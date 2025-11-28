@@ -7,9 +7,14 @@ Cash Information
         botProvision
 
 Balance with BOT
-    account BANK OF TANZANIA
+    account BANK OF TANZANIA hardcoded
     tzsAmount when amount is dollar 
     allowanceProbableLoss,
     botProvision
 
-    
+Balance with Other Banks
+    country: Tanzania is hardcoded
+    relationshipType ='Domestic banks unrelated' hardcoded from lookuptab;e d33
+    Account type
+
+
