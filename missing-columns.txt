@@ -1,0 +1,9 @@
+MISSING COLUMNS
+
+Cash Information
+        cashDenomination,
+        quantityOfCoinsNotes,
+        allowanceProbableLoss,
+        botProvision
+
+    
