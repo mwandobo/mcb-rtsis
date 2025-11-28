@@ -1,5 +1,8 @@
 select CURRENT_TIMESTAMP as reportingDate,
 gte.FK_GLG_ACCOUNTACCO as accountNumber,
+'BANK OF TANZANIA' as accountName,
+'TIPS' as accountType,
+ null as subAccountType,
 gte.CURRENCY_SHORT_DES as currency,
 -- orgAmount: always original DC_AMOUNT
     gte.DC_AMOUNT AS orgAmount,
@@ -19,9 +22,9 @@ gte.CURRENCY_SHORT_DES as currency,
             gte.DC_AMOUNT
     END AS tzsAmount,
 gte.TRN_DATE as transactionDate,
-LTRIM(RTRIM(COALESCE(c.first_name, '') || ' ' || COALESCE(c.middle_name, '') || ' ' || COALESCE(c.surname, ''))) AS accountName,
-'TIPS' as accountType,
-CURRENT_TIMESTAMP as maturityDate
+CURRENT_TIMESTAMP as maturityDate,
+0 as allowanceProbableLoss,
+0 as botProvision
 
 FROM
     GLI_TRX_EXTRACT AS gte
@@ -29,6 +32,12 @@ JOIN
     GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
 JOIN CUSTOMER c
     ON c.CUST_ID = gte.CUST_ID
+LEFT JOIN CURRENCY cu
+    ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
+
+-- join rate table safely
+-- LEFT JOIN RATE_TABLE r
+--     ON r.FK_CURRENCYID_CURR = cu.ID_CURRENCY
 --JOIN RATE_TABLE r
     --ON r.TMSTAMP = gte.TMSTAMP
-WHERE gl.EXTERNAL_GLACCOUNT='100028000';
+WHERE gl.EXTERNAL_GLACCOUNT='100028000'

@@ -6,4 +6,10 @@ Cash Information
         allowanceProbableLoss,
         botProvision
 
+Balance with BOT
+    account BANK OF TANZANIA
+    tzsAmount when amount is dollar 
+    allowanceProbableLoss,
+    botProvision
+
     
