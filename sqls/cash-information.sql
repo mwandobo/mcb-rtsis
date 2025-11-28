@@ -9,10 +9,33 @@ SELECT
       WHEN gl.EXTERNAL_GLACCOUNT='101000004' OR gl.EXTERNAL_GLACCOUNT='101000011' THEN 'Cash in Teller'
       ELSE 'unknown'
     END as cashCategory,
-    gte.DC_AMOUNT as orgAmount,
-    gte.DC_AMOUNT as tzsAmount,
+    null as cashSubCategory,
+    'Business Hours' as cashSubmissionTime,
+    gte.CURRENCY_SHORT_DES as currency,
+    null as cashDenomination,
+    null as quantityOfCoinsNotes
+,
+ -- orgAmount: always original DC_AMOUNT
+    gte.DC_AMOUNT AS orgAmount,
+
+    -- USD Amount: only if currency is USD, otherwise null
+    CASE
+        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+            THEN gte.DC_AMOUNT
+        ELSE NULL
+    END AS usdAmount,
+
+    -- TZS Amount: convert only if USD, otherwise use as is
+    CASE
+        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+            THEN gte.DC_AMOUNT * 2500   -- <<< replace with your rate
+        ELSE
+            gte.DC_AMOUNT
+    END AS tzsAmount,
     gte.TRX_GL_TRN_DATE as transactionDate,
-    gte.AVAILABILITY_DATE as maturityDate
+    gte.AVAILABILITY_DATE as maturityDate,
+    0 as allowanceProbableLoss,
+    0 as botProvision
 FROM
     GLI_TRX_EXTRACT AS gte
 JOIN
