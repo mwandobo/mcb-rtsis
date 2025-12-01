@@ -1,5 +1,6 @@
 SELECT
-    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP as reportingDate,
+    CURRENT_TIMESTAMP as floatBalanceDate,
     gte.CURRENCY_SHORT_DES as currency,
     -- orgAmount: always original DC_AMOUNT
     gte.DC_AMOUNT AS orgFloatAmount,
