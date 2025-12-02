@@ -31,3 +31,5 @@ Balance with MNO
     externalRatingCorrespondentBank.. defined in table D67 but i just use Highly rated Multilateral Development Banks
     gradesUnratedBanks.. defined in table D68 but i just use null
 
+Loan Tanasaction
+    loanTransactionType: Defined in D184
