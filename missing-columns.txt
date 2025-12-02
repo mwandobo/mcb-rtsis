@@ -24,10 +24,5 @@ Balance with Other Banks
 
 Balance with MNO
     floatBalanceDate: We just went with reporting date
-    relationshipType ='Domestic banks unrelated' hardcoded from lookuptab;e d33
-    Account type= Needs to be checked
-    Sub Account type= Needs to be checked
-    assetsClassificationCategory ... definedin D32 but i just use 'Current' now
-    externalRatingCorrespondentBank.. defined in table D67 but i just use Highly rated Multilateral Development Banks
-    gradesUnratedBanks.. defined in table D68 but i just use null
+
 
