@@ -26,3 +26,5 @@ Balance with MNO
     floatBalanceDate: We just went with reporting date
 
 
+Loan Tanasaction
+    loanTransactionType: Defined in D184
