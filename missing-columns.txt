@@ -28,3 +28,6 @@ Balance with MNO
 
 Loan Tanasaction
     loanTransactionType: Defined in D184
+
+Insurance Commission
+    policyNumber

@@ -1,0 +1,104 @@
+SELECT
+    -- Fixed timestamp evaluated ONLY ONCE for the whole result set
+    (SELECT CURRENT TIMESTAMP FROM SYSIBM.SYSDUMMY1)                     AS reportingDate,
+
+    -- ==================================================================
+    -- ASSET TYPE
+    -- ==================================================================
+    CASE
+        WHEN gl.EXTERNAL_GLACCOUNT = '100017000'                                    THEN 'Gold'
+        WHEN gl.EXTERNAL_GLACCOUNT = '144000032'                                    THEN 'StampAccount'
+        WHEN gl.EXTERNAL_GLACCOUNT IN ('144000015','144000047','144000048','144000050',
+                                       '144000051','144000054','144000058','144000061',
+                                       '144000062','144000074')                     THEN 'SundryDebtors'
+        WHEN gl.EXTERNAL_GLACCOUNT IN ('230000007','230000071','145000001','230000079')
+                                                                                    THEN 'Trade Credit and advances'
+        WHEN gl.EXTERNAL_GLACCOUNT IN ('144000006','144000066')                    THEN 'PrepaidExpenses'
+        WHEN gl.EXTERNAL_GLACCOUNT IN ('170150001','170150002','171030001','144000052')
+                                                                                    THEN 'otherIntangible asset'
+        ELSE                                                                        'MiscellaneousAssets'
+    END                                                                         AS assetType,
+
+    gte.TRN_DATE                                                                AS transactionDate,
+    gte.AVAILABILITY_DATE                                                       AS maturityDate,
+
+    TRIM(RTRIM(WC.FIRST_NAME) || ' ' ||
+         COALESCE(RTRIM(WC.MIDDLE_NAME), '') || ' ' ||
+         RTRIM(WC.SURNAME))                                                     AS debtorName,
+
+    CASE WHEN TRIM(WC.NATIONAL_DESCRIPTION) LIKE '%TANZANIAN%' THEN 'Tanzania' ELSE 'Unknown' END
+                                                                                AS debtorCountry,
+
+    gte.CURRENCY_SHORT_DES                                                      AS currency,
+    gte.DC_AMOUNT                                                               AS orgAmount,
+
+    CASE WHEN gte.CURRENCY_SHORT_DES = 'USD'
+         THEN DECIMAL(REPLACE(TRIM(gte.DC_AMOUNT), ',', ''), 31, 2)
+         ELSE NULL
+    END                                                                         AS usdAmount,
+
+    CASE WHEN gte.CURRENCY_SHORT_DES = 'USD'
+         THEN DECIMAL(REPLACE(TRIM(gte.DC_AMOUNT), ',', ''), 31, 2) * 2730.50
+         ELSE DECIMAL(REPLACE(TRIM(gte.DC_AMOUNT), ',', ''), 31, 2)
+    END                                                                         AS tzsAmount,
+
+    -- ==================================================================
+    -- SECTOR SNA CLASSIFICATION
+    -- ==================================================================
+    CASE
+        WHEN gl.EXTERNAL_GLACCOUNT IN ('144000001','144000039','144000043','101010001','101240001')
+            THEN 'Other Depository Corporations'
+        WHEN gl.EXTERNAL_GLACCOUNT IN ('144000047','144000048','144000050','144000051',
+                                       '144000058','144000061','144000062','144000074')
+            THEN 'Other Financial Intermediary'
+        WHEN gl.EXTERNAL_GLACCOUNT IN ('230000007','145000001','230000071')          THEN 'Households'
+        WHEN gl.EXTERNAL_GLACCOUNT = '112020005'                                    THEN 'Insurance Companies'
+        WHEN gl.EXTERNAL_GLACCOUNT = '143000001'                                    THEN 'Central Government'
+        WHEN gl.EXTERNAL_GLACCOUNT = '100017000'                                    THEN 'Other Non-Financial Corporations'
+        WHEN COALESCE(WC.CUST_ID,'') != ''
+         AND TRIM(UPPER(WC.NATIONAL_DESCRIPTION)) LIKE '%TANZANIAN%'               THEN 'Households'
+        WHEN COALESCE(WC.CUST_ID,'') != ''                                          THEN 'Other Non-Financial Corporations'
+        ELSE                                                                        'Other Non-Financial Corporations'
+    END                                                                         AS sectorSnaClassification,
+
+    -- ==================================================================
+    -- PAST DUE DAYS – using the same fixed date as above
+    -- ==================================================================
+    CASE
+        WHEN gte.AVAILABILITY_DATE IS NULL                                          THEN NULL
+        WHEN gte.AVAILABILITY_DATE < (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1)
+            THEN DAYS( (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1) )
+                 - DAYS(gte.AVAILABILITY_DATE)
+        ELSE 0
+    END                                                                         AS pastDueDays,
+
+    -- ==================================================================
+    -- ASSET CLASSIFICATION (BoT Y-code)
+    -- ==================================================================
+    CASE
+        WHEN gte.AVAILABILITY_DATE IS NULL                                          THEN 1
+        WHEN DAYS( (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1) )
+             - DAYS(gte.AVAILABILITY_DATE) <= 30                                    THEN 1
+        WHEN DAYS( (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1) )
+             - DAYS(gte.AVAILABILITY_DATE) <= 90                                    THEN 2
+        ELSE                                                                        3
+    END                                                                         AS assetClassificationCategory,
+
+    DECIMAL(0, 15, 2)                                                           AS allowanceProbableLoss,
+    DECIMAL(0, 15, 2)                                                           AS botProvision
+
+FROM GLI_TRX_EXTRACT       AS gte
+LEFT JOIN CUSTOMER          AS C   ON C.CUST_ID   = gte.CUST_ID
+LEFT JOIN W_DIM_CUSTOMER    AS WC  ON WC.CUST_ID  = gte.CUST_ID
+LEFT JOIN GLG_ACCOUNT       AS gl  ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
+
+WHERE gl.EXTERNAL_GLACCOUNT IN (
+    '100017000','101010001','101240001','112020005','143000001',
+    '144000001','144000015','144000032','144000039','144000043',
+    '144000046','144000047','144000048','144000050','144000051',
+    '144000054','144000057','144000058','144000061','144000062',
+    '144000066','144000074','145000001','230000007','230000013',
+    '230000014','230000071','230000079','144000006','144000052',
+    '170150001','170150002','171030001','705190001','705190002',
+    '705190003','144000020'
+);
