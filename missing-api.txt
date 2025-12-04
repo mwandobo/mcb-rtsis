@@ -1,5 +1,5 @@
 MISSING COLUMNS
 
 invDebtSecurities
-
-
+interbank Loan receivable
+microfinance SegmentLoans
