@@ -39,8 +39,6 @@ Overdraft
 
 
 Shared Capital
-    capitalSubCategory,
-    transactionType,
     shareholderNames,
     clientType,
     shareholderCountry,
