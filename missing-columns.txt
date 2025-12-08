@@ -45,4 +45,9 @@ Shared Capital
     numberOfShares,
     sharePriceBookValue,
     sectorSnaClassification
+icmb transactions
+    lenderName,
+    borrowerName,
+    tenure,
+    interest rate
 
