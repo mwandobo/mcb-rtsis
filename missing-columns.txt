@@ -32,11 +32,8 @@ Loan Tanasaction
 Insurance Commission
     policyNumber
 
-Shared Capital
-    capitalSubCategory,
-    transactionType,
-    shareholderNames,
-    clientType,
-    shareholderCountry,
-    numberOfShares,
-    sharePriceBookValue,
+Overdraft
+  ratingStatus
+  crRatingBorrower
+  groupCode
+
