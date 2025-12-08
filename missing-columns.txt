@@ -37,3 +37,14 @@ Overdraft
   crRatingBorrower
   groupCode
 
+
+Shared Capital
+    capitalSubCategory,
+    transactionType,
+    shareholderNames,
+    clientType,
+    shareholderCountry,
+    numberOfShares,
+    sharePriceBookValue,
+    sectorSnaClassification
+
