@@ -1,0 +1,31 @@
+{
+  "name": "db2-icbm-transactions-source",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max": "1",
+    
+    "connection.url": "jdbc:db2://${DB2_HOST}:${DB2_PORT}/${DB2_DATABASE}",
+    "connection.user": "${DB2_USER}",
+    "connection.password": "${DB2_PASSWORD}",
+    
+    "mode": "timestamp",
+    "timestamp.column.name": "transactionDate",
+    "poll.interval.ms": "2000",
+    "batch.max.rows": "1000",
+    
+    "query": "SELECT CURRENT_TIMESTAMP as reportingDate, gte.TRN_DATE as transactionDate, '' as lenderName, '' as borrowerName, CASE WHEN TIME(gte.TMSTAMP) < TIME('15:30:00') THEN 'market' ELSE 'off market' END AS transactionType, gte.DC_AMOUNT as tzsAmount, '' as tenure, '' as interestRate FROM GLI_TRX_EXTRACT as gte JOIN GLG_ACCOUNT as gl ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO WHERE gl.EXTERNAL_GLACCOUNT = '102000001'",
+    
+    "topic.prefix": "bank.db2.",
+    "table.types": "VIEW",
+    
+    "transforms": "createKey,setSchema",
+    "transforms.createKey.type": "org.apache.kafka.connect.transforms.ValueToKey",
+    "transforms.createKey.fields": "transactionDate,transactionType",
+    "transforms.setSchema.type": "org.apache.kafka.connect.transforms.SetSchemaMetadata$Value",
+    "transforms.setSchema.schema.name": "bank.icbm_transactions",
+    
+    "errors.tolerance": "none",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true"
+  }
+}

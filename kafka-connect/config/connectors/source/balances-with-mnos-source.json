@@ -1,0 +1,30 @@
+{
+  "name": "db2-balances-with-mnos-source",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max": "1",
+    
+    "connection.url": "jdbc:db2://${DB2_HOST}:${DB2_PORT}/${DB2_DATABASE}",
+    "connection.user": "${DB2_USER}",
+    "connection.password": "${DB2_PASSWORD}",
+    
+    "mode": "bulk",
+    "poll.interval.ms": "5000",
+    "batch.max.rows": "1000",
+    
+    "query": "SELECT CURRENT_TIMESTAMP AS reportingDate, CURRENT_TIMESTAMP AS floatBalanceDate, CASE gl.EXTERNAL_GLACCOUNT WHEN '504080001' THEN 'Super Agent Commission' WHEN '144000051' THEN 'AIRTEL Money Super Agent Float' WHEN '144000058' THEN 'TIGO PESA Super Agent Float' WHEN '144000061' THEN 'HALOPESA Super Agent Float' WHEN '144000062' THEN 'MPESA Super Agent Float' ELSE '' END AS mnoCode, gte.FK_GLG_ACCOUNTACCO AS tillNumber, gte.CURRENCY_SHORT_DES AS currency, 0 AS allowanceProbableLoss, 0 AS botProvision, gte.DC_AMOUNT AS orgFloatAmount, CASE WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN gte.DC_AMOUNT ELSE NULL END AS usdFloatAmount, CASE WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN gte.DC_AMOUNT * 2500 ELSE gte.DC_AMOUNT END AS tzsFloatAmount FROM GLI_TRX_EXTRACT gte JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID WHERE gl.EXTERNAL_GLACCOUNT IN ('504080001','144000051','144000058','144000061','144000062')",
+    
+    "topic.prefix": "bank.db2.",
+    "table.types": "VIEW",
+    
+    "transforms": "createKey,setSchema",
+    "transforms.createKey.type": "org.apache.kafka.connect.transforms.ValueToKey",
+    "transforms.createKey.fields": "tillNumber,mnoCode",
+    "transforms.setSchema.type": "org.apache.kafka.connect.transforms.SetSchemaMetadata$Value",
+    "transforms.setSchema.schema.name": "bank.balances_with_mnos",
+    
+    "errors.tolerance": "none",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true"
+  }
+}

@@ -37,7 +37,6 @@ Overdraft
   crRatingBorrower
   groupCode
 
-
 Shared Capital
     shareholderNames,
     clientType,
@@ -48,6 +47,5 @@ Shared Capital
 icmb transactions
     lenderName,
     borrowerName,
-    tenure,
     interest rate
 
