@@ -31,3 +31,21 @@ Loan Tanasaction
 
 Insurance Commission
     policyNumber
+
+Overdraft
+  ratingStatus
+  crRatingBorrower
+  groupCode
+
+Shared Capital
+    shareholderNames,
+    clientType,
+    shareholderCountry,
+    numberOfShares,
+    sharePriceBookValue,
+    sectorSnaClassification
+icmb transactions
+    lenderName,
+    borrowerName,
+    interest rate
+
