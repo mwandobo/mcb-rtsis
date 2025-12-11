@@ -35,7 +35,8 @@ Insurance Commission
 Overdraft
   ratingStatus
   crRatingBorrower
-  groupCode
+  groupCode,
+  CrUsageLast30DaysAmount
 
 
 Shared Capital
