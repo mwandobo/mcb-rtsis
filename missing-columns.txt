@@ -57,7 +57,6 @@ Overdraft
   CrUsageLast30DaysAmount,
   assetClassificationCategory hardcoded to current
 
-
 Shared Capital
     shareholderNames,
     clientType,
@@ -65,4 +64,8 @@ Shared Capital
     numberOfShares,
     sharePriceBookValue,
     sectorSnaClassification
+icmb transactions
+    lenderName,
+    borrowerName,
+    interest rate
 
