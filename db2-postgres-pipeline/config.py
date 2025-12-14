@@ -1,0 +1,413 @@
+"""
+Configuration management for DB2 to PostgreSQL pipeline
+"""
+
+import os
+from dataclasses import dataclass
+from typing import Dict, List
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+@dataclass
+class DatabaseConfig:
+    """Database connection configuration"""
+    # DB2 Configuration for ibm_db
+    db2_host: str = os.getenv('DB2_HOST', '172.10.2.42')
+    db2_port: int = int(os.getenv('DB2_PORT', '50000'))
+    db2_database: str = os.getenv('DB2_DATABASE', 'mcbecho')
+    db2_user: str = os.getenv('DB2_USER', 'profits')
+    db2_password: str = os.getenv('DB2_PASSWORD', 'prft2016')
+    db2_schema: str = os.getenv('DB2_SCHEMA', 'PROFITS')
+    
+    # PostgreSQL Configuration
+    pg_host: str = os.getenv('PG_HOST', 'localhost')
+    pg_port: int = int(os.getenv('PG_PORT', '5432'))
+    pg_database: str = os.getenv('PG_DATABASE', 'bankdb')
+    pg_user: str = os.getenv('PG_USER', 'postgres')
+    pg_password: str = os.getenv('PG_PASSWORD', 'postgres')
+
+@dataclass
+class MessageQueueConfig:
+    """Message queue configuration"""
+    # RabbitMQ Configuration
+    rabbitmq_host: str = os.getenv('RABBITMQ_HOST', 'localhost')
+    rabbitmq_port: int = int(os.getenv('RABBITMQ_PORT', '5672'))
+    rabbitmq_user: str = os.getenv('RABBITMQ_USER', 'guest')
+    rabbitmq_password: str = os.getenv('RABBITMQ_PASSWORD', 'guest')
+    
+    # Redis Configuration
+    redis_host: str = os.getenv('REDIS_HOST', 'localhost')
+    redis_port: int = int(os.getenv('REDIS_PORT', '6379'))
+    redis_db: int = int(os.getenv('REDIS_DB', '0'))
+
+@dataclass
+class PipelineConfig:
+    """Pipeline processing configuration"""
+    poll_interval: int = int(os.getenv('POLL_INTERVAL', '10'))
+    batch_size: int = int(os.getenv('BATCH_SIZE', '1000'))
+    max_retries: int = int(os.getenv('MAX_RETRIES', '3'))
+    retry_delay: int = int(os.getenv('RETRY_DELAY', '5'))
+    
+    # Logging
+    log_level: str = os.getenv('LOG_LEVEL', 'INFO')
+    log_file: str = os.getenv('LOG_FILE', 'logs/pipeline.log')
+
+@dataclass
+class TableConfig:
+    """Configuration for individual table processing"""
+    name: str
+    query: str
+    timestamp_column: str
+    target_table: str
+    queue_name: str
+    processor_class: str
+    batch_size: int = 1000
+    poll_interval: int = 10
+
+class Config:
+    """Main configuration class"""
+    
+    def __init__(self):
+        self.database = DatabaseConfig()
+        self.message_queue = MessageQueueConfig()
+        self.pipeline = PipelineConfig()
+        self.tables = self._get_table_configs()
+    
+    def _get_table_configs(self) -> Dict[str, TableConfig]:
+        """Define table configurations"""
+        return {
+            'cash_information': TableConfig(
+                name='cash_information',
+                query="""
+                SELECT 
+                    gte.TRN_DATE,
+                    CURRENT_TIMESTAMP AS REPORTINGDATE,
+                    gte.FK_UNITCODETRXUNIT AS BRANCHCODE,
+                    CASE 
+                        WHEN gl.EXTERNAL_GLACCOUNT='101000001' THEN 'Cash in vault'
+                        WHEN gl.EXTERNAL_GLACCOUNT='101000002' THEN 'Petty cash'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('101000010','101000015') THEN 'Cash in ATMs'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('101000004','101000011') THEN 'Cash in Teller'
+                        ELSE 'Other cash'
+                    END AS CASHCATEGORY,
+                    gte.CURRENCY_SHORT_DES AS CURRENCY,
+                    gte.DC_AMOUNT AS ORGAMOUNT,
+                    CASE WHEN gte.CURRENCY_SHORT_DES='USD' THEN gte.DC_AMOUNT ELSE NULL END AS USDAMOUNT,
+                    CASE WHEN gte.CURRENCY_SHORT_DES='USD' THEN gte.DC_AMOUNT*2500 ELSE gte.DC_AMOUNT END AS TZSAMOUNT,
+                    gte.TRN_DATE AS TRANSACTIONDATE,
+                    gte.AVAILABILITY_DATE AS MATURITYDATE,
+                    CAST(0 AS DECIMAL(18,2)) AS ALLOWANCEPROBABLELOSS,
+                    CAST(0 AS DECIMAL(18,2)) AS BOTPROVISSION
+                FROM GLI_TRX_EXTRACT gte 
+                JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO=gl.ACCOUNT_ID 
+                WHERE gl.EXTERNAL_GLACCOUNT IN ('101000001','101000002','101000004','101000007','101000010','101000015','101000011')
+                ORDER BY gte.TRN_DATE 
+                FETCH FIRST 1000 ROWS ONLY
+                """,
+                timestamp_column='TRN_DATE',
+                target_table='cash_information',
+                queue_name='cash_information_queue',
+                processor_class='CashProcessor',
+                batch_size=1000,
+                poll_interval=10
+            ),
+            'asset_owned': TableConfig(
+                name='asset_owned',
+                query="""
+                SELECT
+                    CURRENT_TIMESTAMP AS reportingDate,
+                    M.AQUISITION_DATE as acquisitionDate,
+                    CU.SHORT_DESCR as currency,
+                    CASE
+                        WHEN gl.EXTERNAL_GLACCOUNT = '144000020' OR
+                             gl.EXTERNAL_GLACCOUNT = '144000052' OR
+                             gl.EXTERNAL_GLACCOUNT = '170150001' OR
+                             gl.EXTERNAL_GLACCOUNT = '171030001' OR
+                             gl.EXTERNAL_GLACCOUNT = '170150002' THEN 'Intangible'
+                        WHEN gl.EXTERNAL_GLACCOUNT = '171020001' THEN 'Immovable'
+                        WHEN gl.EXTERNAL_GLACCOUNT = '170050001' OR
+                             gl.EXTERNAL_GLACCOUNT = '170120001' OR
+                             gl.EXTERNAL_GLACCOUNT = '171090001' OR
+                             gl.EXTERNAL_GLACCOUNT = '161020001' OR
+                             gl.EXTERNAL_GLACCOUNT = '170090001' OR
+                             gl.EXTERNAL_GLACCOUNT = '170070001' THEN 'Movable'
+                        ELSE 'Other'
+                    END AS assetCategory,
+                    CASE
+                        WHEN M.GL_ACCOUNT = '1.7.0.12.0001' THEN 'Computer'
+                        WHEN M.GL_ACCOUNT = '1.7.0.09.0001' THEN 'Motor Vehicle'
+                        WHEN M.GL_ACCOUNT = '1.7.0.07.0001' THEN 'Machinery And Equipment'
+                        WHEN M.GL_ACCOUNT = '1.7.0.05.0001' THEN 'Furniture and fittings'
+                        WHEN M.GL_ACCOUNT = '1.6.1.02.0001' THEN 'Buildings and improvements'
+                        WHEN M.GL_ACCOUNT = '1.7.0.15.0001' THEN 'Infrastructure investments'
+                        ELSE 'Other'
+                    END AS assetType,
+                    M.AMOUNT AS orgCostValue,
+                    CASE
+                        WHEN CU.SHORT_DESCR = 'USD'
+                            THEN M.AMOUNT
+                        ELSE NULL
+                    END AS usdCostValue,
+                    CASE
+                        WHEN CU.SHORT_DESCR = 'USD'
+                            THEN M.AMOUNT * 2500
+                        ELSE
+                            M.AMOUNT
+                    END AS tzsCostValue,
+                    0 as allowanceProbableLoss,
+                    0 as botProvision
+                FROM ASSET_MASTER AS M
+                LEFT JOIN CURRENCY as CU ON CU.ID_CURRENCY = M.CURRENCY_ID
+                LEFT JOIN GLG_ACCOUNT AS gl ON gl.ACCOUNT_ID = M.GL_ACCOUNT
+                ORDER BY M.AQUISITION_DATE
+                FETCH FIRST 1000 ROWS ONLY
+                """,
+                timestamp_column='AQUISITION_DATE',
+                target_table='asset_owned',
+                queue_name='asset_owned_queue',
+                processor_class='AssetsProcessor',
+                batch_size=1000,
+                poll_interval=10
+            ),
+            'balances_bot': TableConfig(
+                name='balances_bot',
+                query="""
+                SELECT CURRENT_TIMESTAMP as reportingDate,
+                    gte.FK_GLG_ACCOUNTACCO as accountNumber,
+                    'BANK OF TANZANIA' as accountName,
+                    'TIPS' as accountType,
+                    null as subAccountType,
+                    gte.CURRENCY_SHORT_DES as currency,
+                    gte.DC_AMOUNT AS orgAmount,
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                            THEN gte.DC_AMOUNT
+                        ELSE NULL
+                    END AS usdAmount,
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                            THEN gte.DC_AMOUNT * 2500
+                        ELSE
+                            gte.DC_AMOUNT
+                    END AS tzsAmount,
+                    gte.TRN_DATE as transactionDate,
+                    CURRENT_TIMESTAMP as maturityDate,
+                    0 as allowanceProbableLoss,
+                    0 as botProvision
+                FROM GLI_TRX_EXTRACT AS gte
+                JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                JOIN CUSTOMER c ON c.CUST_ID = gte.CUST_ID
+                LEFT JOIN CURRENCY cu ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
+                WHERE gl.EXTERNAL_GLACCOUNT='100028000'
+                ORDER BY gte.TRN_DATE
+                FETCH FIRST 1000 ROWS ONLY
+                """,
+                timestamp_column='TRN_DATE',
+                target_table='balances_bot',
+                queue_name='balances_bot_queue',
+                processor_class='BotBalancesProcessor',
+                batch_size=1000,
+                poll_interval=10
+            ),
+            'balances_with_mnos': TableConfig(
+                name='balances_with_mnos',
+                query="""
+                SELECT
+                    CURRENT_TIMESTAMP AS reportingDate,
+                    CURRENT_TIMESTAMP AS floatBalanceDate,
+                    CASE gl.EXTERNAL_GLACCOUNT
+                        WHEN '504080001' THEN 'Super Agent Commission'
+                        WHEN '144000051' THEN 'AIRTEL Money Super Agent Float'
+                        WHEN '144000058' THEN 'TIGO PESA Super Agent Float'
+                        WHEN '144000061' THEN 'HALOPESA Super Agent Float'
+                        WHEN '144000062' THEN 'MPESA Super Agent Float'
+                        ELSE ''
+                    END AS mnoCode,
+                    gte.FK_GLG_ACCOUNTACCO AS tillNumber,
+                    gte.CURRENCY_SHORT_DES AS currency,
+                    0 AS allowanceProbableLoss,
+                    0 AS botProvision,
+                    gte.DC_AMOUNT AS orgFloatAmount,
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                            THEN gte.DC_AMOUNT
+                        ELSE NULL
+                    END AS usdFloatAmount,
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                            THEN gte.DC_AMOUNT * 2500
+                        ELSE
+                            gte.DC_AMOUNT
+                    END AS tzsFloatAmount
+                FROM GLI_TRX_EXTRACT gte
+                JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                WHERE gl.EXTERNAL_GLACCOUNT IN ('504080001','144000051','144000058','144000061','144000062')
+                ORDER BY gte.TRN_DATE
+                FETCH FIRST 1000 ROWS ONLY
+                """,
+                timestamp_column='TRN_DATE',
+                target_table='balances_with_mnos',
+                queue_name='balances_with_mnos_queue',
+                processor_class='MnosProcessor',
+                batch_size=1000,
+                poll_interval=10
+            ),
+            'balance_with_other_banks': TableConfig(
+                name='balance_with_other_banks',
+                query="""
+                SELECT
+                    CURRENT_TIMESTAMP AS reportingDate,
+                    gte.FK_GLG_ACCOUNTACCO as accountNumber,
+                    c.FIRST_NAME as accountName,
+                    CASE
+                        WHEN UPPER(c.FIRST_NAME) = 'ECOBANK' THEN 'ECOCTZTZXXX'
+                        WHEN UPPER(c.FIRST_NAME) = 'BOA' THEN 'EUAFTZTZXXX'
+                        WHEN UPPER(c.FIRST_NAME) = 'TPB' THEN 'TAPBTZTZ'
+                        WHEN UPPER(c.FIRST_NAME) = 'TANZANIA POSTAL BANK' THEN 'TAPBTZTZXX'
+                        ELSE VARCHAR(gte.FK0UNITCODE)
+                    END AS bankCode,
+                    'Tanzania' as Country,
+                    'Domestic bank related' as relationshipType,
+                    '' as accountType,
+                    '' as subAccountType,
+                    gte.CURRENCY_SHORT_DES as currency,
+                    gte.DC_AMOUNT AS orgAmount,
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                            THEN gte.DC_AMOUNT
+                        ELSE NULL
+                    END AS usdAmount,
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                            THEN gte.DC_AMOUNT * 2500
+                        ELSE
+                            gte.DC_AMOUNT
+                    END AS tzsAmount,
+                    gte.TRN_DATE as transactionDate,
+                    (DATE(gte.AVAILABILITY_DATE) - DATE(gte.TRN_DATE)) AS pastDueDays,
+                    0 as allowanceProbableLoss,
+                    0 as botProvision,
+                    'Current' as assetsClassificationCategory,
+                    gte.TRN_DATE as contractDate,
+                    gte.AVAILABILITY_DATE as maturityDate,
+                    'Highly rated Multilateral Development Banks' as externalRatingCorrespondentBank,
+                    '' as gradesUnratedBanks
+                FROM GLI_TRX_EXTRACT as gte
+                JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                JOIN CUSTOMER c ON gte.CUST_ID = c.CUST_ID
+                WHERE gl.EXTERNAL_GLACCOUNT IN('100050001')
+                ORDER BY gte.TRN_DATE
+                FETCH FIRST 1000 ROWS ONLY
+                """,
+                timestamp_column='TRN_DATE',
+                target_table='balance_with_other_bank',
+                queue_name='balance_with_other_banks_queue',
+                processor_class='OtherBanksProcessor',
+                batch_size=1000,
+                poll_interval=10
+            ),
+            'other_assets': TableConfig(
+                name='other_assets',
+                query="""
+                SELECT
+                    (SELECT CURRENT TIMESTAMP FROM SYSIBM.SYSDUMMY1) AS reportingDate,
+                    CASE
+                        WHEN gl.EXTERNAL_GLACCOUNT = '100017000' THEN 'Gold'
+                        WHEN gl.EXTERNAL_GLACCOUNT = '144000032' THEN 'StampAccount'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('144000015','144000047','144000048','144000050',
+                                                       '144000051','144000054','144000058','144000061',
+                                                       '144000062','144000074') THEN 'SundryDebtors'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('230000007','230000071','145000001','230000079')
+                                                                                    THEN 'Trade Credit and advances'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('144000006','144000066') THEN 'PrepaidExpenses'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('170150001','170150002','171030001','144000052')
+                                                                                    THEN 'otherIntangible asset'
+                        ELSE 'MiscellaneousAssets'
+                    END AS assetType,
+                    gte.TRN_DATE AS transactionDate,
+                    gte.AVAILABILITY_DATE AS maturityDate,
+                    TRIM(RTRIM(WC.FIRST_NAME) || ' ' ||
+                         COALESCE(RTRIM(WC.MIDDLE_NAME), '') || ' ' ||
+                         RTRIM(WC.SURNAME)) AS debtorName,
+                    CASE WHEN TRIM(WC.NATIONAL_DESCRIPTION) LIKE '%TANZANIAN%' THEN 'Tanzania' ELSE 'Unknown' END
+                                                                                AS debtorCountry,
+                    gte.CURRENCY_SHORT_DES AS currency,
+                    gte.DC_AMOUNT AS orgAmount,
+                    CASE WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                         THEN gte.DC_AMOUNT
+                         ELSE NULL
+                    END AS usdAmount,
+                    CASE WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                         THEN gte.DC_AMOUNT * 2730.50
+                         ELSE gte.DC_AMOUNT
+                    END AS tzsAmount,
+                    CASE
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('144000001','144000039','144000043','101010001','101240001')
+                            THEN 'Other Depository Corporations'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('144000047','144000048','144000050','144000051',
+                                                       '144000058','144000061','144000062','144000074')
+                            THEN 'Other Financial Intermediary'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('230000007','145000001','230000071') THEN 'Households'
+                        WHEN gl.EXTERNAL_GLACCOUNT = '112020005' THEN 'Insurance Companies'
+                        WHEN gl.EXTERNAL_GLACCOUNT = '143000001' THEN 'Central Government'
+                        WHEN gl.EXTERNAL_GLACCOUNT = '100017000' THEN 'Other Non-Financial Corporations'
+                        WHEN COALESCE(WC.CUST_ID,'') != ''
+                         AND TRIM(UPPER(WC.NATIONAL_DESCRIPTION)) LIKE '%TANZANIAN%' THEN 'Households'
+                        WHEN COALESCE(WC.CUST_ID,'') != '' THEN 'Other Non-Financial Corporations'
+                        ELSE 'Other Non-Financial Corporations'
+                    END AS sectorSnaClassification,
+                    CASE
+                        WHEN gte.AVAILABILITY_DATE IS NULL THEN NULL
+                        WHEN gte.AVAILABILITY_DATE < (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1)
+                            THEN DAYS( (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1) )
+                                 - DAYS(gte.AVAILABILITY_DATE)
+                        ELSE 0
+                    END AS pastDueDays,
+                    CASE
+                        WHEN gte.AVAILABILITY_DATE IS NULL THEN 1
+                        WHEN DAYS( (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1) )
+                             - DAYS(gte.AVAILABILITY_DATE) <= 30 THEN 1
+                        WHEN DAYS( (SELECT CURRENT DATE FROM SYSIBM.SYSDUMMY1) )
+                             - DAYS(gte.AVAILABILITY_DATE) <= 90 THEN 2
+                        ELSE 3
+                    END AS assetClassificationCategory,
+                    0 AS allowanceProbableLoss,
+                    0 AS botProvision
+                FROM GLI_TRX_EXTRACT AS gte
+                LEFT JOIN CUSTOMER AS C ON C.CUST_ID = gte.CUST_ID
+                LEFT JOIN W_DIM_CUSTOMER AS WC ON WC.CUST_ID = gte.CUST_ID
+                LEFT JOIN GLG_ACCOUNT AS gl ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
+                WHERE gl.EXTERNAL_GLACCOUNT IN (
+                    '100017000','101010001','101240001','112020005','143000001',
+                    '144000001','144000015','144000032','144000039','144000043',
+                    '144000046','144000047','144000048','144000050','144000051',
+                    '144000054','144000057','144000058','144000061','144000062',
+                    '144000066','144000074','145000001','230000007','230000013',
+                    '230000014','230000071','230000079','144000006','144000052',
+                    '170150001','170150002','171030001','705190001','705190002',
+                    '705190003','144000020'
+                )
+                ORDER BY gte.TRN_DATE
+                FETCH FIRST 1000 ROWS ONLY
+                """,
+                timestamp_column='TRN_DATE',
+                target_table='other_assets',
+                queue_name='other_assets_queue',
+                processor_class='OtherAssetsProcessor',
+                batch_size=1000,
+                poll_interval=10
+            )
+        }
+    
+    def get_queue_names(self) -> List[str]:
+        """Get all queue names"""
+        queues = []
+        for table_config in self.tables.values():
+            queues.extend([
+                table_config.queue_name,
+                f"{table_config.queue_name}_retry",
+                f"{table_config.queue_name}_dlq"
+            ])
+        return queues
