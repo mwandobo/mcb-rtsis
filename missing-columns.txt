@@ -29,13 +29,33 @@ Balance with MNO
 Loan Tanasaction
     loanTransactionType: Defined in D184
 
+Loan Infromations
+ relatedParty
+ relationshipCategory
+ purposeOtherLoans,
+ sourceFundMortgage,
+ amortizationType,
+ gracePeriodPaymentPrincipal
+ interestPricingMethod
+ effectiveAnnualInterestRate
+ loanFlagType
+ restructuringDate
+ internalRiskGroup
+ tradingIntent
+
+
+
+
 Insurance Commission
     policyNumber
 
 Overdraft
-  ratingStatus
-  crRatingBorrower
-  groupCode
+  ratingStatus,
+  crRatingBorrower,
+  Loan supervisor,
+  groupCode,
+  CrUsageLast30DaysAmount,
+  assetClassificationCategory hardcoded to current
 
 Shared Capital
     shareholderNames,

@@ -1,0 +1,1 @@
+in collateral i can get  info by searching by using FK_CUSTOMERCUST_ID and AccountCD which is provided by weom_loans
