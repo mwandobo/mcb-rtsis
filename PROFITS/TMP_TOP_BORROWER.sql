@@ -1,0 +1,21 @@
+create table TMP_TOP_BORROWER
+(
+    ACCOUNT_NUMBER        CHAR(40),
+    ACCOUNT_CD            INTEGER,
+    AGREEMENT_NUMBER      CHAR(40),
+    AGREEMENT_CD          INTEGER,
+    BORROWER_ID           INTEGER,
+    BORROWER              CHAR(90),
+    GROUP_NAME            CHAR(40),
+    PRODUCT_DESC          CHAR(40),
+    FINSC_DESC            CHAR(40),
+    ACC_LIMIT_AMN_LC      INTEGER,
+    ACC_LIMIT_AMN_FC      INTEGER,
+    LC_GROSS_TOTAL        DECIMAL(15, 2),
+    GROSS_TOTAL           DECIMAL(15, 2),
+    AGE_OF_TOTAL          INTEGER,
+    LOAN_CLASS            CHAR(20),
+    PRODUCT_DYNAMIC_DESCR CHAR(200),
+    COL_EST_VALUE_AMN     INTEGER
+);
+

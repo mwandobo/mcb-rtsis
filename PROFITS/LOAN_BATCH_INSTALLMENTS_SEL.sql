@@ -1,0 +1,50 @@
+create table LOAN_BATCH_INSTALLMENTS_SEL
+(
+    TMSTAMP             TIMESTAMP(6) not null,
+    TRX_USER            CHAR(8)      not null,
+    INSTALL_SN          INTEGER      not null,
+    REQUEST_DT          DATE         not null,
+    REQUEST_SN          INTEGER      not null,
+    REQUEST_PERIOD      CHAR(1)      not null,
+    REQUEST_TYPE        CHAR(1)      not null,
+    ACC_TYPE            INTEGER      not null,
+    ACC_CD              INTEGER,
+    ACC_UNIT            INTEGER      not null,
+    ACC_SN              INTEGER      not null,
+    SUBSIDY2_INTER_PERC DECIMAL(8, 4),
+    SPREAD_INTER_PERC   DECIMAL(8, 4),
+    SUBSIDY_INTER_PERC  DECIMAL(8, 4),
+    NORMAL_INTER_PERC   DECIMAL(8, 4),
+    N128_INTER_PERC     DECIMAL(8, 4),
+    INTEREST_AMN        DECIMAL(15, 2),
+    INSTALL_AMN         DECIMAL(15, 2),
+    DB_INTEREST_AMN     DECIMAL(15, 2),
+    N128_INTEREST_AMN   DECIMAL(15, 2),
+    SPRD_INTEREST_AMN   DECIMAL(15, 2),
+    ROUNDING_AMN        DECIMAL(15, 2),
+    COST_OF_OPTION_AMN  DECIMAL(15, 2),
+    REMAIN_CAP_AMN      DECIMAL(15, 2),
+    INSTALL_INSURANCE   DECIMAL(15, 2),
+    SUBS2_INTEREST_AMN  DECIMAL(15, 2),
+    CAPITAL_AMN         DECIMAL(15, 2),
+    SUBS_INTEREST_AMN   DECIMAL(15, 2),
+    DATE_INTER_CHANGED  DATE,
+    OMITED_FLG          CHAR(1),
+    REQUEST_STATUS      CHAR(1),
+    RQ_LST_PAYMENT_DT   DATE,
+    RQ_OVERDUE_DAYS     INTEGER,
+    RQ_REMAINING_AMNT   DECIMAL(15, 2),
+    COMMISSION_AMN      DECIMAL(15, 2),
+    EXPENSE_AMN         DECIMAL(15, 2),
+    RQ_CAP_PAID         DECIMAL(15, 2),
+    RQ_INT_PAID         DECIMAL(15, 2),
+    RQ_EXP_PAID         DECIMAL(15, 2),
+    RQ_COM_PAID         DECIMAL(15, 2),
+    constraint PK_BTC_INST_SEL
+        primary key (TMSTAMP, TRX_USER, INSTALL_SN, REQUEST_DT, REQUEST_SN, REQUEST_PERIOD, REQUEST_TYPE, ACC_TYPE,
+                     ACC_UNIT, ACC_SN)
+);
+
+create unique index INDX_BTC_INST_SEL
+    on LOAN_BATCH_INSTALLMENTS_SEL (ACC_SN, ACC_UNIT, ACC_TYPE, REQUEST_DT);
+

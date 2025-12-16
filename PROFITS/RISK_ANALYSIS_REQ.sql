@@ -1,0 +1,35 @@
+create table RISK_ANALYSIS_REQ
+(
+    PRFT_REF_NO      CHAR(16)     not null,
+    ACCOUNT_NUMBER   DECIMAL(11)  not null,
+    STATUS           CHAR(1)      not null,
+    TRX_UNIT         INTEGER      not null,
+    TRX_DATE         DATE         not null,
+    TRX_USER         CHAR(8)      not null,
+    TMSTAMP          TIMESTAMP(6) not null,
+    TERMINAL_NUMBER  CHAR(99)     not null,
+    CUST_ID          INTEGER      not null,
+    CUST_TYPE        CHAR(1),
+    FIRSTNAME        CHAR(20),
+    LASTNAME         CHAR(70),
+    ID               CHAR(20),
+    ID_TYPE          CHAR(40),
+    AFM              CHAR(20),
+    AFM_COUNTRY      CHAR(40),
+    ZIP_CODE         CHAR(10),
+    CITY             CHAR(30),
+    ADDRESS1         CHAR(40),
+    ADDRESS2         CHAR(40),
+    ADDR_COUNTRY     CHAR(3),
+    NATION_COUNTRY   CHAR(3),
+    BIRTHDATE        DATE,
+    PLACE_OF_BIRTH   CHAR(20),
+    COUNTRY_OF_BIRTH CHAR(3),
+    PROFESSION       CHAR(40),
+    ECONOMY          CHAR(40),
+    RESPONSIBLE_UNIT INTEGER,
+    EMPLOYEE_ID      CHAR(8),
+    constraint PK_RSKANALRQ
+        primary key (PRFT_REF_NO, ACCOUNT_NUMBER, TMSTAMP)
+);
+

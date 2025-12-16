@@ -1,0 +1,21 @@
+create table DEP_ACC_TR_ACC
+(
+    ACCOUNT_NUMBER    DECIMAL(11),
+    TR_ACC_CD         SMALLINT,
+    TR_ACC_TYPE       SMALLINT,
+    TR_ACC_UNIT       INTEGER,
+    TR_ACC_SN         INTEGER,
+    SELL_COMMISION    DECIMAL(9, 6),
+    BUY_COMMISION     DECIMAL(9, 6),
+    AK_RATE_TABLE_NUM DECIMAL(10),
+    LAST_TR_EVAL_BAL  DECIMAL(15, 2),
+    TMSTAMP           DATE,
+    LAST_TR_EVAL_DATE DATE,
+    USED_STATUS       CHAR(1),
+    RECHECK_BAL_FLG   CHAR(1),
+    ENTRY_STATUS      CHAR(1)
+);
+
+create unique index IXU_DEP_016
+    on DEP_ACC_TR_ACC (ACCOUNT_NUMBER);
+

@@ -1,0 +1,18 @@
+create table DEP_M_F_DISTR_TRX
+(
+    ACCOUNT_NUMBER   DECIMAL(11),
+    ENTRY_SER_NUM    SMALLINT,
+    TRANS_SER_NUM    INTEGER,
+    TRX_CODE         INTEGER,
+    ID_JUSTIFIC      INTEGER,
+    AMOUNT           DECIMAL(15, 2),
+    AVAIL_DATE       DATE,
+    DISTRIBUTED_DATE DATE,
+    TRX_DATE         DATE,
+    TO_DISTRIBUTE    CHAR(1),
+    DB_CR            CHAR(1)
+);
+
+create unique index IXU_DEP_058
+    on DEP_M_F_DISTR_TRX (ACCOUNT_NUMBER, ENTRY_SER_NUM, TRANS_SER_NUM);
+

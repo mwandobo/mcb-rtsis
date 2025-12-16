@@ -1,0 +1,12 @@
+create table TERMINAL
+(
+    TERMINAL_NUMBER   CHAR(99),
+    FK_UNITCODE       INTEGER,
+    FK_DISTR_CHANNEID INTEGER,
+    TMSTAMP           TIMESTAMP(6),
+    ENTRY_STATUS      CHAR(1)
+);
+
+create unique index IXU_TER_001
+    on TERMINAL (TERMINAL_NUMBER);
+

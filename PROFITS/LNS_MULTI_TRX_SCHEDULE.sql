@@ -1,0 +1,50 @@
+create table LNS_MULTI_TRX_SCHEDULE
+(
+    INSTALL_COUNT           SMALLINT,
+    INSTALL_FREQ            SMALLINT,
+    PROCESS_TMPSTAMP        TIMESTAMP(6),
+    INSERT_TMPSTAMP         TIMESTAMP(6),
+    ACCOUNT_CD              SMALLINT,
+    PROGRAM_SN              INTEGER  not null,
+    TRAN_SERIAL             SMALLINT not null,
+    APPLICATION_ID          CHAR(15) not null,
+    CUST_ID                 INTEGER  not null,
+    UNIT_CODE               INTEGER,
+    ACCOUNT_NUMBER          CHAR(40) not null,
+    PRFT_SYSTEM             SMALLINT,
+    PROCESSED_STATUS        CHAR(1),
+    TRX_AMOUNT              DECIMAL(15, 2),
+    TRX_JUSTIFIC            INTEGER,
+    TRX_TRANSACT            INTEGER,
+    PRODUCT_ID              INTEGER,
+    ENTRY_STATUS            CHAR(1),
+    ID_CURRENCY             INTEGER,
+    GRACE_PERIOD_EXP_DT     DATE,
+    STATEMENT_FREQ          CHAR(1),
+    EXTERNAL_APPLICATION_ID CHAR(40),
+    COMMENTS                CHAR(40),
+    FINSC                   INTEGER,
+    CCODE                   INTEGER,
+    LPURP                   INTEGER,
+    BSECT                   INTEGER,
+    CBPURP                  INTEGER,
+    CLOAN                   INTEGER,
+    SALES_UNIT              INTEGER,
+    SALES_PERSON            INTEGER,
+    FIXED_INTEREST          INTEGER,
+    FLOAT_INTEREST          INTEGER,
+    BATCH_FLG               CHAR(1),
+    BATCH_ERROR             VARCHAR(50),
+    TRX_PERCENTAGE          DECIMAL(8, 4),
+    BGM_PROGRAM_STEP_SN     INTEGER  not null,
+    REVERSED_FLAG           CHAR(1),
+    BANKEMPLOYEE_ACCOUNT    CHAR(8),
+    BANKEMPLOYEE_DELAY      CHAR(8),
+    ELIGIBLE_AMOUNT         DECIMAL(15, 2),
+    constraint LNS_MULTI_TRX_PRK
+        primary key (PROGRAM_SN, TRAN_SERIAL, APPLICATION_ID, CUST_ID, ACCOUNT_NUMBER, BGM_PROGRAM_STEP_SN)
+);
+
+create unique index IXN_BGM_74021_04
+    on LNS_MULTI_TRX_SCHEDULE (APPLICATION_ID, PROCESSED_STATUS, ENTRY_STATUS);
+

@@ -1,0 +1,11 @@
+create table COUNTER_TABLE
+(
+    CHANGE_DATE DATE,
+    TAB_NAME    CHAR(20),
+    UNITCODE    INTEGER,
+    CNTR        SMALLINT
+);
+
+create unique index IXU_COU_001
+    on COUNTER_TABLE (CHANGE_DATE, TAB_NAME, UNITCODE);
+

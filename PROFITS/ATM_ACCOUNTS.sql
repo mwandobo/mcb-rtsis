@@ -1,0 +1,13 @@
+create table ATM_ACCOUNTS
+(
+    BANK_IDENTIFIER  VARCHAR(10) not null
+        constraint PK_ATM_ACC
+            primary key,
+    ISSUER_ACC_NO    CHAR(40),
+    ISSUER_ACC_CD    SMALLINT,
+    ISSUER_DEP_ACC   DECIMAL(11),
+    ACQUIRER_ACC_NO  CHAR(40),
+    ACQUIRER_ACC_CD  SMALLINT,
+    ACQUIRER_DEP_ACC DECIMAL(11)
+);
+

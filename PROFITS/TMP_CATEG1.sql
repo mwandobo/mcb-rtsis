@@ -1,0 +1,19 @@
+create table TMP_CATEG1
+(
+    C_DIGIT              SMALLINT,
+    SERIAL_NUM           INTEGER,
+    FK_GENERIC_DETASER   INTEGER,
+    FK_CUSTOMERCUST_ID   INTEGER,
+    CUST_ID              INTEGER,
+    FK_GENERIC_HEADPAR   CHAR(5),
+    FK_GENERIC_DETAFK    CHAR(5),
+    CATEGORY_HEADPAR     CHAR(5),
+    FK_CATEGORYCATEGOR   CHAR(8),
+    CATEGORY_CODE        CHAR(8),
+    FIRST_NAME           CHAR(20),
+    CATEGORY_DESCRIPTION CHAR(20),
+    SURNAME              CHAR(70),
+    CUST_TYPE            VARCHAR(13),
+    DESCRIPTION          VARCHAR(40)
+);
+

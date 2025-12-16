@@ -1,0 +1,20 @@
+create table CHEQUE_DISC_TOT
+(
+    OD_ACCOUNT      DECIMAL(11) not null,
+    INTERNAL_SN     INTEGER     not null,
+    SERVICE_C_DIGIT SMALLINT,
+    OD_C_DIGIT      SMALLINT,
+    TOTAL_CHEQUES   SMALLINT,
+    UNIT            INTEGER,
+    SERVICE_ACCOUNT DECIMAL(11),
+    NOT_DISC_AMT    DECIMAL(15, 2),
+    TOTAL_AMOUNT    DECIMAL(15, 2),
+    CANCELLED_AMT   DECIMAL(15, 2),
+    TOTAL_DISC_AMT  DECIMAL(15, 2),
+    TMSTAMP         DATE,
+    INS_DATE        DATE,
+    MATRIX_STATUS   CHAR(1),
+    constraint IXU_DEP_119
+        primary key (OD_ACCOUNT, INTERNAL_SN)
+);
+

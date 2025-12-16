@@ -1,0 +1,18 @@
+create table DIRECTORS_LOANS
+(
+    FK_UNITCODE         INTEGER  not null,
+    ACC_TYPE            SMALLINT not null,
+    ACC_SN              INTEGER  not null,
+    ACCOUNT_NUMBER      VARCHAR(40),
+    ACCOUNT_CD          SMALLINT,
+    PRFT_SYSTEM         SMALLINT,
+    NAME_OF_BORROWER    VARCHAR(91),
+    ORIGINAL_DATE       DATE,
+    ORIGINAL_AMOUNT     DECIMAL(15, 2),
+    MATURITY_DATE       DATE,
+    OUTSTANDING_BALANCE DECIMAL(15, 2),
+    OVERDUE_BALANCE     DECIMAL(15, 2),
+    GUARANTEES          VARCHAR(40),
+    PROVISION           DECIMAL(15, 2)
+);
+

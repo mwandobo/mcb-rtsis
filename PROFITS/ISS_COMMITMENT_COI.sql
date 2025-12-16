@@ -1,0 +1,14 @@
+create table ISS_COMMITMENT_COI
+(
+    INTERNAL_SN        SMALLINT,
+    TP_SO_IDENTIFIER   DECIMAL(10),
+    CUST_ID            INTEGER,
+    COVER_RATIO        DECIMAL(9, 6),
+    CUST_TP_SO_ID      DECIMAL(10),
+    CUST_NAME          CHAR(95),
+    LOADING_PERCENTAGE DECIMAL(9, 6)
+);
+
+create unique index IXU_ISS_018
+    on ISS_COMMITMENT_COI (INTERNAL_SN, TP_SO_IDENTIFIER);
+

@@ -1,0 +1,36 @@
+create table IPS_ETL_DETAIL
+(
+    FILENAME           CHAR(50)    not null,
+    FILE_TYPE          CHAR(1)     not null,
+    LINE_NO            DECIMAL(10) not null,
+    TRX_DATE           DATE        not null,
+    FILEID             CHAR(35),
+    FILE_TIMESTAMP     CHAR(14),
+    RECORD_TYPE        CHAR(1),
+    MESSAGE_TYPE       SMALLINT,
+    END_TO_END_ID      CHAR(35),
+    VERIFICATION_ID    CHAR(35),
+    INSTRUCTION_ID     CHAR(35),
+    IBAN               CHAR(50),
+    TAX_ID             INTEGER,
+    ACCOUNT_USAGE_FLG  CHAR(4),
+    ACTIVATION_DATE    DATE,
+    INACTIVATION_DATE  DATE,
+    ACCOUNT_STATUS     CHAR(4),
+    STATUS_REASON      CHAR(4),
+    PROFITS_ACC_STATUS CHAR(4),
+    EXCEPTION_CODE     CHAR(4),
+    GROUP_TYPE         CHAR(3),
+    GROUP_TRAILER_TYPE CHAR(3),
+    DETAIL_RECORDS_NO  DECIMAL(15, 2),
+    GROUPS_NO          DECIMAL(15, 2),
+    CONFIRMATION_DATE  DATE,
+    CONFIRMATION_ID    CHAR(35),
+    COMPLETE_FLAG      CHAR(1),
+    TMSTAMP            TIMESTAMP(6),
+    FULL_LINE          VARCHAR(549),
+    EXP_FILENAME       CHAR(50),
+    constraint PK_ETL_DTL
+        primary key (FILENAME, FILE_TYPE, LINE_NO)
+);
+

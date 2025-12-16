@@ -1,0 +1,25 @@
+create table REP_74385
+(
+    ACC_UNIT         INTEGER,
+    ACC_SN           INTEGER,
+    LOAN_STATUS      CHAR(1),
+    ACCOUNTED        CHAR(1),
+    ACC_CD           SMALLINT,
+    PRODUCT          INTEGER,
+    STARTING_DATE    DATE,
+    END_DATE         DATE,
+    DB_INTEREST      DECIMAL(8, 4),
+    N128_INTEREST    DECIMAL(8, 4),
+    PENALTY_INTEREST DECIMAL(8, 4),
+    SPREAD_INTEREST  DECIMAL(8, 4),
+    TOT_INT_AMOUNT   DECIMAL(15, 2),
+    PRODUCT_AMOUNT   DECIMAL(15, 2),
+    AVERAGE_BALANCE  DECIMAL(15, 2),
+    CUST_ID          INTEGER,
+    ID_CURRENCY      INTEGER,
+    ACC_STATUS       CHAR(1)
+);
+
+create unique index IXU_LOA_060
+    on REP_74385 (ACC_UNIT, ACC_SN, LOAN_STATUS, ACCOUNTED);
+

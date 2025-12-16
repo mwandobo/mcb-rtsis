@@ -1,0 +1,11 @@
+create table STAT_DEPOSIT_T_GRP
+(
+    ID_PROGRAM       CHAR(5),
+    DEPOSIT_GROUP    SMALLINT,
+    ID_TABLE         INTEGER,
+    DEPOSIT_GRP_DESC CHAR(30)
+);
+
+create unique index IXP_STA_008
+    on STAT_DEPOSIT_T_GRP (ID_PROGRAM, DEPOSIT_GROUP, ID_TABLE);
+

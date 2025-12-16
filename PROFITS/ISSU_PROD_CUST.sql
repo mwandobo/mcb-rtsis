@@ -1,0 +1,12 @@
+create table ISSU_PROD_CUST
+(
+    PRODUCT         INTEGER,
+    CUSTOMER        INTEGER,
+    DEFAULT_IND     SMALLINT,
+    CR_DEP_ACCOUNT  DECIMAL(11) not null,
+    BANK_ACCOUNT_NO CHAR(40)
+);
+
+create unique index IXU_ISS_005
+    on ISSU_PROD_CUST (PRODUCT, CUSTOMER, CR_DEP_ACCOUNT);
+

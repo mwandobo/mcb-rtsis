@@ -1,0 +1,9 @@
+create table TMP_SHARES
+(
+    APPL_TYPE   SMALLINT,
+    TRX_UNIT    INTEGER,
+    TRX_SHARES  DECIMAL(10),
+    TRX_DATE    DATE,
+    APPL_TYPE_C CHAR(20)
+);
+

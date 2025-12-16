@@ -1,0 +1,16 @@
+create table USR_EXCH_FUND
+(
+    TRX_UNIT           INTEGER,
+    TRX_DATE           DATE,
+    TRX_ID             INTEGER,
+    FKUSR_IS_RECEIVED  CHAR(8),
+    FKUSR_IS_SENT_BY   CHAR(8),
+    FK_CURRENCYID_CURR INTEGER,
+    AMOUNT             DECIMAL(15, 2),
+    TMSTAMP            TIMESTAMP(6),
+    ENTRY_STATUS       CHAR(1)
+);
+
+create unique index IXU_USR_002
+    on USR_EXCH_FUND (TRX_UNIT, TRX_DATE, TRX_ID, FKUSR_IS_RECEIVED, FKUSR_IS_SENT_BY, FK_CURRENCYID_CURR);
+

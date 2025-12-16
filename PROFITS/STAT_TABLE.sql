@@ -1,0 +1,12 @@
+create table STAT_TABLE
+(
+    ID_PROGRAM         CHAR(5),
+    ID_TABLE           INTEGER,
+    DAYS_DURATION_FROM SMALLINT,
+    DAYS_DURATION_TO   SMALLINT,
+    PROGR_DESC         VARCHAR(200)
+);
+
+create unique index IXP_STA_005
+    on STAT_TABLE (ID_PROGRAM, ID_TABLE);
+

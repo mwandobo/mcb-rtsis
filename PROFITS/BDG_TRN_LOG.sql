@@ -1,0 +1,57 @@
+create table BDG_TRN_LOG
+(
+    FK_BDG_CNTR_UNIFK INTEGER  not null,
+    FK_USRCODE        CHAR(8)  not null,
+    TRN_DATE          DATE     not null,
+    YEAR0             SMALLINT not null,
+    TRN_SNUM          INTEGER  not null,
+    BDG_FTH_RATE      DECIMAL(4, 2),
+    ACT_SEC_RATE      DECIMAL(4, 2),
+    REV_SEC_RATE      DECIMAL(4, 2),
+    REV_THD_RATE      DECIMAL(4, 2),
+    REV_FTH_RATE      DECIMAL(4, 2),
+    BDG_THD_RATE      DECIMAL(4, 2),
+    BDG_SEC_RATE      DECIMAL(4, 2),
+    BDG_FST_RATE      DECIMAL(4, 2),
+    REV_FST_RATE      DECIMAL(4, 2),
+    ACT_FTH_RATE      DECIMAL(4, 2),
+    ACT_THD_RATE      DECIMAL(4, 2),
+    ACT_FST_RATE      DECIMAL(4, 2),
+    ACT_FST_RESULT    DECIMAL(12),
+    REV_THD_RESULT    DECIMAL(12),
+    ACT_FTH_SIZE      DECIMAL(12),
+    BDG_FST_SIZE      DECIMAL(12),
+    BDG_SEC_SIZE      DECIMAL(12),
+    BDG_THD_SIZE      DECIMAL(12),
+    BDG_FTH_SIZE      DECIMAL(12),
+    BDG_FST_RESULT    DECIMAL(12),
+    BDG_SEC_RESULT    DECIMAL(12),
+    BDG_THD_RESULT    DECIMAL(12),
+    BDG_FTH_RESULT    DECIMAL(12),
+    ACT_THD_SIZE      DECIMAL(12),
+    ACT_SEC_SIZE      DECIMAL(12),
+    ACT_FST_SIZE      DECIMAL(12),
+    REV_FTH_RESULT    DECIMAL(12),
+    REV_FST_SIZE      DECIMAL(12),
+    REV_SEC_SIZE      DECIMAL(12),
+    REV_THD_SIZE      DECIMAL(12),
+    REV_FTH_SIZE      DECIMAL(12),
+    REV_FST_RESULT    DECIMAL(12),
+    REV_SEC_RESULT    DECIMAL(12),
+    ACT_FTH_RESULT    DECIMAL(12),
+    ACT_THD_RESULT    DECIMAL(12),
+    ACT_SEC_RESULT    DECIMAL(12),
+    FK_BDG_ELEMENTID  CHAR(30),
+    constraint IXU_GL_048
+        primary key (FK_BDG_CNTR_UNIFK, FK_USRCODE, TRN_DATE, YEAR0, TRN_SNUM)
+);
+
+create unique index I0000376
+    on BDG_TRN_LOG (FK_BDG_CNTR_UNIFK);
+
+create unique index I0000378
+    on BDG_TRN_LOG (FK_USRCODE);
+
+create unique index I0000521
+    on BDG_TRN_LOG (FK_BDG_ELEMENTID);
+

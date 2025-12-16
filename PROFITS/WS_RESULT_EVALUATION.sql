@@ -1,0 +1,11 @@
+create table WS_RESULT_EVALUATION
+(
+    WS_CODE     VARCHAR(20)  not null,
+    RESULT_TEXT VARCHAR(100) not null,
+    RESULT_TYPE VARCHAR(10)  not null,
+    DESCRIPTION VARCHAR(100)
+);
+
+create unique index PK_WS_RESULT_EVALUATION
+    on WS_RESULT_EVALUATION (WS_CODE, RESULT_TEXT);
+

@@ -1,0 +1,25 @@
+create table MG_ADD_INFO_INTER
+(
+    ACCOUNT_NO_TAUT INTEGER,
+    SERIAL_NO       INTEGER,
+    PROCESS_DATE    DATE,
+    UPDATE_TYPE     CHAR(1),
+    PRFT_DATA_TYPE  CHAR(1),
+    FIELD_TYPE      CHAR(1),
+    ROW_STATUS      CHAR(1),
+    FILE_DETAIL_ID  CHAR(2),
+    PRFT_TABLE      CHAR(20),
+    ACTIONDESC      CHAR(20),
+    PRFT_KEY_FIELD  CHAR(20),
+    PRFT_FIELD      CHAR(20),
+    ACCOUNT_NO      CHAR(40),
+    FIELD_NAME      CHAR(50),
+    FILE_NAME       CHAR(50),
+    ERR_DESC        CHAR(80),
+    FIELD_VALUE     VARCHAR(80),
+    CUST_ID         INTEGER
+);
+
+create unique index I0000379
+    on MG_ADD_INFO_INTER (SERIAL_NO, FILE_NAME);
+

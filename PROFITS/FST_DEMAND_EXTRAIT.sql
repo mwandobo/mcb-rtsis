@@ -1,0 +1,66 @@
+create table FST_DEMAND_EXTRAIT
+(
+    FK_DEPOSIT_ACCOACC DECIMAL(11) not null,
+    TRANS_SER_NUM      INTEGER     not null,
+    ENTRY_SER_NUM      SMALLINT    not null,
+    CHEQUE_CD          SMALLINT,
+    ID_TRANSACT        INTEGER,
+    ACCOUNT_CURRENCY   INTEGER,
+    ACCOUNT_PRODUCT    INTEGER,
+    ACCOUNT_UNIT       INTEGER,
+    TRX_UNIT           INTEGER,
+    ID_JUSTIFIC        INTEGER,
+    CUSTOMER_NUMBER    INTEGER,
+    TRX_SN             INTEGER,
+    CHEQUE_NUMBER      DECIMAL(10),
+    EXPECTED_REF       DECIMAL(10),
+    IN_AMOUNT          DECIMAL(15, 2),
+    ENTRY_AMOUNT       DECIMAL(15, 2),
+    PREV_ACC_BALANCE   DECIMAL(15, 2),
+    VALUE_DATE         DATE,
+    TRX_DATE           DATE,
+    AVAILABILITY_DATE  DATE,
+    REVERSE_FLAG       CHAR(1),
+    PENDING_FLAG       CHAR(1),
+    REVERSED_TRX_FLAG  CHAR(1),
+    NOT_PRINTED_FLG    CHAR(1),
+    DEBIT_CREDIT_FLAG  CHAR(1),
+    TRANSFERED_FLG     CHAR(1),
+    TRX_USR            CHAR(8),
+    ENTRY_COMMENTS     VARCHAR(40),
+    COMMENTS1          VARCHAR(40),
+    COMMENTS2          VARCHAR(40),
+    COMMENTS3          VARCHAR(40),
+    COMMENTS4          VARCHAR(40),
+    COMMENTS5          VARCHAR(40),
+    COMMENTS6          VARCHAR(40),
+    COMMENTS7          VARCHAR(40),
+    COMMENTS8          VARCHAR(40),
+    COMMENTS9          VARCHAR(40),
+    COMMENTS10         VARCHAR(40),
+    COMMENTS11         VARCHAR(40),
+    COMMENTS12         VARCHAR(40),
+    COMMENTS13         VARCHAR(40),
+    COMMENTS14         VARCHAR(40),
+    COMMENTS15         VARCHAR(40),
+    COMMENTS16         VARCHAR(40),
+    COMMENTS17         VARCHAR(40),
+    TIMESTAMP          TIMESTAMP(6),
+    TUN_INTERNAL_SN    SMALLINT default 1,
+    I_TRX_DATE         DATE,
+    I_TRX_UNIT         INTEGER,
+    I_TRX_USR          CHAR(8),
+    I_TRX_SN           INTEGER,
+    constraint IXU_FST_000
+        primary key (FK_DEPOSIT_ACCOACC, TRANS_SER_NUM, ENTRY_SER_NUM)
+);
+
+create unique index IDX_FST_TUN
+    on FST_DEMAND_EXTRAIT (TRX_DATE, TRX_UNIT, TRX_USR, TRX_SN, TUN_INTERNAL_SN);
+
+create unique index IXU_CIU_1014
+    on FST_DEMAND_EXTRAIT (CUSTOMER_NUMBER);
+
+create unique index IX_TRX_CUST
+    on FST_DEMAND_EXTRAIT (CUSTOMER_NUMBER, TRX_DATE);
+

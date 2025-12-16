@@ -1,0 +1,15 @@
+create table DCD_FIELD_POSITION
+(
+    PRFT_SYSTEM        SMALLINT,
+    RULE_ID            DECIMAL(12),
+    INTERNAL_SN        INTEGER,
+    FIELD_GRP_POSITION SMALLINT,
+    FIELD_TYPE         CHAR(2),
+    TABLE_ALIAS        CHAR(40),
+    TABLE_ATTRIBUTE    CHAR(40),
+    TABLE_ENTITY       CHAR(40)
+);
+
+create unique index IXU_DCD_024
+    on DCD_FIELD_POSITION (PRFT_SYSTEM, RULE_ID, INTERNAL_SN);
+

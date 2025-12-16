@@ -1,0 +1,10 @@
+create table CASHFLOW_TABLE
+(
+    AMOUNT    DECIMAL(15, 2),
+    CASH_DATE DATE,
+    ACC_SN    INTEGER,
+    ACC_TYPE  SMALLINT,
+    ACC_UNIT  INTEGER,
+    TIMESTMP  TIMESTAMP(6) not null
+);
+

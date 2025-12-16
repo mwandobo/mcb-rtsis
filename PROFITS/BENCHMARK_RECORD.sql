@@ -1,0 +1,13 @@
+create table BENCHMARK_RECORD
+(
+    EXECUTION_SN   DECIMAL(15) not null,
+    BENCHMARK_ID   DECIMAL(15) not null,
+    BENCHMARK_SN   DECIMAL(15) not null,
+    PRFT_SYSTEM    SMALLINT    not null,
+    ACCOUNT_NUMBER CHAR(40)    not null,
+    CUST_ID        INTEGER,
+    TMSTAMP_USED   TIMESTAMP(6),
+    constraint IXU_BNC_005
+        primary key (ACCOUNT_NUMBER, PRFT_SYSTEM, BENCHMARK_SN, BENCHMARK_ID, EXECUTION_SN)
+);
+

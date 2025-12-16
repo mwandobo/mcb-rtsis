@@ -1,0 +1,24 @@
+create table BORDEREAU_DETAIL
+(
+    TRX_UNIT            INTEGER,
+    CURRENCY_ID         INTEGER,
+    COLLABORATION_BANK  INTEGER,
+    TRX_USR_SN          INTEGER,
+    ITEMS               INTEGER,
+    GRP_SUBSCRIPT       DECIMAL(10),
+    RATE                DECIMAL(12, 6),
+    REFERENCE_NUMBER_TO DECIMAL(13),
+    REFERENCE_NUMBER    DECIMAL(13),
+    CHEQUE_AMOUNT       DECIMAL(15, 2),
+    TRX_DATE            DATE,
+    ISSUE_DATE          DATE,
+    RECORD_TYPE         CHAR(1),
+    CHEQUE_TYPE         CHAR(1),
+    TRX_USR             CHAR(8),
+    CHEQUE_NUMBER_TO    CHAR(20),
+    CHEQUE_NUMBER       CHAR(20)
+);
+
+create unique index IXU_BIL_120
+    on BORDEREAU_DETAIL (TRX_UNIT, TRX_DATE, TRX_USR, TRX_USR_SN, GRP_SUBSCRIPT);
+

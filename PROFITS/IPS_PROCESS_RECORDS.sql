@@ -1,0 +1,26 @@
+create table IPS_PROCESS_RECORDS
+(
+    DATA_HASH         VARCHAR(50) not null,
+    RECORD_SN         DECIMAL(10) not null,
+    GROUP_NUMBER      DECIMAL(10) not null,
+    DATA_ROW_SN       INTEGER,
+    RECORD_TYPE       VARCHAR(6),
+    REFERENCE_CODE    VARCHAR(40),
+    TRX_DATE          DATE,
+    TRX_UNIT          INTEGER,
+    TRX_USER          CHAR(8),
+    TRX_SN            INTEGER,
+    TUN_INTERNAL_SN   INTEGER,
+    CUSTOMER_ID       INTEGER,
+    PROFITS_SYSTEM    SMALLINT,
+    PROFITS_ACCOUNT   CHAR(40),
+    TAX_AMOUNT        DECIMAL(15, 2),
+    EXPENSE_AMOUNT    DECIMAL(15, 2),
+    CURRENCY_ID       SMALLINT,
+    PROCESS_AMOUNT    DECIMAL(15, 2),
+    COMMISSION_AMOUNT DECIMAL(15, 2),
+    ENTRY_STATUS      CHAR(1),
+    constraint PK_IPS_PROCESS_RECORDS
+        primary key (RECORD_SN, DATA_HASH, GROUP_NUMBER)
+);
+

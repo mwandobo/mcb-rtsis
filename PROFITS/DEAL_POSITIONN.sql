@@ -1,0 +1,13 @@
+create table DEAL_POSITIONN
+(
+    EXCHANGE_NOTES_IND CHAR(1) not null,
+    TRX_DATE           DATE    not null,
+    SOURCE_AMOUNT      DECIMAL(15, 2),
+    TARGET_AMOUNT      DECIMAL(15, 2),
+    SOURCE_EQUIVALENT  DECIMAL(15, 2),
+    TARGET_EQUIVALENT  DECIMAL(15, 2),
+    FK_CURRENCYID_CURR INTEGER not null,
+    constraint IXU_GLG_104
+        primary key (FK_CURRENCYID_CURR, EXCHANGE_NOTES_IND, TRX_DATE)
+);
+

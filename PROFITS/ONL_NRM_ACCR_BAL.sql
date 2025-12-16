@@ -1,0 +1,18 @@
+create table ONL_NRM_ACCR_BAL
+(
+    ACC_UNIT          INTEGER,
+    ACC_TYPE          SMALLINT,
+    ACC_SN            INTEGER,
+    INTEREST_CALC_PRD SMALLINT,
+    VALEUR_BALANCE    DECIMAL(15, 2),
+    INT_CALC_DATE     DATE,
+    VALUE_DATE        DATE,
+    INT_CALC_STATUS   CHAR(1),
+    NON_REVERSAL_FLG  CHAR(1),
+    ENTRY_COMMENTS    CHAR(40),
+    RQ_ACCR_N128_AMN  DECIMAL(15, 2)
+);
+
+create unique index IXU_ONL_000
+    on ONL_NRM_ACCR_BAL (ACC_UNIT, ACC_TYPE, ACC_SN);
+

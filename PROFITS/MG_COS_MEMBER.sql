@@ -1,0 +1,36 @@
+create table MG_COS_MEMBER
+(
+    FILE_NAME        CHAR(50) not null,
+    SERIAL_NO        INTEGER  not null,
+    ROW_STATUS       SMALLINT,
+    MEMBER_STATUS    SMALLINT,
+    COUNCIL_NUMBER   SMALLINT,
+    ASSEMBLY_NUMBER  SMALLINT,
+    MONITORING_UNIT  SMALLINT,
+    CUSTOMER_ID      INTEGER,
+    MEMBER_ID        INTEGER,
+    BLOCK_TOTAL      DECIMAL(10),
+    SHARES_TOTAL     DECIMAL(10),
+    UTF_NUM2         DECIMAL(15, 2),
+    UTF_NUM1         DECIMAL(15, 2),
+    ROW_PROCESS_DATE DATE,
+    DELETION_DATE    DATE,
+    UTF_DATE2        DATE,
+    ASSEMBLY_DATE    DATE,
+    UTF_DATE1        DATE,
+    COUNCIL_DATE     DATE,
+    CREATION_DATE    DATE,
+    ROW_TMSTAMP      TIMESTAMP(6),
+    DIVIDENT_ACCOUNT CHAR(40),
+    REGISTR_ACCOUNT  CHAR(40),
+    UTF_TEXT1        CHAR(80),
+    UTF_TEXT2        CHAR(80),
+    UTF_TEXT3        CHAR(80),
+    ROW_ERR_DESC     CHAR(80),
+    constraint IXU_MIG_005
+        primary key (FILE_NAME, SERIAL_NO)
+);
+
+create unique index BKEYMEM
+    on MG_COS_MEMBER (MEMBER_ID);
+

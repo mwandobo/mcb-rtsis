@@ -1,0 +1,9 @@
+create table HIST_BENEFICIARY
+(
+    FK_CUSTOMERCUST_ID INTEGER     not null,
+    FK_DEPOSIT_ACCOACC DECIMAL(11) not null,
+    BENEFICIARY_SN     SMALLINT,
+    constraint IXU_DEF_021
+        primary key (FK_CUSTOMERCUST_ID, FK_DEPOSIT_ACCOACC)
+);
+

@@ -1,0 +1,19 @@
+create table EOM_TOP_DEP
+(
+    ACCOUNT_NAME     CHAR(100),
+    ACCOUNT_NUMBER   CHAR(40),
+    CUST_ID          INTEGER,
+    ACCOUNT_TYPE     VARCHAR(9),
+    DIR_OWNER_CUSTID DECIMAL(15, 2),
+    DIRECTOR_OWNER   CHAR(100),
+    DIR_OWNER_TAX_ID VARCHAR(100),
+    EURO_BOOK_BAL    DECIMAL(15, 2),
+    RATE             VARCHAR(40),
+    MATURITY_DATE    VARCHAR(10),
+    EOM_DATE         DATE,
+    SECTOR           VARCHAR(80)
+);
+
+create unique index PK_EOM_TOP_DEP
+    on EOM_TOP_DEP (EOM_DATE);
+

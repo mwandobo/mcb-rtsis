@@ -1,0 +1,7 @@
+create table TBL_N128_PRODUCTS
+(
+    ID_PRODUCT INTEGER,
+    ID_N128    INTEGER,
+    N128_PERC  DECIMAL(8, 4)
+);
+

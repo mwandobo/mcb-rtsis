@@ -1,0 +1,16 @@
+create table POS_FW_MATURE_DT
+(
+    TUN_INTERNAL_SN SMALLINT,
+    TRX_SN          INTEGER,
+    TRX_USER        CHAR(8),
+    TRX_DATE        DATE,
+    TRX_UNIT        INTEGER,
+    INTERNAL_SN     INTEGER,
+    ID_CURRENCY     INTEGER,
+    AMOUNT          DECIMAL(18, 2),
+    MATURITY_DATE   DATE
+);
+
+create unique index IXU_POS_003
+    on POS_FW_MATURE_DT (TUN_INTERNAL_SN, TRX_SN, TRX_USER, TRX_DATE, TRX_UNIT, INTERNAL_SN);
+

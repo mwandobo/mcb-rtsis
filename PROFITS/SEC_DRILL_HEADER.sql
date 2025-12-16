@@ -1,0 +1,17 @@
+create table SEC_DRILL_HEADER
+(
+    MAIN_CODE      CHAR(8) not null
+        constraint PK_DRILLHDR
+            primary key,
+    MAIN_SYSTEM    SMALLINT,
+    UPDATE_TMSTAMP TIMESTAMP(6),
+    UPDATE_USR     CHAR(8),
+    UPDATE_DATE    DATE,
+    UPDATE_UNIT    INTEGER,
+    CREATE_TMSTAMP TIMESTAMP(6),
+    CREATE_USR     CHAR(8),
+    CREATE_DATE    DATE,
+    CREATE_UNIT    INTEGER,
+    ENTRY_STATUS   CHAR(1)
+);
+

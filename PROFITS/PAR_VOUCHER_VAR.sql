@@ -1,0 +1,12 @@
+create table PAR_VOUCHER_VAR
+(
+    VAR_NAME     CHAR(40),
+    VAR_TYPE     SMALLINT,
+    VAR_LENGTH   SMALLINT,
+    VAR_DECIMALS SMALLINT,
+    DESCRIPTION  CHAR(80)
+);
+
+create unique index IXP_PAR_002
+    on PAR_VOUCHER_VAR (VAR_NAME, VAR_TYPE);
+

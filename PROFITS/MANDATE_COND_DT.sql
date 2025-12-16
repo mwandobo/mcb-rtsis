@@ -1,0 +1,18 @@
+create table MANDATE_COND_DT
+(
+    PARTICIPANT_SN SMALLINT not null,
+    CUST_ID        INTEGER,
+    CONDITION_SN   INTEGER  not null,
+    SCALE_ID       SMALLINT not null,
+    ID_CHANNEL     INTEGER  not null,
+    ID_TRANSACT    INTEGER  not null,
+    PRFT_SYSTEM    SMALLINT not null,
+    ACCOUNT_NUMBER CHAR(40) not null,
+    PARAMETER_TYPE CHAR(5),
+    SERIAL_NUM     INTEGER,
+    DESCRIPTION    VARCHAR(250),
+    TIMESTAMP      TIMESTAMP(6),
+    constraint PK_MANDATE_COND_DT
+        primary key (CONDITION_SN, SCALE_ID, ID_CHANNEL, ID_TRANSACT, PRFT_SYSTEM, ACCOUNT_NUMBER, PARTICIPANT_SN)
+);
+

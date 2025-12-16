@@ -1,0 +1,6 @@
+create table TMP_SUMS
+(
+    APPLICATION_ID DECIMAL(11),
+    PURCHASE_PRICE DECIMAL(15, 2)
+);
+

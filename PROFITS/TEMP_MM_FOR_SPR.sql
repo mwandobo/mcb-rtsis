@@ -1,0 +1,21 @@
+create table TEMP_MM_FOR_SPR
+(
+    DURATION_DAYS   SMALLINT,
+    DEAL_COL_BANK   INTEGER,
+    CURRENCY_ID     INTEGER,
+    ID_PRODUCT      INTEGER,
+    DEAL_NO         INTEGER,
+    RATE            DECIMAL(8, 4),
+    INT_RATE        DECIMAL(8, 4),
+    DP_BAL_FC       DECIMAL(15, 2),
+    INTEREST_AMOUNT DECIMAL(15, 2),
+    LNS_BAL_FC      DECIMAL(15, 2),
+    DEAL_DATE       DATE,
+    TRX_DATE        DATE,
+    MATURITY_DATE   DATE,
+    VALUE_DATE      DATE,
+    DEAL_OPERATION  CHAR(1),
+    CURR_DESC       CHAR(5),
+    COL_BANK_NAME   VARCHAR(40)
+);
+

@@ -1,0 +1,12 @@
+create table PORTFOLIO_TRANSFER
+(
+    TRX_DATE       DATE,
+    CUST_ID        INTEGER,
+    PORTFOLIO_CODE INTEGER,
+    BRANCH_CODE    INTEGER,
+    PROCESSED_FLG  CHAR(1)
+);
+
+create unique index IXU_POR_001
+    on PORTFOLIO_TRANSFER (TRX_DATE, CUST_ID);
+

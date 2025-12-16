@@ -1,0 +1,7 @@
+create table TMP_RE_COM_VALUE
+(
+    PROFITS_SYSTEM       INTEGER,
+    PROPERTY_ACCOUNT_VAL DECIMAL(15, 2),
+    PRFT_ACCOUNT         CHAR(40)
+);
+

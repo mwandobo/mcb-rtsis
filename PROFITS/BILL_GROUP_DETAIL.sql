@@ -1,0 +1,21 @@
+create table BILL_GROUP_DETAIL
+(
+    GROUP_ID           SMALLINT,
+    TRX_UNIT           INTEGER,
+    FK_COLL_BANK_ID    INTEGER,
+    FK_CURRENCYID_CURR INTEGER,
+    FK_BISS_CODE       INTEGER,
+    BORDEREAU_NUM      DECIMAL(10),
+    SERIAL_NUM         DECIMAL(10),
+    CHEQUE_AMOUNT      DECIMAL(15, 2),
+    TRX_DATE           DATE,
+    VALEUR_DATE        DATE,
+    ISSUE_DATE         DATE,
+    TIMESTAMP          TIMESTAMP(6),
+    TRX_USER           CHAR(8),
+    CHEQUE_NUMBER      CHAR(20)
+);
+
+create unique index IXU_BIL_123
+    on BILL_GROUP_DETAIL (TRX_UNIT, TRX_DATE, TRX_USER, BORDEREAU_NUM, GROUP_ID, SERIAL_NUM);
+

@@ -1,0 +1,18 @@
+create table HPEN_SCALE_PRD
+(
+    FK_DISTR_CHANNEL  INTEGER  not null,
+    FK_PRODUCT_ID     INTEGER  not null,
+    SNUM              SMALLINT not null,
+    NON_PENALTED_TRX  INTEGER,
+    MIN_CR_SPREAD     DECIMAL(8, 4),
+    MAX_CR_SPREAD     DECIMAL(8, 4),
+    MIN_DB_SPREAD     DECIMAL(8, 4),
+    CREDIT_SPREAD     DECIMAL(8, 4),
+    DEBIT_SPREAD      DECIMAL(8, 4),
+    MAX_DB_SPREAD     DECIMAL(8, 4),
+    AVERAGE_BALANCE   DECIMAL(15, 2),
+    CHANGE_SPRD_START CHAR(1),
+    constraint IXU_HPE_000
+        primary key (FK_DISTR_CHANNEL, FK_PRODUCT_ID, SNUM)
+);
+

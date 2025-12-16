@@ -1,0 +1,30 @@
+create table AGR_MNT_LOAD
+(
+    OLD_AGR_NO      CHAR(40) not null
+        constraint IXU_MIG_007
+            primary key,
+    MIG_STATUS      SMALLINT,
+    OLD_AGR_CD      SMALLINT,
+    CUST_ADDR_NUM   SMALLINT,
+    NEW_AGR_MEM_SN  SMALLINT,
+    NEW_AGR_YEAR    SMALLINT,
+    UNIT_CODE       INTEGER,
+    ID_PRODUCT      INTEGER,
+    NEW_AGR_SN      INTEGER,
+    NEW_AGR_UNIT    INTEGER,
+    ID_CURRENCY     INTEGER,
+    VILLAGE_NUM     INTEGER,
+    CUST_ID         INTEGER,
+    AGR_LIMIT       DECIMAL(15, 2),
+    OFF_ASGN_DT     DATE,
+    AGR_SIGNING_DT  DATE,
+    AGR_EXPIRY_DT   DATE,
+    ACC_OPEN_EXP_DT DATE,
+    DEL_OFF_ASGN_DT DATE,
+    MG_ACCOUNT_TYPE CHAR(5),
+    USR_CODE        CHAR(8),
+    DEL_OFFICER     CHAR(8),
+    ACC_OFFICER     CHAR(8),
+    AGR_COMMENTS    CHAR(40)
+);
+

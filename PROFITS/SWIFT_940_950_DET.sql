@@ -1,0 +1,38 @@
+create table SWIFT_940_950_DET
+(
+    FK_SWIFT_PRFT_NO CHAR(16) not null,
+    STATEMENT_SN     INTEGER  not null,
+    OPEN_BALANCE     DECIMAL(15, 2),
+    AMOUNT           DECIMAL(15, 2),
+    ENTRY_DATE       DATE,
+    VALUE_DATE       DATE,
+    FUNDS_CODE       CHAR(1),
+    SPLIT_FLAG       CHAR(1),
+    ENTRY_STATUS     CHAR(1),
+    DB_MASK          CHAR(2),
+    ID_CODE          CHAR(4),
+    REFERENCE_CODE   CHAR(16),
+    INST_REFERENCE   CHAR(18),
+    SUPPL_DETAILS    CHAR(34),
+    STATEMENT_LINE   VARCHAR(100),
+    INFORM_ACC_OW_86 VARCHAR(390),
+    ACC_IDENT_25     CHAR(35),
+    CURRENCY         CHAR(3),
+    SWIFT_ADDRESS    VARCHAR(12),
+    FUNDS_TYPE       CHAR(20),
+    SETTLEMNT_COMM   CHAR(40),
+    SETTLEMNT_INFO   CHAR(40),
+    IN_BALANCE       CHAR(20),
+    IN_CREDIT        CHAR(20),
+    IN_DEBIT         CHAR(20),
+    IN_REFERENCE     CHAR(40),
+    constraint IXU_FX_025
+        primary key (FK_SWIFT_PRFT_NO, STATEMENT_SN)
+);
+
+create unique index SWIFT_940_950_PK
+    on SWIFT_940_950_DET (SWIFT_ADDRESS, REFERENCE_CODE);
+
+create unique index SWIFT_940_950_SEC1
+    on SWIFT_940_950_DET (ACC_IDENT_25, VALUE_DATE);
+

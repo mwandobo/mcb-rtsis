@@ -1,0 +1,20 @@
+create table AK_AKDD_RATE_TBL
+(
+    FK_TRBONDBOND_CODE CHAR(15)    not null,
+    FK_BOND_RATE_TARAT DECIMAL(10) not null,
+    YIELD_PRCG         DECIMAL(8, 4),
+    TRNSF_COMMISION    DECIMAL(9, 6),
+    BUY_COMMISION      DECIMAL(9, 6),
+    SELL_COMMISION     DECIMAL(9, 6),
+    RUNNING_CHANGE     DECIMAL(9, 4),
+    DAILY_CHANGE       DECIMAL(9, 4),
+    SELL_RATE          DECIMAL(14, 8),
+    BUY_RATE           DECIMAL(14, 8),
+    RATE               DECIMAL(14, 8),
+    TOTAL_ASSET        DECIMAL(15, 2),
+    CLEAR_POS_ASSET_AK DECIMAL(15, 2),
+    MARKET_NUM_SHARES  DECIMAL(18, 3),
+    constraint IXU_DEP_113
+        primary key (FK_TRBONDBOND_CODE, FK_BOND_RATE_TARAT)
+);
+

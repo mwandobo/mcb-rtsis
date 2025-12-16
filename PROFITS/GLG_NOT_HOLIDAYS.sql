@@ -1,0 +1,10 @@
+create table GLG_NOT_HOLIDAYS
+(
+    EXCEPTION_DATE DATE,
+    TIMESTMP       TIMESTAMP(6),
+    COMMENTS       VARCHAR(50)
+);
+
+create unique index IXU_GLG_083
+    on GLG_NOT_HOLIDAYS (EXCEPTION_DATE);
+

@@ -1,0 +1,21 @@
+create table CUST_CARD_INFO
+(
+    CARD_NO            CHAR(16),
+    FK_CUSTOMERCUST_ID INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    START_DATE         DATE,
+    END_DATE           DATE,
+    ENTRY_STATUS       CHAR(1),
+    CARD_COMNTS        VARCHAR(30),
+    FK_GENERIC_DETAFK  CHAR(5),
+    FK_GENERIC_DETASER INTEGER,
+    CARD_RENEWAL       CHAR(1),
+    FK_DISABLE_DETAFK  CHAR(5),
+    FK_DISABLE_DETASER INTEGER,
+    DISABLE_REASON_COM CHAR(80),
+    PAN                VARCHAR(100)
+);
+
+create unique index IXU_CUS_005
+    on CUST_CARD_INFO (CARD_NO, ENTRY_STATUS);
+

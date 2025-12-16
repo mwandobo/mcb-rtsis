@@ -1,0 +1,17 @@
+create table CUSTOMER_RECOGNIZE_GUID
+(
+    USER_GUI_ID   VARCHAR(50) not null,
+    CUST_ID       INTEGER,
+    BANK_EMPLOYEE CHAR(8),
+    TMSTAMP       TIMESTAMP(6)
+);
+
+create unique index IX_BANK_EMPLOYEE
+    on CUSTOMER_RECOGNIZE_GUID (BANK_EMPLOYEE);
+
+create unique index IX_CUST_ID
+    on CUSTOMER_RECOGNIZE_GUID (CUST_ID);
+
+create unique index PK_GUID
+    on CUSTOMER_RECOGNIZE_GUID (USER_GUI_ID);
+

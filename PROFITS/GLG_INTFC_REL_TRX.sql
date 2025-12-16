@@ -1,0 +1,27 @@
+create table GLG_INTFC_REL_TRX
+(
+    SUBSYSTEM          CHAR(2)  not null,
+    TRX_CODE           CHAR(5)  not null,
+    MOVEMENT_CODE      CHAR(20) not null,
+    FREQUENCY          INTEGER  not null,
+    ACC_RULE_CODE      INTEGER,
+    REC_SN             INTEGER,
+    TIMESTMP           TIMESTAMP(6),
+    DR_GL_INTEREST_ACC CHAR(21),
+    CR_GL_INTEREST_ACC CHAR(21),
+    DR_GL_ACCR_INT_ACC CHAR(21),
+    CR_GL_ACCR_INT_ACC CHAR(21),
+    GL_ACCRUAL_ACC     CHAR(21),
+    GL_NETWORK_ACC     CHAR(21),
+    GL_COR_ACC         CHAR(21),
+    DR_GL_COLLATER_ACC CHAR(21),
+    CR_GL_COLLATER_ACC CHAR(21),
+    DR_GL_TARGET_ACC   CHAR(21),
+    DR_GL_INT_TARG_ACC CHAR(21),
+    DR_GL_CONTROL_ACC  CHAR(21),
+    CR_GL_CONTROL_ACC  CHAR(21),
+    TRX_DESCR          VARCHAR(60),
+    constraint IXU_GL_039
+        primary key (SUBSYSTEM, TRX_CODE, MOVEMENT_CODE, FREQUENCY)
+);
+

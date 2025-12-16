@@ -1,0 +1,41 @@
+create table BOT_17_INSTALMENT
+(
+    INSTALMENT_ID              INTEGER generated always as identity
+        constraint BOT_17_INSTALMENT_ID_PK
+            primary key,
+    FK_STORINSTALMENT          INTEGER
+        constraint BOT_17_FKSTORINSTALMENT
+            references BOT_4_STORINSTALMENT,
+    INSTALMENTCOUNT            INTEGER,
+    INSTALMENTTYPE             INTEGER,
+    METHODOFPAYMENT            INTEGER,
+    OUTSTANDINGAMOUNT          DECIMAL(19, 4),
+    OUTSTANDINGINSTALMENTCOUNT INTEGER,
+    OVERDUEINSTALMENTCOUNT     INTEGER,
+    PERIODICITYOFPAYMENTS      INTEGER,
+    STANDARDINSTALMENTAMOUNT   DECIMAL(19, 4),
+    TYPEOFINSTALMENTLOAN       INTEGER,
+    X__COLLATERAL              SMALLINT default 1,
+    X__CONNECTEDSUBJECT        SMALLINT default 1,
+    CURRENCYOFLOAN             INTEGER,
+    ECONOMICSECTOR             INTEGER,
+    NEGATIVESTATUSOFLOAN       INTEGER,
+    PASTDUEAMOUNT              DECIMAL(19, 4),
+    PASTDUEDAYS                INTEGER,
+    PHASEOFLOAN                INTEGER,
+    PURPOSEOFLOAN              INTEGER,
+    RESCHEDULEDLOAN            INTEGER,
+    TOTALLOANAMOUNT            DECIMAL(19, 4),
+    FK_BOT_72_CONTRACTDATES    INTEGER
+        constraint FK_BOT_17_BOT_72__
+            references BOT_72_CONTRACTDATES,
+    FK_BOT_91_DISPUTE          INTEGER
+        constraint FK_BOT_17_BOT_91__
+            references BOT_91_DISPUTE,
+    FK_BOT_70_FEESANDPENALTIES INTEGER
+        constraint FK_BOT_17_BOT_70__
+            references BOT_70_FEESANDPENALTIES,
+    LOAN_CODE                  VARCHAR(40),
+    REPORTING_DATE             DATE
+);
+

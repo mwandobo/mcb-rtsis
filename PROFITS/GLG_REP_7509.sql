@@ -1,0 +1,13 @@
+create table GLG_REP_7509
+(
+    TRN_DATE    DATE,
+    ID_CURRENCY INTEGER,
+    JOURNAL_ID  CHAR(2),
+    ACCOUNT_ID  CHAR(21),
+    DB_AMOUNT   DECIMAL(15, 2),
+    CR_AMOUNT   DECIMAL(15, 2)
+);
+
+create unique index IXP_GLG_003
+    on GLG_REP_7509 (TRN_DATE, ID_CURRENCY, JOURNAL_ID, ACCOUNT_ID);
+

@@ -1,0 +1,8 @@
+create table TMP_TERM_DEP
+(
+    FK_UNITCODE         INTEGER,
+    BOOK_BALANCE_LC     DECIMAL(15, 2),
+    ACCR_CR_INTEREST_LC DECIMAL(15, 2),
+    GROUP_RANGE         DECIMAL(15, 2)
+);
+

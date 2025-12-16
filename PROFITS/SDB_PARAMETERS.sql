@@ -1,0 +1,10 @@
+create table SDB_PARAMETERS
+(
+    BANK_CODE         SMALLINT,
+    STANDING_JUSTIFIC INTEGER,
+    STANDING_FX_PROD  INTEGER
+);
+
+create unique index PK_SDB_PARAM
+    on SDB_PARAMETERS (BANK_CODE);
+

@@ -1,0 +1,13 @@
+create table DEP_CHEQUES_RANGE
+(
+    RANGE_FROM         DECIMAL(10),
+    RANGE_TO           DECIMAL(10),
+    ID_CURRENCY        INTEGER,
+    SHORT_DESCR        CHAR(5),
+    CHEQUE_END_ISSUE_D DATE,
+    CHEQUE_END_TRX_DAT DATE
+);
+
+create unique index IXU_DEP_033
+    on DEP_CHEQUES_RANGE (RANGE_FROM, RANGE_TO, ID_CURRENCY, SHORT_DESCR);
+

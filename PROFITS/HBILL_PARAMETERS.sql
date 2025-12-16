@@ -1,0 +1,17 @@
+create table HBILL_PARAMETERS
+(
+    GS_SEND_UNIT       INTEGER,
+    CORR_UNPAID_LIMIT  DECIMAL(15, 2),
+    BPR_CORR_FILENAME  CHAR(20),
+    BPR_CLR_AGENT      INTEGER,
+    BPR_CURRENT_YEAR   CHAR(4)      not null,
+    BPR_MAXAMNT_PERCHQ DECIMAL(15, 2),
+    BPR_MAXISSUE_LIMIT SMALLINT,
+    BPR_CAN_FINALIZE   CHAR(1),
+    TMSTAMP            TIMESTAMP(6) not null,
+    USR_UPD            CHAR(8),
+    UPD_DTE            DATE,
+    constraint PK_HBILL_PARAMETERS
+        primary key (TMSTAMP, BPR_CURRENT_YEAR)
+);
+

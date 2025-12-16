@@ -1,0 +1,17 @@
+create table TEMP_POS_MINIAIEUR
+(
+    ID_CURRENCY     INTEGER,
+    FIX_RATE        DECIMAL(10, 6),
+    OTHER_SELL      DECIMAL(15, 2),
+    TOTAL_SELL      DECIMAL(15, 2),
+    CASH_SHIP_SELL  DECIMAL(15, 2),
+    BANK_OF_GR_SELL DECIMAL(15, 2),
+    TOTAL_BUY       DECIMAL(15, 2),
+    EXCHANGE_BUY    DECIMAL(15, 2),
+    BANK_BUY        DECIMAL(15, 2),
+    OTHER_BUY       DECIMAL(15, 2),
+    TRX_DATE        DATE,
+    BANK_CODE       VARCHAR(5),
+    CURR_ISO_CODE   VARCHAR(5)
+);
+

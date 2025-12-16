@@ -1,0 +1,19 @@
+create table TP_HD_INPUT_INTERF
+(
+    RECEIVED_DATE      DATE        not null,
+    SERIAL_NUMBER      INTEGER     not null,
+    HD_CR_DR_FLAG      CHAR(1),
+    CURRENCY_ID        INTEGER,
+    TOTAL_AMOUNT       DECIMAL(15, 2),
+    TOTAL_DTL_RECORDS  DECIMAL(13),
+    EFFECTIVE_DATE     DATE,
+    VALUE_DATE         DATE,
+    INPUT_FILENAME     CHAR(20),
+    HD_STATUS          CHAR(1),
+    ERROR_DESCRIPTION  VARCHAR(40),
+    TIMESTMP           TIMESTAMP(6),
+    FK_TP_SO_COMMITMEN DECIMAL(10) not null,
+    constraint PKTPHDIN
+        primary key (FK_TP_SO_COMMITMEN, SERIAL_NUMBER, RECEIVED_DATE)
+);
+

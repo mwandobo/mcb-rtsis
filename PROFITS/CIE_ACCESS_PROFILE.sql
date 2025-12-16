@@ -1,0 +1,20 @@
+create table CIE_ACCESS_PROFILE
+(
+    CIE_PROFILE_ID     SMALLINT not null
+        constraint IXU_DEF_096
+            primary key,
+    PSW_MIN_LENGTH     SMALLINT,
+    FORCE_CHANGE_PERIO SMALLINT,
+    PSW_MAX_TRY        SMALLINT,
+    OLD_PSW_COUNT      SMALLINT,
+    WARNING_PERIOD     SMALLINT,
+    FK_DISTR_CHANNEL   INTEGER,
+    ALERTS_SETUP       CHAR(1),
+    PSW_VER_FLAG       CHAR(1),
+    PSW_ENC_TYPE       CHAR(1),
+    PSW_CHANGE_BY_USER CHAR(1),
+    FK_UNIT_CATEGORID  CHAR(8),
+    PSW_MASK           CHAR(26),
+    PSW_POLICY_DESCR   CHAR(200)
+);
+

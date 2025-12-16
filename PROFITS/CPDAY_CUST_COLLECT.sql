@@ -1,0 +1,22 @@
+create table CPDAY_CUST_COLLECT
+(
+    FK_CONTTRXOFCP_AGR DECIMAL(10),
+    SN                 DECIMAL(13),
+    TRX_JUSTIFIC       INTEGER,
+    TRX_CODE           INTEGER,
+    ISSUED_CHEQUE_NO   DECIMAL(10),
+    ITEMS              DECIMAL(13),
+    ORG_OL_CHARGE      DECIMAL(15, 2),
+    ORG_OL_CHARGE_TAX  DECIMAL(15, 2),
+    PREV_BALANCE       DECIMAL(15, 2),
+    AMOUNT             DECIMAL(15, 2),
+    COLLECTION_DATE    DATE,
+    TRX_DATE           DATE,
+    RETURN_DATE        DATE,
+    TMSTAMP            TIMESTAMP(6),
+    DEBIT_CREDIT_FLAG  CHAR(1)
+);
+
+create unique index IXU_CPD_001
+    on CPDAY_CUST_COLLECT (FK_CONTTRXOFCP_AGR, SN);
+

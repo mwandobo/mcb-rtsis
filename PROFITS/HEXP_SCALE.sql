@@ -1,0 +1,51 @@
+create table HEXP_SCALE
+(
+    FK_CURRENCYID_CURR INTEGER  not null,
+    FK_EXPENSEID_EXPEN INTEGER  not null,
+    VALIDITY_DATE      DATE     not null,
+    SNUM               SMALLINT not null,
+    MAX_EXPENSE        DECIMAL(15, 2),
+    MIN_EXPENSE        DECIMAL(15, 2),
+    MIN_AMOUNT         DECIMAL(15, 2),
+    CALC_METHOD        CHAR(1),
+    AMOUNT1            DECIMAL(15, 2),
+    PERCENTAGE1        DECIMAL(8, 4),
+    EXPENSE1           DECIMAL(15, 2),
+    AMOUNT2            DECIMAL(15, 2),
+    PERCENTAGE2        DECIMAL(8, 4),
+    EXPENSE2           DECIMAL(15, 2),
+    AMOUNT3            DECIMAL(15, 2),
+    PERCENTAGE3        DECIMAL(8, 4),
+    EXPENSE3           DECIMAL(15, 2),
+    AMOUNT4            DECIMAL(15, 2),
+    PERCENTAGE4        DECIMAL(8, 4),
+    EXPENSE4           DECIMAL(15, 2),
+    AMOUNT5            DECIMAL(15, 2),
+    PERCENTAGE5        DECIMAL(8, 4),
+    EXPENSE5           DECIMAL(15, 2),
+    AMOUNT6            DECIMAL(15, 2),
+    PERCENTAGE6        DECIMAL(8, 4),
+    EXPENSE6           DECIMAL(15, 2),
+    AMOUNT7            DECIMAL(15, 2),
+    PERCENTAGE7        DECIMAL(8, 4),
+    EXPENSE7           DECIMAL(15, 2),
+    AMOUNT8            DECIMAL(15, 2),
+    PERCENTAGE8        DECIMAL(8, 4),
+    EXPENSE8           DECIMAL(15, 2),
+    AMOUNT9            DECIMAL(15, 2),
+    PERCENTAGE9        DECIMAL(8, 4),
+    EXPENSE9           DECIMAL(15, 2),
+    AMOUNT0            DECIMAL(15, 2),
+    PERCENTAGE0        DECIMAL(8, 4),
+    EXPENSE0           DECIMAL(15, 2),
+    CONTINUATION       CHAR(1),
+    ID_EXPENSE         INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    ENTRY_STATUS       CHAR(1),
+    constraint PK_HEXP_SCALE
+        primary key (VALIDITY_DATE, FK_EXPENSEID_EXPEN, FK_CURRENCYID_CURR, SNUM)
+);
+
+create unique index I0000919
+    on HEXP_SCALE (FK_CURRENCYID_CURR);
+

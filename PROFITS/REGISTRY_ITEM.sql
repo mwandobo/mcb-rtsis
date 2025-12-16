@@ -1,0 +1,27 @@
+create table REGISTRY_ITEM
+(
+    REGISTRY_SN    DECIMAL(12) not null,
+    REGISTRY_TYPE  CHAR(2)     not null,
+    DETAIL_SN      DECIMAL(10) not null,
+    DETAIL_TYPE    CHAR(2)     not null,
+    REGISTRY_HDR   DECIMAL(12),
+    REGISTRY_DESCR CHAR(200),
+    REGISTRY_STS   CHAR(1),
+    USED_ASSET     CHAR(1),
+    ASSET_ID       CHAR(10),
+    OFFER_USED     CHAR(1),
+    LEASE_USED     CHAR(1),
+    LEASE_NUMBER   CHAR(40),
+    CREATE_USER    CHAR(8),
+    CREATE_UNIT    DECIMAL(5),
+    CREATE_DATE    DATE,
+    CREATE_TMSTAMP TIMESTAMP(6),
+    UPDATE_USER    CHAR(8),
+    UPDATE_UNIT    DECIMAL(5),
+    UPDATE_DATE    DATE,
+    UPDATE_TMSTAMP TIMESTAMP(6),
+    FOR_LEASE      CHAR(1),
+    constraint PK_REGISTRY_TYPE
+        primary key (REGISTRY_TYPE, REGISTRY_SN)
+);
+

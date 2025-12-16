@@ -1,0 +1,12 @@
+create table STAT_EUR_IN_COUNTR
+(
+    PARAMETER_TYPE CHAR(5),
+    SERIAL_NUM     INTEGER,
+    ID_CURRENCY    INTEGER,
+    EUR_IN_FLG     CHAR(1),
+    SHORT_DESCR    CHAR(5)
+);
+
+create unique index IXP_STA_009
+    on STAT_EUR_IN_COUNTR (PARAMETER_TYPE, SERIAL_NUM);
+

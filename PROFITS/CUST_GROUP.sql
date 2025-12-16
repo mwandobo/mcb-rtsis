@@ -1,0 +1,23 @@
+create table CUST_GROUP
+(
+    GROUP_ID           INTEGER,
+    FKGD_HAS_TYPE      INTEGER,
+    FKGD_HAS_AS_PURPOS INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    ACTIVE             CHAR(1),
+    FKGH_HAS_TYPE      CHAR(5),
+    FKGH_HAS_AS_PURPOS CHAR(5),
+    DESCRIPTION        VARCHAR(40),
+    GROUP_UNIT         INTEGER,
+    COMMENTS           VARCHAR(255),
+    CORP_LOAN_ACCOUNT  CHAR(40),
+    AGREED_INCOME_AMN  DECIMAL(18, 2),
+    DURATION_UNIT      CHAR(1),
+    DURATION_NUMBER    SMALLINT,
+    CHARGED_ACCOUNT    CHAR(40),
+    ACCOUNT_CD         SMALLINT
+);
+
+create unique index IXU_CUS_007
+    on CUST_GROUP (GROUP_ID);
+

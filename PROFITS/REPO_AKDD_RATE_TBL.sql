@@ -1,0 +1,18 @@
+create table REPO_AKDD_RATE_TBL
+(
+    FK_BONDRATETAB_NUM DECIMAL(10) not null,
+    PROFIT_DURATION    SMALLINT    not null,
+    PROFIT_DUR_UNIT    CHAR(1)     not null,
+    SCALE_ID           SMALLINT    not null,
+    AKDD_FROM_DURATION SMALLINT,
+    INT_PRCG_RANGE     DECIMAL(9, 6),
+    INT_PERCENTAGE     DECIMAL(9, 6),
+    FROM_AMOUNT        DECIMAL(15, 2),
+    TO_AMOUNT          DECIMAL(15, 2),
+    AKDD_EXPIRY_DATE   DATE,
+    TMSTAMP            TIMESTAMP(6),
+    FK_TRBONDBOND_CODE CHAR(15),
+    constraint IXU_DEP_173
+        primary key (FK_BONDRATETAB_NUM, PROFIT_DURATION, PROFIT_DUR_UNIT, SCALE_ID)
+);
+

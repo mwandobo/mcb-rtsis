@@ -1,0 +1,17 @@
+create table COS_APPL_SHARES
+(
+    SHARE_ID          DECIMAL(10) not null,
+    APPLICATION_ID    DECIMAL(11) not null,
+    MATCHED_APPL_ID   DECIMAL(11),
+    SHARE_PRICE       DECIMAL(15, 2),
+    CREATED_DATE      DATE,
+    MATCHED_DATE      DATE,
+    MATCHED_TIMESTAMP TIMESTAMP(6),
+    UPDATED_TIMESTAMP TIMESTAMP(6),
+    MATCHED_FLAG      CHAR(1),
+    CREATED_BY        CHAR(8),
+    UPDATED_BY        CHAR(8),
+    constraint IXU_CP_108
+        primary key (SHARE_ID, APPLICATION_ID)
+);
+

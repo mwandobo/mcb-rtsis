@@ -1,0 +1,24 @@
+create table VALUER
+(
+    VALUER_ID         INTEGER not null,
+    INTERNAL_FLG      CHAR(1),
+    VALUER_NAME       CHAR(60),
+    VALUER_PHONE      CHAR(30),
+    VALUER_MOBILE     CHAR(30),
+    VALUER_ADDRESS    CHAR(150),
+    VALUER_EMAIL      CHAR(150),
+    ENTRY_STATUS      CHAR(1),
+    FK_GH_VAL_CNTY    CHAR(5),
+    FK_GD_VAL_CNTY    INTEGER,
+    TMSTAMP           TIMESTAMP(6),
+    AMOUNT            DECIMAL(15, 2),
+    FK_GH_VAL_UNDWR   CHAR(5),
+    FK_GD_VAL_UNDWR   INTEGER,
+    CONTACT_PERSON    CHAR(150),
+    FK_VAMN_CURR_ID   INTEGER,
+    FK_BANKEMPLOYEEID CHAR(8)
+);
+
+create unique index IXU_COL_041
+    on VALUER (VALUER_ID);
+

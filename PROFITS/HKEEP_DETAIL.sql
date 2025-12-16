@@ -1,0 +1,13 @@
+create table HKEEP_DETAIL
+(
+    FK_IDN        INTEGER,
+    RUNNING_DATE  DATE,
+    ROWS_TO_HKEEP DECIMAL(15),
+    ROWS_DELETED  DECIMAL(15),
+    ALPHA_TIME    TIMESTAMP(6),
+    OMEGA_TIME    TIMESTAMP(6)
+);
+
+create unique index IXH_DTL_001
+    on HKEEP_DETAIL (FK_IDN, RUNNING_DATE);
+

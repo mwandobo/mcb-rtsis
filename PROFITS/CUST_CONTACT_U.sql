@@ -1,0 +1,17 @@
+create table CUST_CONTACT_U
+(
+    FK0GENERIC_DETASER INTEGER,
+    FK0GENERIC_DETAFK  CHAR(5),
+    FK_BANKEMPLOYEEID  CHAR(8),
+    FK_GENERIC_DETASER INTEGER,
+    FK_GENERIC_DETAFK  CHAR(5),
+    FK_CUSTOMERCUST_ID INTEGER      not null,
+    TMSTAMP            TIMESTAMP(6) not null,
+    SERIAL_NO          SMALLINT     not null,
+    CONTACT_DATE       DATE,
+    CONTACT_COMMENT    VARCHAR(100),
+    FK_UNITCODE        INTEGER,
+    constraint IXU_CIU_026
+        primary key (SERIAL_NO, FK_CUSTOMERCUST_ID)
+);
+

@@ -1,0 +1,37 @@
+create table OTP_KEY
+(
+    CHANNEL_ID         INTEGER      not null,
+    EXT_USER           VARCHAR(100) not null,
+    EXT_KEY            VARCHAR(100) not null,
+    CURR_TRX_DATE      DATE         not null,
+    OTP_SN             DECIMAL(10)  not null,
+    TMSTAMP_KEY        TIMESTAMP(6) not null,
+    CUSTOMER_ID        INTEGER,
+    CUSTOMER_CD        SMALLINT,
+    ACC_SRC_SYSTEM     SMALLINT,
+    ACC_SRC_NUMBER     CHAR(40),
+    ACC_SRC_CD         SMALLINT,
+    ACC_DEST_SYSTEM    SMALLINT,
+    ACC_DEST_NUMBER    CHAR(40),
+    ACC_DEST_CD        SMALLINT,
+    OTP_KEY            VARCHAR(40),
+    TMSTAMP_CREATE     TIMESTAMP(6),
+    TMSTAMP_EXPIRE     TIMESTAMP(6),
+    TMSTAMP_USED       TIMESTAMP(6),
+    TMSTAMP_DEACTIVATE TIMESTAMP(6),
+    TMSTAMP_INACTIVE   TIMESTAMP(6),
+    ERROR_MESSAGE      VARCHAR(180),
+    SCHEDULED_DATE     DATE,
+    EXT_EMAIL          VARCHAR(80),
+    EXT_MOBILE         VARCHAR(80),
+    CUST_EMAIL         VARCHAR(80),
+    CUST_MOBILE        VARCHAR(80),
+    OTP_STATUS         CHAR(1),
+    EXT_AMOUNT         DECIMAL(15, 2),
+    KEY_COMMENTS       VARCHAR(80),
+    KEY_REFERENCE      CHAR(40),
+    EXT_CURRENCY_ISO   CHAR(5),
+    constraint PK_OTPKEY
+        primary key (TMSTAMP_KEY, OTP_SN, CURR_TRX_DATE, EXT_KEY, EXT_USER, CHANNEL_ID)
+);
+

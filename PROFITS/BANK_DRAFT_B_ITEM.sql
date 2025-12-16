@@ -1,0 +1,24 @@
+create table BANK_DRAFT_B_ITEM
+(
+    DRAFT_ITEM         CHAR(10) not null,
+    ACCOUNT_NUMBER     CHAR(40),
+    ACCOUNT_CD         SMALLINT,
+    PRFT_SYSTEM        SMALLINT,
+    DEP_ACC_NUMBER     DECIMAL(11),
+    DEP_OPEN_UNIT      INTEGER,
+    CUST_ID            INTEGER,
+    ISSUE_DATE         DATE,
+    LAST_UPDATE_DATE   DATE,
+    ENTRY_STATUS       CHAR(1),
+    TMSTAMP            TIMESTAMP(6),
+    FK_BANK_DRAFT_B_SN INTEGER  not null,
+    FK_BANK_DRAFT_TYPE CHAR(1)  not null,
+    FK_PROFITS_ACCOUNT CHAR(40)
+);
+
+create unique index PK_BD_BITEM
+    on BANK_DRAFT_B_ITEM (FK_BANK_DRAFT_TYPE, FK_BANK_DRAFT_B_SN, DRAFT_ITEM);
+
+create unique index SEC_BD_BITEM1
+    on BANK_DRAFT_B_ITEM (DRAFT_ITEM, DEP_ACC_NUMBER, ACCOUNT_NUMBER);
+

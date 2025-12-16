@@ -1,0 +1,10 @@
+create table MSG_SEC_HISTORY
+(
+    USER_NAME  VARCHAR(10),
+    LOGIN_DATE TIMESTAMP(6),
+    IP         VARCHAR(45)
+);
+
+create unique index MSG_SEC_HISTORY_PK
+    on MSG_SEC_HISTORY (USER_NAME, LOGIN_DATE);
+

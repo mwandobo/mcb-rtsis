@@ -1,0 +1,10 @@
+create table WFS_HDR_CURRENCIES
+(
+    ID_CURRENCY     INTEGER,
+    FK_WF_HEADER    DECIMAL(10),
+    CURRENCY_STATUS CHAR(1)
+);
+
+create unique index PK_WFH_CUR
+    on WFS_HDR_CURRENCIES (ID_CURRENCY, FK_WF_HEADER);
+

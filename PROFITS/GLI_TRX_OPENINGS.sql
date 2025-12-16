@@ -1,0 +1,92 @@
+CREATE VIEW GLI_TRX_OPENINGS
+as
+SELECT
+ FK1UNITCODE,  FK_GLG_ACCOUNTACCO, CURRENCY_SHORT_DES, ID_CURRENCY, GL_TRN_DATE, TRX_USR, trn_date, SUM(BALANCE) AS BALANCE
+ FROM
+(SELECT
+a.FK1UNITCODE,
+a.FK_GLG_ACCOUNTACCO,
+b.SHORT_DESCR AS CURRENCY_SHORT_DES,
+b.ID_CURRENCY,
+a.GL_TRN_DATE,
+a.trn_date,
+SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+                     AS TRX_USR,
+SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0)
+            ELSE -NVL(a.AMOUNT, 0)
+            END)  AS BALANCE
+FROM dep_gli_interface a, currency b
+WHERE b.id_currency = a.fk_currencyid_curr
+GROUP BY  a.FK1UNITCODE, a.FK_GLG_ACCOUNTACCO,  b.SHORT_DESCR, B.ID_CURRENCY, a.GL_TRN_DATE, a.trn_date, SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+HAVING SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0) ELSE -NVL(a.AMOUNT, 0) END) <> 0
+UNION ALL
+SELECT
+a.FK1UNITCODE,
+a.FK_GLG_ACCOUNTACCO,
+b.SHORT_DESCR AS CURRENCY_SHORT_DES,
+b.ID_CURRENCY,
+a.GL_TRN_DATE,
+a.trn_date,
+SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+                     AS TRX_USR,
+SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0)
+            ELSE -NVL(a.AMOUNT, 0)
+            END)  AS BALANCE
+FROM lns_gli_interface a, currency b
+WHERE b.id_currency = a.fk_currencyid_curr
+GROUP BY  a.FK1UNITCODE, a.FK_GLG_ACCOUNTACCO, b.SHORT_DESCR, B.ID_CURRENCY, a.GL_TRN_DATE, a.trn_date, SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+HAVING SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0) ELSE -NVL(a.AMOUNT, 0) END) <> 0
+UNION ALL
+SELECT
+a.FK1UNITCODE,
+a.FK_GLG_ACCOUNTACCO,
+b.SHORT_DESCR AS CURRENCY_SHORT_DES,
+b.ID_CURRENCY,
+a.GL_TRN_DATE,
+a.trn_date,
+SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+                     AS TRX_USR,
+SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0)
+            ELSE -NVL(a.AMOUNT, 0)
+            END)  AS BALANCE
+FROM fxft_gli_interface a, currency b
+WHERE b.id_currency = a.fk_currencyid_curr
+GROUP BY  a.FK1UNITCODE, a.FK_GLG_ACCOUNTACCO, b.SHORT_DESCR, B.ID_CURRENCY, a.GL_TRN_DATE, a.trn_date, SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+HAVING SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0) ELSE -NVL(a.AMOUNT, 0) END) <> 0
+UNION ALL
+SELECT
+a.FK1UNITCODE,
+a.FK_GLG_ACCOUNTACCO,
+b.SHORT_DESCR AS CURRENCY_SHORT_DES,
+b.ID_CURRENCY,
+a.GL_TRN_DATE,
+a.trn_date,
+SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+                     AS TRX_USR,
+SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0)
+            ELSE -NVL(a.AMOUNT, 0)
+            END)  AS BALANCE
+FROM gli_interface a, currency b
+WHERE b.id_currency = a.fk_currencyid_curr
+GROUP BY  a.FK1UNITCODE, a.FK_GLG_ACCOUNTACCO, b.SHORT_DESCR, B.ID_CURRENCY, a.GL_TRN_DATE, a.trn_date, SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+HAVING SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0) ELSE -NVL(a.AMOUNT, 0) END) <> 0
+UNION ALL
+SELECT
+a.FK1UNITCODE,
+a.FK_GLG_ACCOUNTACCO,
+b.SHORT_DESCR AS CURRENCY_SHORT_DES,
+b.ID_CURRENCY,
+a.GL_TRN_DATE,
+a.trn_date,
+SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+                     AS TRX_USR,
+SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0)
+            ELSE -NVL(a.AMOUNT, 0)
+            END)  AS BALANCE
+FROM prf_gli_interface a, currency b
+WHERE b.id_currency = a.fk_currencyid_curr
+GROUP BY  a.FK1UNITCODE, a.FK_GLG_ACCOUNTACCO, b.SHORT_DESCR, B.ID_CURRENCY, a.GL_TRN_DATE, a.trn_date, SUBSTR (a.remarks, 16, LENGTH (TRIM (a.remarks)) - 16 - 11)
+HAVING SUM(CASE WHEN a.ENTRY_TYPE=1 THEN NVL(a.AMOUNT, 0) ELSE -NVL(a.AMOUNT, 0) END) <> 0)
+GROUP BY FK1UNITCODE,  FK_GLG_ACCOUNTACCO, CURRENCY_SHORT_DES, ID_CURRENCY, GL_TRN_DATE, trn_date, TRX_USR
+HAVING SUM(BALANCE)<>0;
+

@@ -1,0 +1,13 @@
+create table WFS_DTL_DOCUMENTS
+(
+    MANDATORY_FLG    CHAR(1),
+    MULTIPLE_ENTRIES CHAR(1),
+    DETAILED_DESCR   VARCHAR(3000),
+    FK_DOC_CATEGORY  CHAR(4)     not null,
+    FK_WF_HEADER     DECIMAL(10) not null,
+    FK_WF_DETAIL     DECIMAL(10) not null,
+    DOC_ENTRY_STATUS CHAR(1),
+    constraint PK_WFS_DTL_DOC
+        primary key (FK_DOC_CATEGORY, FK_WF_HEADER, FK_WF_DETAIL)
+);
+

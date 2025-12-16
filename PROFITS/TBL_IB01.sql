@@ -1,0 +1,18 @@
+create table TBL_IB01
+(
+    C_DIGIT        SMALLINT,
+    ACCOUNT_CD     SMALLINT,
+    ACC_UNIT       INTEGER,
+    CUST_ID        INTEGER,
+    PERCENTAGE     DECIMAL(15, 4),
+    COLLATERAL_VAL DECIMAL(15, 2),
+    BALANCE        DECIMAL(15, 2),
+    COLLATERAL     DECIMAL(15, 2),
+    ACC_OPEN_DT    DATE,
+    CURR_TRX_DATE  DATE,
+    ACCOUNT        CHAR(40)
+);
+
+create unique index SYS_C002071645
+    on TBL_IB01 (ACCOUNT);
+

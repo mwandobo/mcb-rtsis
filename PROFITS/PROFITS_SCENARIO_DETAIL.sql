@@ -1,0 +1,35 @@
+create table PROFITS_SCENARIO_DETAIL
+(
+    KEY_TMSTAMP     TIMESTAMP(6) not null,
+    KEY_SYSTEM      DECIMAL(2)   not null,
+    KEY_SN          DECIMAL(12)  not null,
+    KEY_INTERNAL_SN DECIMAL(12)  not null,
+    DATE_1          DATE,
+    DATE_2          DATE,
+    DATE_3          DATE,
+    DATE_4          DATE,
+    DATE_5          DATE,
+    AMOUNT_1        DECIMAL(15, 2),
+    AMOUNT_2        DECIMAL(15, 2),
+    AMOUNT_3        DECIMAL(15, 2),
+    AMOUNT_4        DECIMAL(15, 2),
+    AMOUNT_5        DECIMAL(15, 2),
+    NUMBER_1        DECIMAL(10),
+    NUMBER_2        DECIMAL(10),
+    NUMBER_3        DECIMAL(10),
+    NUMBER_4        DECIMAL(10),
+    NUMBER_5        DECIMAL(10),
+    INTEGER_1       DECIMAL(5),
+    INTEGER_2       DECIMAL(5),
+    INTEGER_3       DECIMAL(5),
+    INTEGER_4       DECIMAL(5),
+    INTEGER_5       DECIMAL(5),
+    FLAG_1          VARCHAR(2),
+    FLAG_2          VARCHAR(2),
+    FLAG_3          VARCHAR(2),
+    FLAG_4          VARCHAR(2),
+    FLAG_5          VARCHAR(2),
+    constraint I0001140
+        primary key (KEY_TMSTAMP, KEY_SYSTEM, KEY_SN, KEY_INTERNAL_SN)
+);
+

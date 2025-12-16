@@ -1,0 +1,37 @@
+create table RSKCO_SECURITIES
+(
+    SECU_ID            CHAR(30) not null,
+    PRODUCT            CHAR(50) not null,
+    ISINDEX            SMALLINT,
+    ISFUND             SMALLINT,
+    COUP_FREQ          SMALLINT,
+    BASIS              SMALLINT,
+    DECSINPRICE        SMALLINT,
+    INTEREST           DECIMAL(15),
+    STRIKE             DECIMAL(15),
+    UNITSIZE           DECIMAL(15),
+    MULTIPLIER         DECIMAL(15),
+    DIVIDENT           DECIMAL(15),
+    HAIRCUT            DECIMAL(15),
+    ISSUE_DT           DATE,
+    DIVID_DT           DATE,
+    SETTLE_DT          DATE,
+    PRFT_EXTRACTION_DT DATE,
+    FIX_FLOAT          CHAR(1),
+    CCY2               CHAR(3),
+    CURRENCY           CHAR(3),
+    PRICECCY2          CHAR(3),
+    CURVE              CHAR(3),
+    CALL_PUT           CHAR(5),
+    DAY_COUNT          CHAR(6),
+    OPTIONTYPE         CHAR(10),
+    EXCHANGE           CHAR(15),
+    FLOATINGINDEX      CHAR(20),
+    PRFT_ROUTINE       CHAR(20),
+    UNDERLYING         CHAR(30),
+    ISSUER             CHAR(40),
+    ISIN               CHAR(50),
+    constraint IXU_LNS_046
+        primary key (SECU_ID, PRODUCT)
+);
+

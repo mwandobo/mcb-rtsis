@@ -1,0 +1,12 @@
+create table BENCHMARK_SCENARIO
+(
+    BENCHMARK_ID       DECIMAL(15) not null
+        constraint IXU_BNC_006
+            primary key,
+    BENCHMARK_SYSTEM   CHAR(50),
+    BENCHMARK_DESC     VARCHAR(80),
+    BENCHMARK_ANALYSIS VARCHAR(4000),
+    EXECUTION_CNT_SET  INTEGER,
+    DELAY_TIMER        INTEGER
+);
+

@@ -1,0 +1,19 @@
+create table WFS_CHECKS_FLOW
+(
+    CHECK_FLOW_SN    DECIMAL(10) not null,
+    FK_WFS_HEADER    DECIMAL(10) not null,
+    FK_WFS_CHECKS    DECIMAL(10) not null,
+    CHECK_FLOW_DESCR VARCHAR(80),
+    CREATE_UNIT      INTEGER,
+    CREATE_DATE      DATE,
+    CREATE_USR       CHAR(8),
+    CREATE_TMSTAMP   TIMESTAMP(6),
+    UPDATE_UNIT      INTEGER,
+    UPDATE_DATE      DATE,
+    UPDATE_USR       CHAR(8),
+    UPDATE_TMSTAMP   TIMESTAMP(6),
+    ENTRY_STATUS     CHAR(1),
+    constraint PK_WFS_CHECKS_FLOW
+        primary key (CHECK_FLOW_SN, FK_WFS_HEADER, FK_WFS_CHECKS)
+);
+

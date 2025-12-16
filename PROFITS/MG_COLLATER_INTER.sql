@@ -1,0 +1,24 @@
+create table MG_COLLATER_INTER
+(
+    FILE_NAME          CHAR(50) not null,
+    SERIAL_NO          INTEGER  not null,
+    COLL_STATUS        SMALLINT,
+    COLLATERAL_SN      SMALLINT,
+    ACCOUNT_NO_TAUT    INTEGER,
+    COL_EST_VALUE_AMN  DECIMAL(15, 2),
+    COL_EST_INSUR_AMN  DECIMAL(15, 2),
+    COLL_PROCESS_DATE  DATE,
+    COLL_TMSTAMP       TIMESTAMP(6),
+    FILE_DETAIL_ID     CHAR(2),
+    COLL_CUR_SHORT_DSC CHAR(5),
+    OLD_LNS_NO         CHAR(20),
+    FK_COLLATERAL_TFK  CHAR(30),
+    COLLATERAL_DESC    CHAR(240),
+    COLL_ERR_DESC      VARCHAR(80),
+    constraint IXU_MIG_039
+        primary key (FILE_NAME, SERIAL_NO)
+);
+
+create unique index SIXCOLIN
+    on MG_COLLATER_INTER (OLD_LNS_NO, COLLATERAL_SN);
+

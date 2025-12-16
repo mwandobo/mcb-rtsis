@@ -1,0 +1,37 @@
+create table BORDEREAU_CHEQUE
+(
+    IDENTIFIER         DECIMAL(13),
+    IBAN_CD            SMALLINT,
+    C_DIGIT            SMALLINT,
+    TRX_UNIT           INTEGER,
+    BORDEREAU_UNIT     INTEGER,
+    FK_HAS_CURRENCY    INTEGER,
+    FK_DRAWN_COLLBANK  INTEGER,
+    ID_JUSTIFIC        INTEGER,
+    BORDEREAU_USR_SN   INTEGER,
+    TRX_USR_SN         INTEGER,
+    ACCOUNT_NUMBER     DECIMAL(11),
+    CHEQUE_AMOUNT      DECIMAL(15, 2),
+    CORR_SEND_DATE     DATE,
+    CHEQUE_ISSUE_DATE  DATE,
+    TRX_DATE           DATE,
+    TMSTAMP            TIMESTAMP(6),
+    BORDEREAU_DATE     DATE,
+    CHEQUE_TYPE        CHAR(1),
+    CLEARING_FLAG      CHAR(1),
+    ACH_MCH_FLAG       CHAR(1),
+    IBAN_CNTRY         CHAR(2),
+    ACH_MCH_BANK_CODE  CHAR(3),
+    ACH_UNIT_CODE      CHAR(4),
+    IBAN_DIGITS        CHAR(4),
+    CHEQUE_ISSUE_PLACE CHAR(6),
+    BORDEREAU_USR      CHAR(8),
+    TRX_USR            CHAR(8),
+    CHEQUE_NUMBER      CHAR(20),
+    CHEQUE_ACC_NUMBER  CHAR(23),
+    BBAN               CHAR(30)
+);
+
+create unique index IXU_BOR_001
+    on BORDEREAU_CHEQUE (IDENTIFIER);
+

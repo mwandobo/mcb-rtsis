@@ -1,0 +1,13 @@
+create table RELATIONSHIP_REL
+(
+    FKCUST_HAS_AS_FIRS INTEGER  not null,
+    FKCUST_HAS_AS_SECO INTEGER  not null,
+    FK_RELATIONSHIPTYP CHAR(12) not null,
+    FKGD_HAS_AS_REL    INTEGER  not null,
+    FKGH_HAS_AS_REL    CHAR(5)  not null,
+    DESCRIPTION        CHAR(40),
+    ALL_ACCOUNTS       CHAR(1),
+    constraint IXU_RELACC_001
+        primary key (FKCUST_HAS_AS_FIRS, FKCUST_HAS_AS_SECO, FK_RELATIONSHIPTYP, FKGH_HAS_AS_REL, FKGD_HAS_AS_REL)
+);
+

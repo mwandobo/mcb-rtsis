@@ -1,0 +1,18 @@
+create table LOAN_ACCRUALS_DAILY
+(
+    ACC_UNIT             INTEGER  not null,
+    ACC_TYPE             SMALLINT not null,
+    ACC_SN               INTEGER  not null,
+    LAST_NRM_CALC_DATE   DATE,
+    TOT_NOR_ACCRUALS     DECIMAL(15, 2),
+    NOR_DLY_ACCRUALS     DECIMAL(15, 2),
+    LAST_OVR_CALC_DATE   DATE,
+    TOT_OVR_ACCRUALS     DECIMAL(15, 2),
+    OVR_NOR_ACCRUALS     DECIMAL(15, 2),
+    OVR_PEN_ACCRUALS     DECIMAL(15, 2),
+    OVR_DLY_NOR_ACCRUALS DECIMAL(15, 2),
+    OVR_DLY_PEN_ACCRUALS DECIMAL(15, 2),
+    constraint ILOAN_ACCRUALS_DAILY
+        primary key (ACC_UNIT, ACC_TYPE, ACC_SN)
+);
+

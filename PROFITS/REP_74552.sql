@@ -1,0 +1,36 @@
+create table REP_74552
+(
+    LOAN_ACC_NUMBER    CHAR(40) not null
+        constraint IXU_REP_059
+            primary key,
+    LOAN_ACC_CD        SMALLINT,
+    BRANCH_CODE        INTEGER,
+    REG_BRANCH_CODE    INTEGER,
+    SERVICE_CENTR_CODE INTEGER,
+    PRODUCT_ID         INTEGER,
+    CUST_ID            INTEGER,
+    INTEREST_RATE      DECIMAL(8, 4),
+    TOT_CAP_BAL_GEL    DECIMAL(15, 2),
+    TOT_ACC_INT        DECIMAL(15, 2),
+    TOT_ACC_PNL        DECIMAL(15, 2),
+    PNL_INT_BAL        DECIMAL(15, 2),
+    OV_CAP_BAL         DECIMAL(15, 2),
+    ST_ACC_LIM_AMN_GEL DECIMAL(15, 2),
+    TOT_CAP_BAL_FOREIG DECIMAL(15, 2),
+    OV_INT_BAL         DECIMAL(15, 2),
+    ST_ACC_LIM_AMN     DECIMAL(15, 2),
+    ACCOUNT_OPEN_DT    DATE,
+    ACCOUNT_EXP_DT     DATE,
+    OVERDUE_DT         DATE,
+    ACCOUNT_CURRENCY   CHAR(5),
+    OFFICER_ID         CHAR(8),
+    CUST_NAME          CHAR(20),
+    CUST_PID           CHAR(20),
+    OFFICER_SURNAME    CHAR(20),
+    OFFICER_NAME       CHAR(20),
+    PROD_DESCRIPTION   CHAR(40),
+    CUST_CATEGORY      CHAR(40),
+    CUST_SURNAME       CHAR(70),
+    MECHANISM          CHAR(153)
+);
+

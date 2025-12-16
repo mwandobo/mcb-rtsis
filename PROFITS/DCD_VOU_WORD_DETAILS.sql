@@ -1,0 +1,11 @@
+create table DCD_VOU_WORD_DETAILS
+(
+    FK_DCD_VOU_WRDHDR DECIMAL(15),
+    INT_SN            INTEGER,
+    FIELD_DATA        VARCHAR(100),
+    FIELD_NAME        VARCHAR(100)
+);
+
+create unique index IXU_DCD_042
+    on DCD_VOU_WORD_DETAILS (FK_DCD_VOU_WRDHDR, INT_SN);
+

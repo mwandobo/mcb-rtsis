@@ -1,0 +1,27 @@
+create table WFS_FLOW
+(
+    FK_APPLICATION_HDR  DECIMAL(10) not null,
+    FLOW_SN             INTEGER     not null,
+    DESCRIPTION         VARCHAR(50),
+    DESCRIPTION_DETAIL  VARCHAR(2048),
+    DESCRIPTION_SHORT   VARCHAR(10),
+    ABBREVIATION        VARCHAR(10),
+    CREATE_UNIT         INTEGER,
+    CREATE_DATE         DATE,
+    CREATE_USR          CHAR(8),
+    CREATE_TMSTAMP      TIMESTAMP(6),
+    UPDATE_UNIT         INTEGER,
+    UPDATE_DATE         DATE,
+    UPDATE_USR          CHAR(8),
+    UPDATE_TMSTAMP      TIMESTAMP(6),
+    FK_ROLE_FROM        DECIMAL(10),
+    FK_STATUS_FROM      DECIMAL(10),
+    FK_ACTION           DECIMAL(10),
+    FK_ROLE_TO          DECIMAL(10),
+    FK_STATUS_TO        DECIMAL(10),
+    WF_FLOW_STS         CHAR(1),
+    CHECK_PROFILE_LIMIT CHAR(1),
+    constraint PK_WF_FLOW
+        primary key (FK_APPLICATION_HDR, FLOW_SN)
+);
+

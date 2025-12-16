@@ -1,0 +1,40 @@
+create table CUST_ADDRESS
+(
+    FK_CUSTOMERCUST_ID INTEGER,
+    SERIAL_NUM         SMALLINT,
+    FKGD_HAS_COUNTRY   INTEGER,
+    FKGD_HAS_AS_DISTRI INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    COMMUNICATION_ADDR CHAR(1),
+    PTS_IND            CHAR(1),
+    ADDRESS_TYPE       CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    LATIN_IND          CHAR(1),
+    FKGH_HAS_COUNTRY   CHAR(5),
+    SEGM_FLAGS         CHAR(5),
+    FKGH_HAS_AS_DISTRI CHAR(5),
+    MAIL_BOX           CHAR(5),
+    ZIP_CODE           CHAR(10),
+    FAX_NO             CHAR(15),
+    TELEPHONE          CHAR(15),
+    CITY               CHAR(30),
+    REGION             VARCHAR(20),
+    ADDRESS_1          VARCHAR(40),
+    ADDRESS_2          VARCHAR(40),
+    ENTRY_COMMENTS     VARCHAR(250),
+    FK_CUST_ADDR_PACO  CHAR(8),
+    FK_CUST_ADDR_PASN  INTEGER,
+    ACCOMODATION_DATE  DATE,
+    INTERNET_ADDRESS   VARCHAR(100),
+    E_MAIL             VARCHAR(60),
+    TELEPHONE_3        VARCHAR(15),
+    TELEPHONE_2        VARCHAR(15),
+    ADDRESS_6          VARCHAR(40),
+    ADDRESS_5          VARCHAR(40),
+    ADDRESS_4          VARCHAR(40),
+    ADDRESS_3          VARCHAR(40)
+);
+
+create unique index IXU_CUS_045
+    on CUST_ADDRESS (FK_CUSTOMERCUST_ID, SERIAL_NUM);
+

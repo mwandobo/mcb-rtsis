@@ -1,0 +1,29 @@
+create table SCH_SESSION_RESULT
+(
+    FK_SESSION            TIMESTAMP(6)       not null,
+    ITEM_UID              VARCHAR(40)        not null,
+    RUNNINGSTATUS         SMALLINT default 0 not null,
+    OUTPUT                CLOB(1048576),
+    ERROR                 CLOB(1048576),
+    FILES                 CLOB(1048576),
+    AELOG                 CLOB(1048576),
+    STARTED               TIMESTAMP(6),
+    ENDED                 TIMESTAMP(6),
+    RUNNED                TIME,
+    ITEMNAME              VARCHAR(100),
+    ITEMPROGRAMID         VARCHAR(5),
+    LASTUPDATED           TIMESTAMP(6),
+    BEFORE_SCHEDULED_DATE TIMESTAMP(0),
+    BEFORE_PREV_TRX_DATE  TIMESTAMP(0),
+    BEFORE_NEXT_TRX_DATE  TIMESTAMP(0),
+    BEFORE_CURR_TRX_DATE  TIMESTAMP(0),
+    BEFORE_PREVIOUS_DATE  TIMESTAMP(0),
+    AFTER_SCHEDULED_DATE  TIMESTAMP(0),
+    AFTER_PREV_TRX_DATE   TIMESTAMP(0),
+    AFTER_NEXT_TRX_DATE   TIMESTAMP(0),
+    AFTER_CURR_TRX_DATE   TIMESTAMP(0),
+    AFTER_PREVIOUS_DATE   TIMESTAMP(0),
+    constraint SCH_SESSION_RESULT_PK
+        primary key (FK_SESSION, ITEM_UID)
+);
+

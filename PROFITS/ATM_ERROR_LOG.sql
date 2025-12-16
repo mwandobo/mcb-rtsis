@@ -1,0 +1,26 @@
+create table ATM_ERROR_LOG
+(
+    IN_TMSTAMP       TIMESTAMP(6),
+    ID               DECIMAL(10),
+    CURR_TRX_DATE    DATE,
+    OUT_TMSTAMP      TIMESTAMP(6),
+    EXECUTION_FLAG   CHAR(1),
+    REPL_CODE        CHAR(4),
+    IN_MTI_CODE      CHAR(4),
+    TRANSACTION_DATE CHAR(4),
+    REFERENCE_NUMBER CHAR(12),
+    TERMINAL_NUMBER  CHAR(16),
+    EXIT_STATE       CHAR(80),
+    IN_MESSAGE       VARCHAR(4000),
+    OUT_MESSAGE      VARCHAR(2000),
+    TRANSACTION_TIME TIME,
+    COUNTER_TYPE     CHAR(5) not null,
+    PROCESSING_CODE  CHAR(6),
+    AUTH_ID          CHAR(20),
+    AFD_REF_NO       CHAR(32),
+    FLD_024          CHAR(3)
+);
+
+create unique index IXU_ATM_006
+    on ATM_ERROR_LOG (ID, IN_TMSTAMP, COUNTER_TYPE);
+

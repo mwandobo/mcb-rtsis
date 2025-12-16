@@ -1,0 +1,31 @@
+create table DEP_SCR_INV_EX_HD
+(
+    ACCOUNT_NUMBER     DECIMAL(11) not null,
+    EXTR_YEAR          SMALLINT    not null,
+    EXTR_QTR           SMALLINT    not null,
+    DATE_FROM          DATE,
+    DATE_TO            DATE,
+    TR_ACC_UNIT        INTEGER,
+    TR_ACC_TYPE        SMALLINT,
+    TR_ACC_SN          INTEGER,
+    TR_ACC_CD          SMALLINT,
+    DEP_PERCENTAGE     DECIMAL(8, 4),
+    SCR_PERCENTAGE     DECIMAL(8, 4),
+    DEP_BALANCE        DECIMAL(15, 2),
+    DEP_INTERESTS      DECIMAL(8, 4),
+    PREV_DEP_BALANCE   DECIMAL(15, 2),
+    SCR_ITEMS          DECIMAL(17, 3),
+    SCR_ITEM_PRICE     DECIMAL(11, 6),
+    SCR_BALANCE        DECIMAL(17, 3),
+    PREV_SCR_BALANCE   DECIMAL(17, 3),
+    TMSTAMP            TIMESTAMP(6),
+    ACCOUNT_ADDRESS    CHAR(50),
+    BENEFICIARY_1_NAME CHAR(30),
+    BENEFICIARY_2_NAME CHAR(30),
+    BENEFICIARY_3_NAME CHAR(30),
+    BENEFICIARY_4_NAME CHAR(30),
+    BENEFICIARY_5_NAME CHAR(30),
+    constraint PK_DEP_SCR_INV_HD
+        primary key (EXTR_QTR, EXTR_YEAR, ACCOUNT_NUMBER)
+);
+

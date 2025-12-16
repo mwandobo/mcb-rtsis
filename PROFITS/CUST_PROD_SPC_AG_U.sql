@@ -1,0 +1,19 @@
+create table CUST_PROD_SPC_AG_U
+(
+    FK_CUSTOMERCUST_ID    INTEGER      not null,
+    FK_PRODUCTID_PRODU    INTEGER      not null,
+    ENTRY_STATUS          CHAR(1),
+    COMMISS_DISCOUNT      DECIMAL(8, 4),
+    EXPENCE_DISCOUNT      DECIMAL(8, 4),
+    MIN_COMMISION_AMNT    DECIMAL(15, 2),
+    EXPIRY_DATE           DATE,
+    COM_CHARGE_FRQ        SMALLINT,
+    COM_CHARGE_FRQ_TYP    CHAR(1),
+    TMSTAMP               TIMESTAMP(6) not null,
+    COMMISSION_AMOUNT     DECIMAL(15, 2),
+    COMMISSION_PERCENTAGE DECIMAL(8, 4),
+    TRX_USR               CHAR(8),
+    constraint IXU_CIU_034
+        primary key (FK_PRODUCTID_PRODU, FK_CUSTOMERCUST_ID)
+);
+

@@ -1,0 +1,18 @@
+create table TIME_DEP_MNT_EXTR
+(
+    FK_CONTAIN_DEPACC DECIMAL(11),
+    ENTRY_SER_NUM     SMALLINT,
+    TRANS_SER_NUM     INTEGER,
+    RENEWAL_SER_NUM   INTEGER,
+    TRX_UNIT          INTEGER,
+    TRX_SN            INTEGER,
+    I_CR_INTER_RATE   DECIMAL(8, 4),
+    TRX_DATE          DATE,
+    INTEREST_PAY_IND  CHAR(1),
+    TRX_USR           CHAR(8),
+    COMMENTS          CHAR(40)
+);
+
+create unique index IXU_TIM_000
+    on TIME_DEP_MNT_EXTR (FK_CONTAIN_DEPACC, ENTRY_SER_NUM, TRANS_SER_NUM);
+

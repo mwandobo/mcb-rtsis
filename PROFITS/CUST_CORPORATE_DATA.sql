@@ -1,0 +1,29 @@
+create table CUST_CORPORATE_DATA
+(
+    REMARKS                        CHAR(40),
+    FINANCIAL_YEAR                 SMALLINT       not null,
+    INTERNAL_SN                    SMALLINT       not null,
+    TOT_AMN_MINUS_3                DECIMAL(15, 2),
+    TOT_AMN_MINUS_2                DECIMAL(15, 2) not null,
+    TOT_AMN_MINUS_1                DECIMAL(15, 2),
+    TOTAL_AMOUNT                   DECIMAL(15, 2),
+    TIMESTMP                       TIMESTAMP(6),
+    FK_GENERIC_DETAFK_GENERIC_HEAD CHAR(5)        not null,
+    FK_GENERIC_DETASERIAL_NUM      INTEGER        not null,
+    FK_CUST_FINANCIFK_CUSTOMERCUST INTEGER        not null,
+    FK_CUST_FINANCIFINANCIAL_YEAR  SMALLINT       not null,
+    FK_CURRENCYID_CURRENCY         INTEGER,
+    constraint PK_CORPORATE_DATA
+        primary key (FK_GENERIC_DETAFK_GENERIC_HEAD, FK_GENERIC_DETASERIAL_NUM, FK_CUST_FINANCIFK_CUSTOMERCUST,
+                     FK_CUST_FINANCIFINANCIAL_YEAR, INTERNAL_SN, FINANCIAL_YEAR)
+);
+
+create unique index I0000704
+    on CUST_CORPORATE_DATA (FK_GENERIC_DETAFK_GENERIC_HEAD, FK_GENERIC_DETASERIAL_NUM);
+
+create unique index I0000717
+    on CUST_CORPORATE_DATA (FK_CURRENCYID_CURRENCY);
+
+create unique index I0010703
+    on CUST_CORPORATE_DATA (FK_CUST_FINANCIFK_CUSTOMERCUST, FK_CUST_FINANCIFINANCIAL_YEAR);
+

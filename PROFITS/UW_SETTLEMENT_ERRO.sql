@@ -1,0 +1,15 @@
+create table UW_SETTLEMENT_ERRO
+(
+    ORDER_CODE    INTEGER,
+    UW_CODE       INTEGER,
+    TRX_UNIT      INTEGER,
+    BLOCK_ACCOUNT DECIMAL(11),
+    BLOCK_AMOUNT  DECIMAL(15, 2),
+    TRX_DATE      DATE,
+    TRX_USR       CHAR(8),
+    COMMENTS      CHAR(40)
+);
+
+create unique index IXU_UW__005
+    on UW_SETTLEMENT_ERRO (ORDER_CODE, UW_CODE);
+

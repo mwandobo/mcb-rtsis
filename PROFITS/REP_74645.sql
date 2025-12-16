@@ -1,0 +1,22 @@
+create table REP_74645
+(
+    GEN_DET_ID   DECIMAL(10),
+    UNIT_CODE    DECIMAL(18),
+    AE_CUST      DECIMAL(10),
+    KA_CUST      DECIMAL(10),
+    EK_CUST      DECIMAL(10),
+    K_CUST       DECIMAL(10),
+    EM_CUST      DECIMAL(10),
+    KA_BALANCE   DECIMAL(15, 2),
+    EM_BALANCE   DECIMAL(15, 2),
+    EK_BALANCE   DECIMAL(15, 2),
+    AE_BALANCE   DECIMAL(15, 2),
+    K_BALANCE    DECIMAL(15, 2),
+    GEN_DET_DESC VARCHAR(40),
+    NAME         VARCHAR(40),
+    NAME0        CHAR(40)
+);
+
+create unique index IXU_REP_014
+    on REP_74645 (GEN_DET_ID, UNIT_CODE);
+

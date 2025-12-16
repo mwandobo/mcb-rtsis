@@ -1,0 +1,11 @@
+create table HPRODUCT_GLACCOUNT
+(
+    FK_GLG_ACCOUNTACCO CHAR(21) not null,
+    FK_HPRODUCTID_PROD INTEGER  not null,
+    FK_HPRODUCTVALIDIT DATE     not null,
+    DELIVERED_FLG      CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    constraint IXU_PRD_007
+        primary key (FK_GLG_ACCOUNTACCO, FK_HPRODUCTID_PROD, FK_HPRODUCTVALIDIT)
+);
+

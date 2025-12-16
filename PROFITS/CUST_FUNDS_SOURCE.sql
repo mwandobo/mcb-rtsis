@@ -1,0 +1,36 @@
+create table CUST_FUNDS_SOURCE
+(
+    FUNDS_AMOUNT            DECIMAL(15, 2),
+    IN_OUT_IND              CHAR(1)  not null,
+    SERIAL_NUM              SMALLINT not null,
+    AMOUNT_IN_LC            DECIMAL(15, 2),
+    TIMESTMP                TIMESTAMP(6),
+    FK_CUST_CUSTOMERCUST_ID INTEGER  not null,
+    FK_YEAR                 SMALLINT not null,
+    FK_GENERIC_DETAFK       CHAR(5)  not null,
+    FK_GENERIC_DETASER      INTEGER  not null,
+    FK0GENERIC_DETAFK       CHAR(5)  not null,
+    FK0GENERIC_DETASER      INTEGER  not null,
+    FK_CURRENCYID_CURR      INTEGER  not null,
+    FK2_GENERIC_DETAFK      CHAR(5),
+    FK2_GENERIC_DETASER     INTEGER,
+    FK1_GENERIC_DETAFK      CHAR(5),
+    FK1_GENERIC_DETASER     INTEGER,
+    COUNTER_PARTY_NAME      CHAR(60),
+    constraint PK_CUST_FUNDS_SOURCE
+        primary key (FK_GENERIC_DETAFK, FK_GENERIC_DETASER, FK0GENERIC_DETAFK, FK0GENERIC_DETASER, FK_CURRENCYID_CURR,
+                     FK_CUST_CUSTOMERCUST_ID, FK_YEAR, SERIAL_NUM, IN_OUT_IND)
+);
+
+create unique index I0000686
+    on CUST_FUNDS_SOURCE (FK_CUST_CUSTOMERCUST_ID, FK_YEAR);
+
+create unique index I0000688
+    on CUST_FUNDS_SOURCE (FK_GENERIC_DETAFK, FK_GENERIC_DETASER);
+
+create unique index I0000690
+    on CUST_FUNDS_SOURCE (FK0GENERIC_DETAFK, FK0GENERIC_DETASER);
+
+create unique index I0000692
+    on CUST_FUNDS_SOURCE (FK_CURRENCYID_CURR);
+

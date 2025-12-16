@@ -1,0 +1,16 @@
+create table UW_BATCH_PARAMETER
+(
+    PROGRAM_ID         CHAR(5),
+    COLL_UW_CODE_TO    INTEGER,
+    COLL_UW_CODE_FROM  INTEGER,
+    UW_CODE_TO         INTEGER,
+    UW_CODE_FROM       INTEGER,
+    DATE_FROM          DATE,
+    DATE_TO            DATE,
+    ON_REQUEST_FLAG    CHAR(1),
+    INSTITUTIONAL_FLAG CHAR(1)
+);
+
+create unique index IXU_UW__008
+    on UW_BATCH_PARAMETER (PROGRAM_ID);
+

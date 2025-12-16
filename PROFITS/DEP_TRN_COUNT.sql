@@ -1,0 +1,16 @@
+create table DEP_TRN_COUNT
+(
+    TRX_UNIT        INTEGER,
+    TRX_DATE        DATE,
+    TRX_USER        CHAR(8),
+    TRX_USR_SN      INTEGER,
+    TUN_INTERNAL_SN SMALLINT default 1,
+    CHANNEL_ID      INTEGER,
+    ACCOUNT_NUMBER  DECIMAL(11),
+    TMSTAMP         TIMESTAMP(6),
+    PROCESSED_FLAG  CHAR(1)
+);
+
+create unique index IXU_DEP_064
+    on DEP_TRN_COUNT (TRX_UNIT, TRX_DATE, TRX_USER, TRX_USR_SN, TUN_INTERNAL_SN);
+

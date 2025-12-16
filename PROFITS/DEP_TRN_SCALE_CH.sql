@@ -1,0 +1,10 @@
+create table DEP_TRN_SCALE_CH
+(
+    ID_PRODUCT    INTEGER,
+    VALIDITY_DATE DATE,
+    ID_CHANNEL    INTEGER
+);
+
+create unique index IXU_DEP_066
+    on DEP_TRN_SCALE_CH (ID_PRODUCT, VALIDITY_DATE, ID_CHANNEL);
+

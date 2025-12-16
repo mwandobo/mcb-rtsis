@@ -1,0 +1,13 @@
+create table CLEARING_AGENT
+(
+    AGENT_CODE         INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    ENTRY_STATUS       CHAR(1),
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    CLR_AGENT_TYPE     VARCHAR(1),
+    DESCRIPTION        VARCHAR(40)
+);
+
+create unique index IXU_CLE_000
+    on CLEARING_AGENT (AGENT_CODE);
+

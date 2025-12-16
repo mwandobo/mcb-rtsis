@@ -1,0 +1,15 @@
+create table OTHER_BANK
+(
+    DISCREET_TITLE     CHAR(15),
+    FK_GENERIC_DETAFK  CHAR(5),
+    FK_GENERIC_DETASER INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    SWIFT_ADDRESS      CHAR(14),
+    CITY               CHAR(20),
+    BANK_NAME          CHAR(70),
+    ADDRESS            CHAR(120)
+);
+
+create unique index IXU_OTH_003
+    on OTHER_BANK (DISCREET_TITLE, FK_GENERIC_DETAFK, FK_GENERIC_DETASER);
+

@@ -1,0 +1,12 @@
+create table PWD_HISTORY
+(
+    USERCODE        CHAR(8),
+    PWD_CHANGE_DATE DATE,
+    PASSWORD        CHAR(26),
+    PASS_TMSTAMP    TIMESTAMP(6),
+    PASS_DIGEST     CHAR(64)
+);
+
+create unique index IXU_PWD_000
+    on PWD_HISTORY (USERCODE, PWD_CHANGE_DATE, PASSWORD);
+

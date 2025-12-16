@@ -1,0 +1,18 @@
+create table FX_POSITION
+(
+    FK_CURRENCYID_CURR INTEGER,
+    VALID_DATE         DATE,
+    PREV_BALANCE_BC    DECIMAL(15, 2),
+    SALES_BC           DECIMAL(15, 2),
+    PURCHASES_DC       DECIMAL(15, 2),
+    PURCHASES_BC       DECIMAL(15, 2),
+    SALES_FC           DECIMAL(15, 2),
+    SALES_DC           DECIMAL(15, 2),
+    PREV_BALANCE_DC    DECIMAL(15, 2),
+    PREV_BALANCE_FC    DECIMAL(15, 2),
+    PURCHASES_FC       DECIMAL(15, 2)
+);
+
+create unique index IXU_FX__004
+    on FX_POSITION (FK_CURRENCYID_CURR, VALID_DATE);
+

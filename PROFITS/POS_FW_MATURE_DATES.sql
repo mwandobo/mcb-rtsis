@@ -1,0 +1,13 @@
+create table POS_FW_MATURE_DATES
+(
+    INTERNAL_SN     INTEGER,
+    TRX_UNIT        INTEGER,
+    TRX_DATE        DATE,
+    TRX_USER        CHAR(8),
+    TRX_SN          INTEGER,
+    TUN_INTERNAL_SN SMALLINT,
+    ID_CURRENCY     INTEGER,
+    AMOUNT          DECIMAL(15, 2),
+    MATURITY_DATE   DATE
+);
+

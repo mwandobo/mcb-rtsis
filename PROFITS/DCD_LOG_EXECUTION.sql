@@ -1,0 +1,18 @@
+create table DCD_LOG_EXECUTION
+(
+    LOG_KEY          DECIMAL(12)  not null,
+    LOG_TMSTAMP      TIMESTAMP(6) not null,
+    RULE_SYSTEM      SMALLINT,
+    RULE_ID          DECIMAL(12),
+    RULE_SN          INTEGER,
+    PROCESS_RULE_SYS SMALLINT,
+    PROCESS_RULE_ID  DECIMAL(12),
+    PROCESS_RULE_SN  INTEGER,
+    ROUTINE_SYSTEM   SMALLINT,
+    ROUTINE_SN       DECIMAL(12),
+    ROUTINE_NAME     VARCHAR(80),
+    LOG_DESCRIPTION  VARCHAR(80),
+    constraint DCD_LOG_PKEY
+        primary key (LOG_TMSTAMP, LOG_KEY)
+);
+

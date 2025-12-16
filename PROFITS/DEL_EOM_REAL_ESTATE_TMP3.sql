@@ -1,0 +1,6 @@
+create table DEL_EOM_REAL_ESTATE_TMP3
+(
+    PROPERTYID  DECIMAL(10) not null,
+    INTERNAL_SN DECIMAL(15, 2)
+);
+

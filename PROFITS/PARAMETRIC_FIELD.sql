@@ -1,0 +1,14 @@
+create table PARAMETRIC_FIELD
+(
+    SEC_WINDOW_SN      SMALLINT,
+    SNUM               INTEGER,
+    OPTIONAL_MANDATORY CHAR(2),
+    FIELD_TYPE         CHAR(2),
+    VALUE_FROM         CHAR(3),
+    SEC_WINDOW_ID      CHAR(8),
+    DESCRIPTION        CHAR(40),
+    ALIAS_TABLE_ORIGIN CHAR(40),
+    TABLE_ENTITY       CHAR(40),
+    TABLE_ATTRIBUTE    CHAR(40)
+);
+

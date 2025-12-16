@@ -1,0 +1,18 @@
+create table TMP_DEP2
+(
+    C_DIGIT           SMALLINT,
+    ACCOUNT_CD        SMALLINT,
+    PRODUCT_ID        INTEGER,
+    MOVEMENT_CURRENCY INTEGER,
+    CUST_ID           INTEGER,
+    DIFF              DECIMAL(15, 2),
+    EURO_BOOK_BAL     DECIMAL(15, 2),
+    AVAILABLE_BALANCE DECIMAL(15, 2),
+    CUST_TYPE         CHAR(2),
+    SHORT_DESCR       CHAR(5),
+    FIRST_NAME        CHAR(20),
+    ACCOUNT_NUMBER    CHAR(40),
+    SURNAME           CHAR(70),
+    DESCRIPTION       VARCHAR(40)
+);
+

@@ -1,0 +1,29 @@
+create table IPS_UNSEIZED_DETAIL
+(
+    FILENAME         CHAR(50)    not null,
+    LINE_NO          DECIMAL(10) not null,
+    TRX_DATE         DATE        not null,
+    DAY_SN           SMALLINT,
+    RECORD_TYPE      CHAR(1),
+    RECORD_TMSTAMP   CHAR(12),
+    TAX_ID           CHAR(20),
+    IBAN             CHAR(50),
+    UNSEIZ_DATE_FROM DATE,
+    UNSEIZ_DATE_TO   DATE,
+    UNSEIZED_TMSTAMP CHAR(12),
+    UPDATE_TYPE      CHAR(1),
+    REFERENCE_NUMBER INTEGER,
+    CUST_FULLNAME    CHAR(30),
+    PROCESS_RESULT   CHAR(1),
+    PROCESS_DESC     VARCHAR(40),
+    UPDATE_TMSTAMP   CHAR(12),
+    COMPLETE_FLAG    CHAR(1),
+    FULL_LINE        VARCHAR(549),
+    SUM_ACCOUNTS     INTEGER,
+    SUM_DELETED_ACC  INTEGER,
+    SUM_INSERTED_ACC INTEGER,
+    TMSTAMP          TIMESTAMP(6),
+    constraint PK_UNSEIZ_DTL
+        primary key (FILENAME, LINE_NO)
+);
+

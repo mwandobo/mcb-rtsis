@@ -1,0 +1,25 @@
+create table CMSG_RQST_HDR
+(
+    FK_CUSTOMER_ID       INTEGER not null,
+    CMSG_RQST_HDR_SN     INTEGER not null,
+    SERVICE_ACCOUNT      CHAR(40),
+    SERVICE_SYSTEM       SMALLINT,
+    CUSTOMER_COMMENTS    LONG VARCHAR(32700),
+    ENABLED_EMAILS       CHAR(1),
+    ENABLED_SMS          CHAR(1),
+    INSERT_DT            DATE,
+    INSERT_UNIT          INTEGER,
+    INSERT_USER          CHAR(8),
+    INSERT_TMSTAMP       TIMESTAMP(6),
+    UPDATE_DT            DATE,
+    UPDATE_UNIT          INTEGER,
+    UPDATE_USER          CHAR(8),
+    UPDATE_TMSTAMP       TIMESTAMP(6),
+    SMS_TOTALS           INTEGER,
+    EMAIL_TOTALS         INTEGER,
+    LAST_EXECUTION_STAMP TIMESTAMP(6),
+    LAST_EXECUTION_DATE  DATE,
+    constraint CMSG_RQST_I_001
+        primary key (FK_CUSTOMER_ID, CMSG_RQST_HDR_SN)
+);
+

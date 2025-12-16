@@ -1,0 +1,31 @@
+create table BLK_FILE_HEADER
+(
+    FILE_HASH           VARCHAR(50)  not null
+        constraint PK_BLK_FILE_HEADER
+            primary key,
+    FILE_NAME           VARCHAR(50)  not null,
+    PROCESSED_RECORDS   INTEGER,
+    TOTAL_RECORDS       INTEGER      not null,
+    LOADED_TRX_DATE     DATE,
+    LOADED_TIMESTAMP    TIMESTAMP(6) not null,
+    LOADED_USER_CODE    CHAR(5),
+    EXECUTION_TYPE      CHAR(1)      not null,
+    EXECUTION_STATUS    CHAR(1)      not null,
+    EXECUTION_TRX_DATE  DATE,
+    EXECUTION_TIMESTAMP TIMESTAMP(6) not null,
+    EXECUTION_USER_CODE CHAR(5),
+    EXECUTION_SN        INTEGER,
+    ERROR_MESSAGE       VARCHAR(80),
+    DATA_ROW_SN         DECIMAL(10),
+    TOTAL_AMOUNT        DECIMAL(15, 2),
+    FKGH_REJECT_REASON  CHAR(5),
+    FKGD_REJECT_REASON  INTEGER,
+    DEBIT_STATUS        CHAR(1) default '0',
+    UNIQUE_ID           BIGINT,
+    CUST_ID             INTEGER,
+    TEMPLATE_ID         INTEGER
+);
+
+create unique index INDX_BLK_FILE_HEADER_EXECUTE
+    on BLK_FILE_HEADER (LOADED_TIMESTAMP, EXECUTION_TYPE, EXECUTION_STATUS);
+

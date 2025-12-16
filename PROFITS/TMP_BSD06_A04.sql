@@ -1,0 +1,16 @@
+create table TMP_BSD06_A04
+(
+    RELATION_CODE     INTEGER,
+    NRM_BALANCE       DECIMAL(15, 2),
+    EST_VALUE_AMN     DECIMAL(15, 2),
+    DEFAULT_AMN       DECIMAL(15, 2),
+    LG_AMOUNT_BAL     DECIMAL(15, 2),
+    TOT_EST_VALUE_AMN DECIMAL(15, 2),
+    OV_BALANCE        DECIMAL(15, 2),
+    AFM_NO            CHAR(20),
+    COLLATERAL_CODE   VARCHAR(5),
+    COUNTRY_CODE      VARCHAR(40),
+    ADDRESS           VARCHAR(81),
+    NAME              VARCHAR(91)
+);
+

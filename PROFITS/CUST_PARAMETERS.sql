@@ -1,0 +1,18 @@
+create table CUST_PARAMETERS
+(
+    CURRENT_YEAR       SMALLINT not null
+        constraint IXU_PRD_005
+            primary key,
+    CORRESPOND_CONFIRM SMALLINT,
+    INDIVIDUAL_CONFIRM SMALLINT,
+    CORPORATE_CONFIRM  SMALLINT,
+    DOCS_ALL           CHAR(1),
+    DOCS_CIS           CHAR(1),
+    FCAST_OWED_CUS_POS CHAR(1),
+    ACTIVE_SIGNATURE   CHAR(1),
+    ACTIVE_FINGERPRINT CHAR(1),
+    ACTIVE_SWIPE_CARD  CHAR(1),
+    ACTIVE_BAR_CODE    CHAR(1),
+    DOCS_ONCE          CHAR(1)
+);
+

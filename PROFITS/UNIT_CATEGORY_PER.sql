@@ -1,0 +1,19 @@
+create table UNIT_CATEGORY_PER
+(
+    ID                 CHAR(8),
+    FK_SEC_ROLECODE    INTEGER,
+    FK_GENERIC_DETASER INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    ENTRY_STATUS       CHAR(1),
+    AUTH_OTHER_UNIT    CHAR(1),
+    CUSTOMER_CONTROL   CHAR(1),
+    PTJ_CHECK_OVERCOME CHAR(1),
+    FK_GENERIC_DETAFK  CHAR(5),
+    DESCRIPTION        CHAR(40),
+    SN                 SMALLINT,
+    MODIF_RIGHTS       SMALLINT
+);
+
+create unique index IXU_UNI_004
+    on UNIT_CATEGORY_PER (ID);
+

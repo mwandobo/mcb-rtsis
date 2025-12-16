@@ -1,0 +1,8 @@
+create table DIASCHEQUE_TEMP_RP003
+(
+    DATE_FROM   DATE,
+    DATE_TO     DATE,
+    COUNT_TOTAL DECIMAL(15),
+    SUM_TOTAL   DECIMAL(15, 2)
+);
+

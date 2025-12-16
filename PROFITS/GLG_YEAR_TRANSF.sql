@@ -1,0 +1,17 @@
+create table GLG_YEAR_TRANSF
+(
+    TRAN_ID            CHAR(6),
+    DEACTIVATION_DATE  DATE,
+    STATUS             CHAR(1),
+    CHANGE_STATUS_FLAG CHAR(1),
+    FK_GLG_DOCUMENTDO0 CHAR(2),
+    FK_GLG_DOCUMENTDOC CHAR(4),
+    FK_GLG_JUSTIFYJUST CHAR(4),
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    REMARKS            VARCHAR(20),
+    DESCR              VARCHAR(30)
+);
+
+create unique index IXU_GLG_103
+    on GLG_YEAR_TRANSF (TRAN_ID);
+

@@ -1,0 +1,23 @@
+create table TMP_CUST1
+(
+    C_DIGIT      SMALLINT,
+    CUST_ID      INTEGER,
+    MAIL_BOX     CHAR(5),
+    ZIP_CODE     CHAR(10),
+    AFM_NO       CHAR(20),
+    ID_NO        CHAR(20),
+    FIRST_NAME   CHAR(20),
+    CITY         CHAR(30),
+    SURNAME      CHAR(70),
+    CUST_TYPE    VARCHAR(13),
+    REGION       VARCHAR(20),
+    ADDRESS_TYPE VARCHAR(20),
+    COUNTRY      VARCHAR(40),
+    ADDRESS_1    VARCHAR(40),
+    ID_TYPE      VARCHAR(40),
+    ADDRESS_2    VARCHAR(40)
+);
+
+create unique index IX_TMP_CUST1
+    on TMP_CUST1 (ADDRESS_1, ADDRESS_2, REGION, MAIL_BOX, CITY, ZIP_CODE, COUNTRY);
+

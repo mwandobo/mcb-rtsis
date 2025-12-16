@@ -1,0 +1,11 @@
+create table SDOE_CUSTOMER_ENTERP
+(
+    CUST_ID             INTEGER,
+    CR_DB_LIMIT_FLAG    SMALLINT,
+    OUTG_ORD_LIMIT_FLAG SMALLINT,
+    TMSTAMP             TIMESTAMP(6) default CURRENT TIMESTAMP
+);
+
+create unique index SDOE_CUSTOMER_ENTERP_PK
+    on SDOE_CUSTOMER_ENTERP (CUST_ID);
+

@@ -1,0 +1,13 @@
+create table FXFT_SHIP_GLACCT
+(
+    FK_GENERIC_DH   CHAR(5),
+    FK_GENERIC_DD   INTEGER,
+    SEND_RECEIVE    CHAR(7),
+    LC_FC           CHAR(2),
+    GL_ACCOUNT_ID   CHAR(21),
+    GL_ROAD_ACCT_ID CHAR(21)
+);
+
+create unique index IXU_FXF_001
+    on FXFT_SHIP_GLACCT (FK_GENERIC_DH, FK_GENERIC_DD, SEND_RECEIVE, LC_FC);
+

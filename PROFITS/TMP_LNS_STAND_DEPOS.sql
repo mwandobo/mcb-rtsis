@@ -1,0 +1,15 @@
+create table TMP_LNS_STAND_DEPOS
+(
+    ACCOUNT_NUMBER CHAR(40)    not null,
+    PRFT_SYSTEM    SMALLINT    not null,
+    SO_ACCOUNT_NUM CHAR(40)    not null,
+    SO_PRFT_SYSTEM SMALLINT    not null,
+    SO_ACCOUNT_CD  SMALLINT,
+    PRIORITY_ORDER SMALLINT,
+    SERIAL_NUM     DECIMAL(10) not null,
+    TMSTAMP        TIMESTAMP(6),
+    ACTION_TYPE    CHAR(1),
+    constraint PK_TMP_LNS_DEP
+        primary key (ACCOUNT_NUMBER, PRFT_SYSTEM, SO_ACCOUNT_NUM, SO_PRFT_SYSTEM, SERIAL_NUM)
+);
+

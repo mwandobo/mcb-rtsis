@@ -1,0 +1,12 @@
+create table PROF_MSG_DETAIL
+(
+    MSG_ID      DECIMAL(15),
+    MSG_SUBJECT VARCHAR(25),
+    MSG_BODY    VARCHAR(250),
+    SENDER_IP   VARCHAR(15),
+    SEND_DATE   DATE
+);
+
+create unique index PKPROFMSGDET
+    on PROF_MSG_DETAIL (MSG_ID);
+

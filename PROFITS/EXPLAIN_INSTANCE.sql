@@ -1,0 +1,31 @@
+create table EXPLAIN_INSTANCE
+(
+    EXPLAIN_REQUESTER VARCHAR(128) not null,
+    EXPLAIN_TIME      TIMESTAMP(6) not null,
+    SOURCE_NAME       VARCHAR(128) not null,
+    SOURCE_SCHEMA     VARCHAR(128) not null,
+    SOURCE_VERSION    VARCHAR(64)  not null,
+    EXPLAIN_OPTION    CHAR(1)      not null,
+    SNAPSHOT_TAKEN    CHAR(1)      not null,
+    DB2_VERSION       CHAR(7)      not null,
+    SQL_TYPE          CHAR(1)      not null,
+    QUERYOPT          INTEGER      not null,
+    BLOCK             CHAR(1)      not null,
+    ISOLATION         CHAR(2)      not null,
+    BUFFPAGE          INTEGER      not null,
+    AVG_APPLS         INTEGER      not null,
+    SORTHEAP          INTEGER      not null,
+    LOCKLIST          INTEGER      not null,
+    MAXLOCKS          SMALLINT     not null,
+    LOCKS_AVAIL       INTEGER      not null,
+    CPU_SPEED         DOUBLE       not null,
+    REMARKS           VARCHAR(254),
+    DBHEAP            INTEGER      not null,
+    COMM_SPEED        DOUBLE       not null,
+    PARALLELISM       CHAR(2)      not null,
+    DATAJOINER        CHAR(1)      not null,
+    EXECUTABLE_ID     VARCHAR(32) FOR BIT DATA,
+    EXECUTION_TIME    TIMESTAMP(6),
+    primary key (EXPLAIN_REQUESTER, EXPLAIN_TIME, SOURCE_NAME, SOURCE_SCHEMA, SOURCE_VERSION)
+);
+

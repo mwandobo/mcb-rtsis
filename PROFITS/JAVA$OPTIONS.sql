@@ -1,0 +1,7 @@
+create table JAVA$OPTIONS
+(
+    WHAT  VARCHAR(128),
+    OPT   VARCHAR(20),
+    VALUE VARCHAR(128)
+);
+

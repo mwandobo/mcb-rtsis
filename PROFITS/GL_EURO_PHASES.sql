@@ -1,0 +1,11 @@
+create table GL_EURO_PHASES
+(
+    PHASE_FROM_DATE   DATE,
+    DOMESTIC_CURRENCY INTEGER,
+    RATE_TBL_CURRENCY INTEGER,
+    RATE_USAGE        CHAR(1)
+);
+
+create unique index IXU_GL__000
+    on GL_EURO_PHASES (PHASE_FROM_DATE);
+

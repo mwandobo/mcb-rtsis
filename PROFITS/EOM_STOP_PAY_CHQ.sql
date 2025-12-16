@@ -1,0 +1,17 @@
+create table EOM_STOP_PAY_CHQ
+(
+    EOM_DATE       DATE,
+    ACCOUNT_NUMBER DECIMAL(11),
+    STOP_DATE      DATE,
+    CHQ_FROM       DECIMAL(11),
+    CHQ_TO         DECIMAL(11),
+    AMOUNT         DECIMAL(15, 2),
+    STATUS         CHAR(1),
+    COMMENTS       VARCHAR(40),
+    REASON_TYPE    CHAR(2),
+    OUR_BANK       CHAR(1)
+);
+
+create unique index EOM_STOP_PAY_CHQ
+    on EOM_STOP_PAY_CHQ (EOM_DATE, ACCOUNT_NUMBER, STOP_DATE, CHQ_FROM, CHQ_TO, STATUS, REASON_TYPE, OUR_BANK);
+

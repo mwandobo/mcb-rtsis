@@ -1,0 +1,16 @@
+create table MSG_ALERT_RULE
+(
+    RULE_ID            CHAR(5) not null
+        constraint IXU_CIS_175
+            primary key,
+    FK_ACC_CUST_CHAFK  INTEGER,
+    FK0ACC_CUST_CHAFK  INTEGER,
+    FK_ACC_CUST_CHACP  DECIMAL(10),
+    FK_ACC_CUST_CHAACC DECIMAL(11),
+    AMOUNT             DECIMAL(15, 2),
+    FK_MSG_ALERT_CALOG CHAR(1),
+    FK_MSG_ALERT_CACR  CHAR(1),
+    FK_MSG_ALERT_CATYP CHAR(3),
+    AUTO_DESCRIPTION   CHAR(20)
+);
+

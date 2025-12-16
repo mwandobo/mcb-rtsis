@@ -1,0 +1,19 @@
+create table DIF_FILE_DATA_HD
+(
+    FILE_TYPE         CHAR(5)     not null,
+    FILE_SN           DECIMAL(10) not null,
+    CREATED_DATE      DATE        not null,
+    CREATED_TMSTAMP   TIMESTAMP(6),
+    TOT_CRT_REC       INTEGER,
+    TOT_PRCS_REC      INTEGER,
+    PRCS_STATUS       CHAR(1),
+    CREATE_TRX_CODE   INTEGER,
+    PROCESS_TRX_CODE  INTEGER,
+    PROCESSED_DATE    DATE,
+    PROCESSED_TMSTAMP TIMESTAMP(6),
+    ERROR_DESCRIPTION VARCHAR(80),
+    ASCII_FILENAME    VARCHAR(50),
+    ORGANIZATION      CHAR(12)    not null,
+    PRIORITY          CHAR(5)
+);
+

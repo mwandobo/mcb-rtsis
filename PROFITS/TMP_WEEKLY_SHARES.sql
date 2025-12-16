@@ -1,0 +1,10 @@
+create table TMP_WEEKLY_SHARES
+(
+    APPL_TYPE      SMALLINT,
+    SHARE_ID       DECIMAL(10),
+    APPLICATION_ID DECIMAL(11),
+    SHARE_PRICE    DECIMAL(15, 2),
+    DATE_TO        DATE,
+    DATE_FROM      DATE
+);
+

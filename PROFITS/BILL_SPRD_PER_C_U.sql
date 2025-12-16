@@ -1,0 +1,14 @@
+create table BILL_SPRD_PER_C_U
+(
+    FK_CUSTOMERCUST_ID INTEGER      not null,
+    FK_BISS_CODE       INTEGER      not null,
+    BILLSPR_TMSTAMP    TIMESTAMP(6) not null,
+    BILLSPR_ENTRY_STAT CHAR(1)      not null,
+    BILLSPR_PERCENT    DECIMAL(8, 4),
+    BILLSPR_AMOUNT     DECIMAL(15, 2),
+    BILLSPR_SPRD_TYPE  CHAR(1)      not null,
+    BILLSPR_UTIL_AMNT  DECIMAL(15, 2),
+    constraint IXU_CIU_004
+        primary key (BILLSPR_ENTRY_STAT, BILLSPR_TMSTAMP, FK_BISS_CODE, FK_CUSTOMERCUST_ID)
+);
+

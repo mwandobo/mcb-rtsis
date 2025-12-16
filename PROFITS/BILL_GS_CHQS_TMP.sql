@@ -1,0 +1,31 @@
+create table BILL_GS_CHQS_TMP
+(
+    INTERNAL_SN         INTEGER      not null,
+    P_TMSTAMP           TIMESTAMP(6) not null,
+    P_USER              CHAR(8)      not null,
+    CHQ_BISS_CDIGIT     SMALLINT,
+    CHQ_ACCOUNT_CD      SMALLINT,
+    CHQ_REJECTION_CD    INTEGER,
+    CHQ_COLLAB_BANK_ID  INTEGER,
+    CHQ_BISS_CODE       INTEGER,
+    CHQ_BILL_SERIAL_NUM DECIMAL(10),
+    CHQ_SERIAL_NUM      DECIMAL(10),
+    CHQ_CW_SERIAL       DECIMAL(10),
+    FK_BILLGSREG_SERIAL DECIMAL(10),
+    CHQ_AMOUNT          DECIMAL(15, 2),
+    CHQ_INS_DATE        DATE,
+    CHQ_ISSUE_DATE      DATE,
+    CHQ_UPD_DATE        DATE,
+    CHQ_TMSTAMP         TIMESTAMP(6),
+    CHQ_MAN_PAY_FLG     CHAR(1),
+    CHQ_ENTRY_STATUS    CHAR(1),
+    CHQ_TYPE_FLG        CHAR(1),
+    CHQ_STATUS_FLAG     CHAR(1),
+    CHQ_UPD_USER        CHAR(8),
+    CHQ_NUMBER          CHAR(20),
+    CHQ_ACCOUNT_NUMBER  CHAR(40),
+    CHQ_CLEARING_DESC   CHAR(100),
+    constraint IXU_DEP_114
+        primary key (INTERNAL_SN, P_TMSTAMP, P_USER)
+);
+

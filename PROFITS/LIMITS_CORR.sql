@@ -1,0 +1,21 @@
+create table LIMITS_CORR
+(
+    PRFT_ACCOUNT       CHAR(40)    not null,
+    PROFITS_SYSTEM     INTEGER,
+    EST_INSURANCE_AMN  DECIMAL(15, 2),
+    EST_VALUE_AMN      DECIMAL(15, 2),
+    ENTRY_STATUS       CHAR(1)     not null,
+    INTERNAL_SN        SMALLINT    not null,
+    COL_EST_VALUE_AMN  DECIMAL(15, 2),
+    COL_EST_INSURANCE  DECIMAL(15, 2),
+    COLLATERAL_STATUS  CHAR(1),
+    COLLATERAL_SN      DECIMAL(10) not null,
+    LIQUID_FLG         CHAR(1),
+    FK_COLLATERALCOLLA DECIMAL(10) not null,
+    FK_COLLATERALFK_CO INTEGER     not null,
+    FK_COLLATERALFK_UN INTEGER     not null,
+    GL_ACCOUNT_CR      CHAR(21),
+    GL_ACCOUNT_DB      CHAR(21),
+    FK_CURRENCYID_CURR INTEGER
+);
+

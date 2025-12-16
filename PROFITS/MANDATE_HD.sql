@@ -1,0 +1,26 @@
+create table MANDATE_HD
+(
+    ACCOUNT_NUMBER    CHAR(40) not null,
+    PRFT_SYSTEM       SMALLINT not null,
+    ID_TRANSACT       INTEGER  not null,
+    ID_CHANNEL        INTEGER  not null,
+    STATUS            CHAR(1),
+    SEND_EMAIL        CHAR(1),
+    SEND_SMS          CHAR(1),
+    SEND_ALERT        CHAR(1),
+    MAND_INITIAT_DT   DATE,
+    MAND_DUR_UNIT     CHAR(1),
+    MAND_DUR_VALUE    SMALLINT,
+    ACCOUNT_LIMIT     DECIMAL(15, 2),
+    UTILIZED_LIMIT    DECIMAL(15, 2),
+    LIM_DUR_UNIT      CHAR(1),
+    LIM_DUR_VALUE     SMALLINT,
+    LIM_INITIATE_DATE DATE,
+    WAIT_DUR_UNIT     CHAR(1),
+    WAIT_DUR_VALUE    SMALLINT,
+    DESCRIPTION       VARCHAR(250),
+    TIMESTAMP         TIMESTAMP(6),
+    constraint PK_MANDATE_HD
+        primary key (ID_CHANNEL, ID_TRANSACT, PRFT_SYSTEM, ACCOUNT_NUMBER)
+);
+

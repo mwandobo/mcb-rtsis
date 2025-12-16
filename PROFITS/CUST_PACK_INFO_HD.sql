@@ -1,0 +1,14 @@
+create table CUST_PACK_INFO_HD
+(
+    ID_PACKAGE     INTEGER,
+    ID_PRODUCT     INTEGER,
+    CUST_ID        INTEGER,
+    TOTAL_ACCS     INTEGER,
+    INSERTION_DT   DATE,
+    PACKAGE_STATUS CHAR(1),
+    SELLING_USR    CHAR(8)
+);
+
+create unique index IXP_CUS_003
+    on CUST_PACK_INFO_HD (CUST_ID, ID_PACKAGE, ID_PRODUCT);
+

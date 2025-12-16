@@ -1,0 +1,32 @@
+create table DIF_FILE_DATA_DT
+(
+    REC_SN            INTEGER     not null,
+    FIELD_SN          INTEGER     not null,
+    ID_STRUCT         INTEGER,
+    GROUP_SN          SMALLINT,
+    FIELD_SECTION     SMALLINT,
+    FIELD_TYPE        CHAR(2),
+    FIELD_ROW         SMALLINT,
+    FIELD_CONTINUE    CHAR(1),
+    VALUE_NUMERIC     DECIMAL(18, 4),
+    DEC_MULTIPLIED    SMALLINT,
+    VALUE_DATE        DATE,
+    VALUE_TIMESTAMP   TIMESTAMP(6),
+    VALUE_CHAR        CHAR(100),
+    PROGGR_TOT_NUM    DECIMAL(18, 4),
+    CREATED_DATE      DATE,
+    CREATED_TIMESTAMP TIMESTAMP(6),
+    PROCESS_DATE      DATE,
+    PROCESS_STATUS    CHAR(1),
+    PROCESS_TIMESTAMP TIMESTAMP(6),
+    ERROR_DESCRIPTION VARCHAR(80),
+    FK_HD_FILE_TYPE   CHAR(5)     not null,
+    FK_HD_FILE_SN     DECIMAL(10) not null,
+    VALUE_TIME        TIME,
+    constraint IXU_DIFFILDT_001
+        primary key (FK_HD_FILE_TYPE, FK_HD_FILE_SN, REC_SN, FIELD_SN)
+);
+
+create unique index IX_VAR
+    on DIF_FILE_DATA_DT (ID_STRUCT, VALUE_CHAR);
+

@@ -1,0 +1,48 @@
+create table GLG_FCCONV_TRN
+(
+    FK_UNITCODE        INTEGER,
+    FK_USRCODE         CHAR(8),
+    LINE_NUM           SMALLINT,
+    TRN_DATE           DATE,
+    TRN_SNUM           INTEGER,
+    FK1UNITCODE        INTEGER,
+    FK_CURR_TABLE_PFK  INTEGER,
+    FK0UNITCODE        INTEGER,
+    FK_CURRENCYID_CURR INTEGER,
+    FK_CUSTOMERCODE    INTEGER,
+    FK_CURR_TABLE_PFK0 INTEGER,
+    DOC_NUM            INTEGER,
+    DEAL_SLIP_NUM      DECIMAL(10),
+    REF_NUM            DECIMAL(10),
+    RATE               DECIMAL(12, 6),
+    AMOUNT             DECIMAL(15, 2),
+    VALEUR_DATE        DATE,
+    GL_TRN_DATE        DATE,
+    CANCEL_DATE        DATE,
+    LEVEL0             CHAR(1),
+    REF_NUM_FLAG       CHAR(1),
+    RECON_FLAG         CHAR(1),
+    PRIM_AGRE_IND      CHAR(1),
+    TRN_TYPE           CHAR(1),
+    TRN_ACTION_TYPE    CHAR(1),
+    ENTRY_TYPE         CHAR(1),
+    DOC_TYPE           CHAR(1),
+    STATUS             CHAR(1),
+    AUTO_FLAG          CHAR(1),
+    FK_GLG_DOCUMENTDO0 CHAR(2),
+    FK_GLG_JOURNALJOUR CHAR(2),
+    SUBSYSTEM          CHAR(2),
+    FK_GLG_JUSTIFYJUST CHAR(4),
+    FK_GLG_CURR_CATCUR CHAR(4),
+    FK_GLG_DOCUMENTDOC CHAR(4),
+    FK_COST_MODEL_TTRN CHAR(6),
+    FK_GLG_MODEL_TRTRN CHAR(6),
+    DOC_CTL_NUM        CHAR(9),
+    TAX_REG_NO         CHAR(10),
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    REMARKS            VARCHAR(40)
+);
+
+create unique index IXU_GLG_072
+    on GLG_FCCONV_TRN (FK_UNITCODE, FK_USRCODE, LINE_NUM, TRN_DATE, TRN_SNUM);
+

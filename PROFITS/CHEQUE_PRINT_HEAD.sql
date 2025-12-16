@@ -1,0 +1,14 @@
+create table CHEQUE_PRINT_HEAD
+(
+    HEAD                       SMALLINT not null,
+    PRINTER_FONT               SMALLINT,
+    PRINTER_STATIC_STRING      VARCHAR(128),
+    PRINTER_POSITION           INTEGER,
+    PRINTER_DYNAMIC_START      SMALLINT,
+    PRINTER_JUSTIFICATION      SMALLINT not null,
+    PRINTER_ADV_SENSOR_DIST    INTEGER,
+    FK_CHEQUE_PRINTTEMPLATE_ID INTEGER  not null,
+    constraint PK_CHEQUE_HEAD
+        primary key (FK_CHEQUE_PRINTTEMPLATE_ID, HEAD)
+);
+

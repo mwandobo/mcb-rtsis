@@ -1,0 +1,21 @@
+create table CMSG_CATEGORIES_TASK
+(
+    CUST_ID        INTEGER     not null,
+    LINK_HEADER_ID DECIMAL(12) not null,
+    LINK_VALUE_ID  DECIMAL(12) not null,
+    TASK_ID        DECIMAL(12) not null,
+    ENABLE_EMAIL   CHAR(1),
+    ENABLE_SMS     CHAR(1),
+    ENABLE_PUSH    CHAR(1),
+    INSERT_UNIT    INTEGER,
+    INSERT_USER    CHAR(8),
+    INSERT_DATE    DATE,
+    INSERT_TMSTAMP TIMESTAMP(6),
+    UPDATE_UNIT    INTEGER,
+    UPDATE_USER    CHAR(8),
+    UPDATE_DATE    DATE,
+    UPDATE_TMSTAMP TIMESTAMP(6),
+    constraint IXU_CMSG_TASK_001
+        primary key (TASK_ID, LINK_VALUE_ID, LINK_HEADER_ID, CUST_ID)
+);
+

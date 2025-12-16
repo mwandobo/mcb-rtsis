@@ -1,0 +1,11 @@
+create table WFS_DTL_USER_EXCL
+(
+    USER_ID      CHAR(8),
+    FK_WF_HEADER DECIMAL(10),
+    FK_WF_DETAIL DECIMAL(10),
+    USER_STATUS  CHAR(1)
+);
+
+create unique index PK_WFD_UEXCL
+    on WFS_DTL_USER_EXCL (USER_ID, FK_WF_HEADER, FK_WF_DETAIL);
+

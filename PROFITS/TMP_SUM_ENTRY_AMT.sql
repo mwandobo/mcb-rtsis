@@ -1,0 +1,6 @@
+create table TMP_SUM_ENTRY_AMT
+(
+    ACCOUNT_NUMBER DECIMAL(11),
+    ENTRY_AMOUNT   DECIMAL(15, 2)
+);
+

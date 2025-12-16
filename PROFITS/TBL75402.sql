@@ -1,0 +1,21 @@
+create table TBL75402
+(
+    ID            INTEGER not null,
+    REC_LEVEL     SMALLINT,
+    UNIT          INTEGER,
+    INVENTORY     DECIMAL(18, 2),
+    GLG_INVENT    DECIMAL(18, 2),
+    GLG_REM_CR    DECIMAL(18, 2),
+    GLG_REM_DB    DECIMAL(18, 2),
+    YPOL_DB       DECIMAL(18, 2),
+    CURRENT_CR    DECIMAL(18, 2),
+    YPOL          DECIMAL(18, 2),
+    CURRENT_DB    DECIMAL(18, 2),
+    YPOL_CR       DECIMAL(18, 2),
+    CUR_TIMSTAMP  TIMESTAMP(6),
+    ACCOUNT_ID    CHAR(21),
+    REC_DESCR     CHAR(40),
+    UNIT_DESCR    CHAR(40),
+    ACCOUNT_DESCR CHAR(60)
+);
+

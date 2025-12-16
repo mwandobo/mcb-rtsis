@@ -1,0 +1,39 @@
+create table MG_TRACC_LOAD
+(
+    FILE_NAME          CHAR(50) not null,
+    SERIAL_NO          INTEGER  not null,
+    PRFT_CUST_C_DIGIT  SMALLINT,
+    TRACCOUNT_STATUS   SMALLINT,
+    PRFT_ACC_C_DIGIT   SMALLINT,
+    PRFT_TRACC_CD      SMALLINT,
+    BENEFICIARY_SN     SMALLINT,
+    PRFT_TRACC_TYPE    SMALLINT,
+    TRX_UNIT           INTEGER,
+    ACC_UNIT_CODE      INTEGER,
+    ACCOUNT_NO_TAUT    INTEGER,
+    PRFT_TRACC_UNIT    INTEGER,
+    PRFT_TRACC_SN      INTEGER,
+    PRFT_CUST_ID       INTEGER,
+    TRX_USR_SN         INTEGER,
+    PRFT_DEP_ACC_NO    DECIMAL(11),
+    OPENING_DATE       DATE,
+    TRX_DATE           DATE,
+    TR_PROCESS_DATE    DATE,
+    CUST_TYPE          CHAR(1),
+    CUST_STATUS        CHAR(1),
+    BENEFICIARY_TYPE   CHAR(1),
+    TR_SECURITIES_TYPE CHAR(1),
+    MG_ACCOUNT_TYPE    CHAR(5),
+    ACC_ID_CURRENCY    CHAR(5),
+    TRX_USER           CHAR(8),
+    TR_ACTIONDESC      CHAR(20),
+    ACCOUNT_LOAN_CATEG CHAR(30),
+    ACCOUNT_NO         CHAR(40),
+    TR_ERR_DESC        VARCHAR(80),
+    constraint IXU_MIG_044
+        primary key (FILE_NAME, SERIAL_NO)
+);
+
+create unique index SMGTRLO1
+    on MG_TRACC_LOAD (ACCOUNT_NO, ACCOUNT_NO_TAUT);
+

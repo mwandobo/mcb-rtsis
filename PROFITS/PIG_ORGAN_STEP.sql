@@ -1,0 +1,13 @@
+create table PIG_ORGAN_STEP
+(
+    FK_HAS_ORGANIZ  CHAR(10) not null,
+    PROCESS_STEP    SMALLINT not null,
+    IN_DCD_PRFT_SYS SMALLINT,
+    IN_DCD_LANG_ID  INTEGER,
+    IN_DCD_RULE_ID  DECIMAL(12),
+    TMSTAMP         TIMESTAMP(6),
+    DESCRIPTION     VARCHAR(40),
+    constraint IXU_PRD_018
+        primary key (FK_HAS_ORGANIZ, PROCESS_STEP)
+);
+

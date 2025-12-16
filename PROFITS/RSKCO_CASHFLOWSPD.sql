@@ -1,0 +1,20 @@
+create table RSKCO_CASHFLOWSPD
+(
+    REFERENCE_ID         CHAR(30) not null,
+    EXPORTDATE           DATE     not null,
+    PASTDUEDATE          DATE     not null,
+    DEFERREDINTERESTDECS SMALLINT,
+    PASTDUEAMOUNTDECS    SMALLINT,
+    INTERESTAMOUNTDECS   SMALLINT,
+    DEFERREDINTEREST     DECIMAL(15),
+    INTEREST             DECIMAL(15),
+    PASTDUEAMOUNT        DECIMAL(15),
+    INTERESTAMOUNT       DECIMAL(15),
+    PRFT_EXTRACTION_DT   DATE,
+    INTERESTDECS         CHAR(3),
+    CURRENCY             CHAR(3),
+    PRFT_ROUTINE         CHAR(20),
+    constraint IXU_LNS_040
+        primary key (REFERENCE_ID, EXPORTDATE, PASTDUEDATE)
+);
+

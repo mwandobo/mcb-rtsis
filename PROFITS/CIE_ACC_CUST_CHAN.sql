@@ -1,0 +1,15 @@
+create table CIE_ACC_CUST_CHAN
+(
+    FK_CUSTOMER       INTEGER  not null,
+    FK_ACCNUMBER      CHAR(40) not null,
+    MAX_TRANSACTIONS  SMALLINT,
+    SEQ_ORDER_NBR     SMALLINT,
+    UTILIZED_TRANS    SMALLINT,
+    MAX_AMOUNT        DECIMAL(15, 2),
+    UTILIZED_AMOUNT   DECIMAL(15, 2),
+    FK_UNIT_CATEGORID CHAR(8),
+    NICKNAME          CHAR(16),
+    constraint IXU_DEF_038
+        primary key (FK_CUSTOMER, FK_ACCNUMBER)
+);
+

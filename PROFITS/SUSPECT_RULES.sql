@@ -1,0 +1,14 @@
+create table SUSPECT_RULES
+(
+    ID_PRODUCT   INTEGER not null,
+    ID_TRANSACT  INTEGER not null,
+    DAILY_CASH   DECIMAL(15, 2),
+    TRX_AMOUNT   DECIMAL(15, 2),
+    IDLE_AMOUNT  DECIMAL(15, 2),
+    IDLE_MONTHS  DECIMAL(10),
+    SPLIT_AMOUNT DECIMAL(15, 2),
+    MINUTES      DECIMAL(10),
+    constraint PFK_SUSPECT_RULES
+        primary key (ID_TRANSACT, ID_PRODUCT)
+);
+

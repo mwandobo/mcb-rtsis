@@ -1,0 +1,13 @@
+create table TEMP_FINAL_DAY_SPR
+(
+    UNIT_CODE       INTEGER,
+    DP_RATE         DECIMAL(8, 4),
+    LNS_RATE        DECIMAL(8, 4),
+    LNS_BAL_DC_MULT DECIMAL(15, 2),
+    LNS_BAL_DC      DECIMAL(15, 2),
+    DP_BAL_DC_MULT  DECIMAL(15, 2),
+    DP_BALANCE_DC   DECIMAL(15, 2),
+    TRX_DATE        DATE,
+    UNIT_NAME       VARCHAR(40)
+);
+

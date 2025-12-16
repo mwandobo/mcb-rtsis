@@ -1,0 +1,22 @@
+create table ATM_DIAS_COM
+(
+    ATM_CODE        DECIMAL(10),
+    BANK_CODE       CHAR(3),
+    BANK_ROLE       CHAR(1),
+    PRODUCTION_DATE DATE,
+    TRANS_TYPE      CHAR(1),
+    ATM_UNIT        INTEGER,
+    TRANS_NUMB      DECIMAL(10),
+    GB_TAX          DECIMAL(15, 2),
+    GB_COM          DECIMAL(15, 2),
+    DIAS_COM_TAX    DECIMAL(15, 2),
+    DIAS_FPA        DECIMAL(15, 2),
+    DIAS_COM        DECIMAL(15, 2),
+    ACQ_BANK_TAX    DECIMAL(15, 2),
+    TRANS_AMT       DECIMAL(15, 2),
+    ACQ_BANK_COM    DECIMAL(15, 2)
+);
+
+create unique index IXU_ATM_005
+    on ATM_DIAS_COM (ATM_CODE, BANK_CODE, BANK_ROLE, PRODUCTION_DATE, TRANS_TYPE);
+

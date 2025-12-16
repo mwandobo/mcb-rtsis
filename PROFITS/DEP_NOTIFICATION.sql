@@ -1,0 +1,18 @@
+create table DEP_NOTIFICATION
+(
+    ACCOUNT_NUMBER    DECIMAL(11) not null,
+    REFERENCE_NUMBER  VARCHAR(20) not null,
+    C_DIGIT           SMALLINT,
+    REPRESENTATIVE_SN SMALLINT,
+    BENEFICIARY_SN    SMALLINT,
+    TRX_UNIT          INTEGER,
+    WITHDRAW_AMOUNT   DECIMAL(15, 2),
+    TIMESTMP          TIMESTAMP(6),
+    TRX_DATE          DATE,
+    WITHDRAW_DATE     DATE,
+    STATUS_FLAG       CHAR(1),
+    CLOSED_FLAG       CHAR(1),
+    constraint IXU_DEP_126
+        primary key (ACCOUNT_NUMBER, REFERENCE_NUMBER)
+);
+

@@ -1,0 +1,18 @@
+create table TBL_WEIGHT
+(
+    CUST_CD        SMALLINT,
+    LOAN_UNIT      INTEGER,
+    CUST_ID        INTEGER,
+    COVER_LIMIT    DECIMAL(15, 2),
+    WEIGHT_AMN     DECIMAL(15, 2),
+    REMAIN_AMN     DECIMAL(15, 2),
+    REC_DATE       DATE,
+    AGR_ACC_CD     CHAR(2),
+    LOAN_ACC_CD    CHAR(2),
+    LOAN_ACC_NUM   CHAR(40),
+    AGR_ACC_NUM    CHAR(40),
+    CUST_NAME      VARCHAR(20),
+    LOAN_UNIT_NAME VARCHAR(40),
+    SURNAME        VARCHAR(70)
+);
+

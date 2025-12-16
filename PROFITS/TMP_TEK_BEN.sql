@@ -1,0 +1,14 @@
+create table TMP_TEK_BEN
+(
+    BENEFICIARY_SN SMALLINT,
+    DEP_CUST_ID    INTEGER,
+    BEN_CUST_ID    INTEGER,
+    DEP_ACC_NUMBER DECIMAL(11),
+    FIRST_NAME     CHAR(20),
+    ACCOUNT_NUMBER CHAR(40),
+    SURNAME        CHAR(70)
+);
+
+create unique index IX_TEK_DEP_ACC_NO
+    on TMP_TEK_BEN (DEP_ACC_NUMBER);
+

@@ -1,0 +1,2 @@
+CREATE VIEW w_fact_user_totals  AS     SELECT fkunit_refers_to unit_code           ,production_date           ,fk_usrcode user_code           ,user_total.fk_currencyid_curr currency_id           ,currency.short_descr currency_code           ,cash_cr_tot_amnt - cash_db_tot_amnt cash_amount           ,fk_unit_has_corres           ,DECODE(usr.atm_user, '1', 'ATM', 'Non-ATM') atm_user_flag        FROM user_total            INNER JOIN usr ON usr.code = user_total.fk_usrcode            INNER JOIN currency               ON currency.id_currency = user_total.fk_currencyid_curr;
+

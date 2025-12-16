@@ -1,0 +1,11 @@
+create table CUSTOMER_COL_PERC
+(
+    CUST_ID      INTEGER,
+    ID_PRODUCT   INTEGER,
+    PERCENTAGE   DECIMAL(8, 4),
+    ENTRY_STATUS CHAR(1)
+);
+
+create unique index IXU_CUS_026
+    on CUSTOMER_COL_PERC (CUST_ID, ID_PRODUCT);
+

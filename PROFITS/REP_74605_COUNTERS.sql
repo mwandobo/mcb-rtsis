@@ -1,0 +1,11 @@
+create table REP_74605_COUNTERS
+(
+    PROCESS_DT  DATE,
+    PROGRAM_ID  CHAR(5),
+    NUMBER_FROM DECIMAL(13),
+    NUMBER_TO   DECIMAL(13)
+);
+
+create unique index IXP_REP_000
+    on REP_74605_COUNTERS (PROCESS_DT, PROGRAM_ID);
+

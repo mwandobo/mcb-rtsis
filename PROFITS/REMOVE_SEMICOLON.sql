@@ -1,0 +1,4 @@
+CREATE FUNCTION remove_semicolon(p_string VARCHAR(32000))
+RETURNS VARCHAR(32000)
+RETURN NVL(TRIM(REPLACE(p_string, ';')), '');
+

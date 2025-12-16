@@ -1,0 +1,13 @@
+create table SQL_BATCH_UPDATE
+(
+    BATCH_ID      CHAR(5),
+    SN            INTEGER,
+    SQL_STATEMENT VARCHAR(4000),
+    PROCESS_START TIMESTAMP(6),
+    PROCESS_END   TIMESTAMP(6),
+    RESULT        VARCHAR(50)
+);
+
+create unique index IXP_SQL_001
+    on SQL_BATCH_UPDATE (SN, BATCH_ID);
+

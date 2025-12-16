@@ -1,0 +1,31 @@
+create table LOAN_SUBS_OEK_INFO
+(
+    ACC_UNIT            INTEGER,
+    ACC_TYPE            SMALLINT,
+    ACC_SN              INTEGER,
+    REQUEST_TYPE        CHAR(1),
+    REQ_INSTALL_SN      SMALLINT,
+    TMSTAMP             TIMESTAMP(6),
+    TRX_CODE            INTEGER,
+    PURPOSE_ID          INTEGER,
+    ID_PRODUCT          INTEGER,
+    CUST_ID             INTEGER,
+    SELECTED_RATE       DECIMAL(9, 6),
+    NRM_SUBS2_BAL       DECIMAL(15, 2),
+    NRM_SUBS_BAL        DECIMAL(15, 2),
+    TOT_INSTALL_INT_AMN DECIMAL(15, 2),
+    CAP_AMN             DECIMAL(15, 2),
+    INSTALL_FIXED_AMN   DECIMAL(15, 2),
+    DRAWDOWN_AMN        DECIMAL(15, 2),
+    ACC_LIMIT_AMN       DECIMAL(15, 2),
+    RQ_CAPITAL_BAL      DECIMAL(15, 2),
+    FIN_CAPITAL_BAL     DECIMAL(15, 2),
+    INSTALL_FIRST_DT    DATE,
+    DRAWDOWN_DT         DATE,
+    INSTALL_NEXT_DT     DATE,
+    AGREEMENT_NUM       CHAR(20)
+);
+
+create unique index IXU_LOA_001
+    on LOAN_SUBS_OEK_INFO (ACC_UNIT, ACC_TYPE, ACC_SN, REQUEST_TYPE, REQ_INSTALL_SN, TMSTAMP);
+

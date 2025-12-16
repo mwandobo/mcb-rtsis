@@ -1,0 +1,17 @@
+create table PIG_DATAREC_HD_STP
+(
+    FK_HAS_HDASCDAT_TP CHAR(1)     not null,
+    FK_HAS_HDASCDAT_SN DECIMAL(10) not null,
+    PROCESS_STEP       SMALLINT    not null,
+    DCD_PRFT_SYS       SMALLINT,
+    DCD_LANG_ID        INTEGER,
+    TOT_PRCS_REC       INTEGER,
+    DCD_RULE_ID        DECIMAL(12),
+    PROCESSED_DATE     DATE,
+    PROCESSED_TMSTAMP  TIMESTAMP(6),
+    ORDER_TO_RUN       CHAR(1),
+    PROCESS_STATUS     CHAR(1),
+    constraint IXU_PRD_014
+        primary key (FK_HAS_HDASCDAT_TP, FK_HAS_HDASCDAT_SN, PROCESS_STEP)
+);
+

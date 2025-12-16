@@ -1,0 +1,15 @@
+create table SECURITIES_TYPE
+(
+    TYPE_ID            SMALLINT,
+    BANK_ACC_TYPE      SMALLINT,
+    BANK_STORE_CODE    INTEGER,
+    BANK_ACC_UNIT_CODE INTEGER,
+    BANK_ACC_SN        INTEGER,
+    MULTIACCOUNT_FLAG  CHAR(1),
+    COBENEF_FLAG       CHAR(1),
+    TYPE_DESC          CHAR(40)
+);
+
+create unique index IXU_SEC_003
+    on SECURITIES_TYPE (TYPE_ID);
+

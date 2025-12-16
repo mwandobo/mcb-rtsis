@@ -1,0 +1,19 @@
+create table AMORTIZ_CHARG_GL
+(
+    CHARGE_TYPE       CHAR(1) not null,
+    CHARGE_ID         INTEGER not null,
+    AMORTIZ_START_DT  DATE,
+    AMORTIZ_METHOD    CHAR(1),
+    AMORTIZ_CURRENCY  CHAR(1),
+    AMORTIZ_FIXRATE   CHAR(1),
+    AMORTIZED         SMALLINT,
+    AMORTIZ_ORIG_TYPE CHAR(1),
+    AMORTIZ_ORIGIN    INTEGER not null,
+    BAL_SHEET_ORIGIN  INTEGER,
+    BAL_GL_ACCOUNT    CHAR(21),
+    PROF_LOSS_GL_ACC  CHAR(21),
+    SUBSYSTEM         DECIMAL(5),
+    constraint PK_AMORTIZ_CHARGES
+        primary key (CHARGE_ID, CHARGE_TYPE)
+);
+

@@ -1,0 +1,46 @@
+create table CUST_ASSET_LIABIL
+(
+    ACCOUNT_NUMBER          CHAR(40) not null,
+    SERIAL_NUM              SMALLINT not null,
+    ACCOUNT_CD              SMALLINT,
+    ASSET_BALANCE           DECIMAL(15, 2),
+    AVERAGE_BALANCE         DECIMAL(15, 2),
+    DURATION_UNIT           CHAR(1),
+    DURATION_VALUE          SMALLINT,
+    ASSET_LIABIL_IND        CHAR(1)  not null,
+    AMOUNT_IN_LC            DECIMAL(15, 2),
+    TIMESTMP                TIMESTAMP(6),
+    FK_GENERIC_DETAFK       CHAR(5)  not null,
+    FK_GENERIC_DETASER      INTEGER  not null,
+    FK_CUST_CUSTOMERCUST_ID INTEGER  not null,
+    FK_YEAR                 SMALLINT not null,
+    FK0GENERIC_DETAFK       CHAR(5)  not null,
+    FK0GENERIC_DETASER      INTEGER  not null,
+    FK1GENERIC_DETAFK       CHAR(5)  not null,
+    FK1GENERIC_DETASER      INTEGER  not null,
+    FK_CURRENCYID_CURR      INTEGER  not null,
+    FK_SWIFT_BIC            CHAR(11) not null,
+    constraint PK_CUST_ASSETS_DATA
+        primary key (FK0GENERIC_DETAFK, FK0GENERIC_DETASER, FK1GENERIC_DETAFK, FK1GENERIC_DETASER, FK_SWIFT_BIC,
+                     FK_CURRENCYID_CURR, FK_CUST_CUSTOMERCUST_ID, FK_YEAR, FK_GENERIC_DETAFK, FK_GENERIC_DETASER,
+                     SERIAL_NUM, ASSET_LIABIL_IND, ACCOUNT_NUMBER)
+);
+
+create unique index I0000637
+    on CUST_ASSET_LIABIL (FK_CUST_CUSTOMERCUST_ID, FK_YEAR);
+
+create unique index I0000641
+    on CUST_ASSET_LIABIL (FK_GENERIC_DETAFK, FK_GENERIC_DETASER);
+
+create unique index I0000642
+    on CUST_ASSET_LIABIL (FK1GENERIC_DETAFK, FK1GENERIC_DETASER);
+
+create unique index I0000643
+    on CUST_ASSET_LIABIL (FK0GENERIC_DETAFK, FK0GENERIC_DETASER);
+
+create unique index I0000646
+    on CUST_ASSET_LIABIL (FK_CURRENCYID_CURR);
+
+create unique index I0000681
+    on CUST_ASSET_LIABIL (FK_SWIFT_BIC);
+

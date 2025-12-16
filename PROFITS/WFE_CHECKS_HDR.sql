@@ -1,0 +1,22 @@
+create table WFE_CHECKS_HDR
+(
+    WFE_CHECKS_ID      DECIMAL(10) not null,
+    APPLICATION_SYSTEM SMALLINT    not null,
+    APPLICATION_ID     CHAR(40)    not null,
+    CHECK_PROCESSED    CHAR(1),
+    CHECK_MANUAL       CHAR(1),
+    CHECK_NOTES        VARCHAR(2048),
+    CHECK_ADD_NOTES    CHAR(1),
+    CREATE_UNIT        INTEGER,
+    CREATE_DATE        DATE,
+    CREATE_USR         CHAR(8),
+    CREATE_TMSTAMP     TIMESTAMP(6),
+    UPDATE_UNIT        INTEGER,
+    UPDATE_DATE        DATE,
+    UPDATE_USR         CHAR(8),
+    UPDATE_TMSTAMP     TIMESTAMP(6),
+    FK_WFS_CHECKS      DECIMAL(10),
+    constraint PK_WFE_CHECKS_HDR
+        primary key (APPLICATION_ID, APPLICATION_SYSTEM, WFE_CHECKS_ID)
+);
+

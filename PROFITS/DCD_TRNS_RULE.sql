@@ -1,0 +1,38 @@
+create table DCD_TRNS_RULE
+(
+    CODE               CHAR(8)      not null,
+    ID                 DECIMAL(12)  not null,
+    PRFT_SYSTEM        SMALLINT     not null,
+    SNUM               INTEGER      not null,
+    TMPSTAMP           TIMESTAMP(6) not null,
+    CALL_RULE_SYSTEM   SMALLINT,
+    ROUTINE_SYSTEM     SMALLINT,
+    UPDATE_FIELD_LINE  INTEGER,
+    DCD_EXIT_STATE_ID  DECIMAL(10),
+    ROUTINE_CODE       DECIMAL(12),
+    CALL_RULE_ID       DECIMAL(12),
+    STATUS0            CHAR(1),
+    UPDATE_FIELD       CHAR(1),
+    DISABLE_LINE       CHAR(1),
+    ENTIRE_LINE_FLG    CHAR(2),
+    DATE_ADD           CHAR(2),
+    CHECK_FIELD_FLG    CHAR(2),
+    FUNCTION_PERFORMED CHAR(3),
+    LABEL_LINE         CHAR(10),
+    LABEL_GOTO         CHAR(10),
+    PASSWORD           CHAR(26),
+    XXX_FIRST_FIELD    CHAR(30),
+    XXX_SECOND_FIELD   CHAR(30),
+    XXX_CALCULATION    CHAR(30),
+    FIRST_TABLE_NAME   CHAR(40),
+    CALC_ATTRIBUE      CHAR(40),
+    CALC_TABLE         CHAR(40),
+    FIRST_ATTRIBUTE    CHAR(40),
+    SECOND_TABLE_NAME  CHAR(40),
+    SECOND_ATTRIBUTE   CHAR(40),
+    RULE_DESCRIPTION   CHAR(50),
+    LINE_DESCRIPTION   CHAR(60),
+    constraint IXU_DEF_074
+        primary key (CODE, ID, PRFT_SYSTEM, SNUM, TMPSTAMP)
+);
+

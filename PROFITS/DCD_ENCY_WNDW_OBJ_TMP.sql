@@ -1,0 +1,30 @@
+create table DCD_ENCY_WNDW_OBJ_TMP
+(
+    FK_PRFT_PROC_ID   INTEGER     not null,
+    ENCY_OBJ_ID       DECIMAL(12) not null,
+    OBJ_NAME          CHAR(40),
+    OBJ_TYPE_CODE     DECIMAL(12) not null,
+    OBJ_UPPER_CASE    CHAR(1),
+    OBJ_READ_ONLY     CHAR(1),
+    OBJ_MARGIN_BOX    CHAR(1),
+    OBJ_EDIT_ALIGN    CHAR(1),
+    OBJ_AUTOSCROLL    CHAR(1),
+    OBJ_AUTOTAB       CHAR(1),
+    OBJ_POS_LEFT      DECIMAL(10),
+    OBJ_POS_BOTTOM    DECIMAL(10),
+    OBJ_POS_RIGHT     DECIMAL(10),
+    OBJ_POS_TOP       DECIMAL(10),
+    OBJ_PROMPT_LEFT   DECIMAL(10),
+    OBJ_PROMPT_RIGHT  DECIMAL(10),
+    OBJ_PROMPT_TOP    DECIMAL(10),
+    OBJ_LENGTH        DECIMAL(10),
+    OBJ_TAB_ORDER     DECIMAL(10),
+    OBJ_PROMPT        CHAR(40),
+    STATUS0           CHAR(1),
+    USE_STATUS        CHAR(1),
+    TMPSTAMP          TIMESTAMP(6),
+    OBJ_PROMPT_BOTTOM DECIMAL(10),
+    constraint DCDPKLOA
+        primary key (ENCY_OBJ_ID, FK_PRFT_PROC_ID)
+);
+

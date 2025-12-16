@@ -1,0 +1,26 @@
+create table WFS_KPI_VALUE
+(
+    KPI_VALUE_SN       DECIMAL(10) not null,
+    FK_WFS_KPI         DECIMAL(10) not null,
+    KPI_VALUE_SN_LABEL VARCHAR(40),
+    KPI_VALUE_ORDER    INTEGER,
+    KPI_DESCRIPTION    VARCHAR(80),
+    KPI_ANALYSIS       VARCHAR(2048),
+    KPI_STEP_VALUE     DECIMAL(18, 4),
+    KPI_VALUE_SQL      VARCHAR(4000),
+    FIELD_1            VARCHAR(20),
+    EVALUATE_1         VARCHAR(5),
+    FIELD_2            VARCHAR(20),
+    EVALUATE_2         VARCHAR(5),
+    CREATE_UNIT        INTEGER,
+    CREATE_DATE        DATE,
+    CREATE_USR         CHAR(8),
+    CREATE_TMSTAMP     TIMESTAMP(6),
+    UPDATE_UNIT        INTEGER,
+    UPDATE_DATE        DATE,
+    UPDATE_TMSTAMP     TIMESTAMP(6),
+    UPDATE_USR         CHAR(8),
+    constraint PK_WFS_SCORE_KPI_VALUE
+        primary key (KPI_VALUE_SN, FK_WFS_KPI)
+);
+

@@ -1,0 +1,17 @@
+create table BILL_TRIAL_BALANCE
+(
+    TRX_UNIT        INTEGER not null,
+    TRX_DATE        DATE    not null,
+    CUST_ID         INTEGER not null,
+    DB_NORMAL_AMNT  DECIMAL(15, 2),
+    DB_NORMAL_CNT   INTEGER,
+    DB_OVERDUE_AMNT DECIMAL(15, 2),
+    DB_OVERDUE_CNT  INTEGER,
+    CR_NORMAL_AMNT  DECIMAL(15, 2),
+    CR_NORMAL_CNT   INTEGER,
+    CR_OVERDUE_AMNT DECIMAL(15, 2),
+    CR_OVERDUE_CNT  INTEGER,
+    constraint IXU_BILL_119
+        primary key (CUST_ID, TRX_DATE, TRX_UNIT)
+);
+

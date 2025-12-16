@@ -1,0 +1,25 @@
+create table TEMP_UNUSUAL_VALEUR
+(
+    C_DIGIT          SMALLINT,
+    ACCOUNT_CD       SMALLINT,
+    PRFT_SYSTEM      SMALLINT,
+    AVAIL_DAYS       SMALLINT,
+    VALUE_DAYS       SMALLINT,
+    TRX_UNIT         INTEGER,
+    ID_JUSTIFICATION INTEGER,
+    ID_TRANSACTION   INTEGER,
+    ID_PRODUCT       INTEGER,
+    ACC_CURRENCY     INTEGER,
+    ACC_UNIT         INTEGER,
+    CUST_ID          INTEGER,
+    AMOUNT           DECIMAL(15, 2),
+    TRX_DATE         DATE,
+    VALEUR_DATE      DATE,
+    AVAILABLE_DATE   DATE,
+    DEFAULT_VALEUR   DATE,
+    DEFAULT_AVAIL    DATE,
+    BATCH_USER       CHAR(1),
+    TRX_USER         CHAR(8),
+    ACCOUNT_NO       CHAR(40)
+);
+

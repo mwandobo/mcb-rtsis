@@ -1,0 +1,18 @@
+create table ATM_MAES_EXP_AUTH
+(
+    AUTHORIZATION_REFE DECIMAL(15) not null,
+    YEAR0              SMALLINT    not null,
+    PROCESS_STATE      CHAR(1),
+    PRODUCTION_DATE    DATE,
+    CARD_NUMBER        CHAR(19),
+    BANK_ACCOUNT_NUM   DECIMAL(18),
+    TRX_AMOUNT         DECIMAL(15, 2),
+    TRX_CUR_ID_ISO     SMALLINT,
+    TRX_DATE           DATE,
+    AUTHORIZATION_CODE CHAR(6),
+    PROFITS_RESULT     CHAR(80),
+    SEQUENCE_NUM       INTEGER,
+    constraint I0002190
+        primary key (YEAR0, AUTHORIZATION_REFE)
+);
+

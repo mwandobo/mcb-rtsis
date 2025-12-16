@@ -1,0 +1,14 @@
+create table DOUBTFUL_ID_AFM
+(
+    ID_AFM_NO     CHAR(20),
+    TYPE          CHAR(1),
+    FKGD_HAS_TYPE INTEGER,
+    TMSTAMP       TIMESTAMP(6),
+    ENTRY_STATUS  CHAR(1),
+    FKGH_HAS_TYPE CHAR(5),
+    ENTRY_COMMENT CHAR(100)
+);
+
+create unique index IXU_DOU_000
+    on DOUBTFUL_ID_AFM (ID_AFM_NO, TYPE);
+

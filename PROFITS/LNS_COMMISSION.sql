@@ -1,0 +1,23 @@
+create table LNS_COMMISSION
+(
+    ID_COMMISSION      INTEGER,
+    USAGE_COUNTER      SMALLINT,
+    DAYSBASE           SMALLINT,
+    FK_CURRENCYID_CURR INTEGER,
+    CONFIRM_DATE       DATE,
+    TMSTAMP            TIMESTAMP(6),
+    INT_COM_IND        CHAR(1),
+    CONFIRM_IND        CHAR(1),
+    APPLY_COM          CHAR(1),
+    DAYS_RETRIEVAL_IND CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    CURRENCY_EXIST_FLG CHAR(1),
+    RATE_IND           CHAR(1),
+    AMOUNT_IND         CHAR(1),
+    SHORT_DESCR        CHAR(5),
+    DESCRIPTION        VARCHAR(40)
+);
+
+create unique index IXU_LNS_009
+    on LNS_COMMISSION (ID_COMMISSION);
+

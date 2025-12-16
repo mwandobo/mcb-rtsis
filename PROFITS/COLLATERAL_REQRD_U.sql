@@ -1,0 +1,23 @@
+create table COLLATERAL_REQRD_U
+(
+    CUST_ID        INTEGER  not null,
+    COL_PRODUCT_ID INTEGER  not null,
+    ACCOUNT_NUMBER CHAR(40) not null,
+    PRFT_SYSTEM    SMALLINT not null,
+    ACCOUNT_CD     SMALLINT,
+    ACC_UNIT       INTEGER,
+    ACC_TYPE       SMALLINT,
+    ACC_SN         DECIMAL(11),
+    INSERTION_DT   DATE,
+    INSERTION_UNIT INTEGER,
+    INSERTION_USER CHAR(8),
+    UPDATE_DT      DATE,
+    UPDATE_UNIT    INTEGER,
+    UPDATE_USER    CHAR(8),
+    COL_PERCENTAGE DECIMAL(8, 4),
+    COL_AMOUNT     DECIMAL(15, 2),
+    TMSTAMP        TIMESTAMP(6),
+    constraint IXU_CIU_009
+        primary key (PRFT_SYSTEM, ACCOUNT_NUMBER, COL_PRODUCT_ID, CUST_ID)
+);
+

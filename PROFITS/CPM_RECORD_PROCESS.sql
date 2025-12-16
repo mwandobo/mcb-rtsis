@@ -1,0 +1,26 @@
+create table CPM_RECORD_PROCESS
+(
+    PROCESS_SN            DECIMAL(15) not null,
+    FK_CPM_FILE_DETAIL_SN DECIMAL(15) not null,
+    FK_CPM_FILE_HEADER_SN DECIMAL(15) not null,
+    PROCESS_SN_LINKED     DECIMAL(15),
+    LOAN_ACCOUNT_UNIT     INTEGER,
+    LOAN_ACCOUNT_TYPE     SMALLINT,
+    LOAN_ACCOUNT_SN       INTEGER,
+    LOAN_ACCOUNT_CD       SMALLINT,
+    GL_ACCOUNT            VARCHAR(40),
+    PROFITS_ACCOUNT       VARCHAR(40),
+    CUSTOMER              DECIMAL(10),
+    AMOUNT_REQUESTED      DECIMAL(18, 2),
+    AMOUNT_PROCESSED      DECIMAL(18, 2),
+    COMMENTS              VARCHAR(100),
+    TRX_USR               CHAR(8),
+    STATUS                CHAR(2),
+    TMSTAMP               TIMESTAMP(6),
+    IS_REPRESENTATIVE     CHAR(1),
+    REPRESENTATIVE_NAME   VARCHAR(30),
+    TP_TASK               CHAR(8),
+    constraint ICPM0838
+        primary key (FK_CPM_FILE_HEADER_SN, FK_CPM_FILE_DETAIL_SN, PROCESS_SN)
+);
+

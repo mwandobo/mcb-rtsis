@@ -1,0 +1,6 @@
+create table TMP_TBL_LOAN_MKT2
+(
+    FINAL_PERC     DECIMAL(15, 2),
+    ACCOUNT_NUMBER CHAR(40)
+);
+

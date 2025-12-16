@@ -1,0 +1,13 @@
+create table TR_BLOCK_DT
+(
+    FK_TR_BLOCK_HDCODE INTEGER  not null,
+    FK_TRBONDBOND_CODE CHAR(15) not null,
+    AVAILABLE_QTY      DECIMAL(18, 3),
+    BLOCK_QTY          DECIMAL(18, 3),
+    BLOCK_COMMENTS     VARCHAR(80),
+    AVAIL_FACE_VALUE   DECIMAL(18, 3),
+    BLOCKED_FACE_VALUE DECIMAL(18, 3),
+    constraint PKTRBLO0
+        primary key (FK_TRBONDBOND_CODE, FK_TR_BLOCK_HDCODE)
+);
+

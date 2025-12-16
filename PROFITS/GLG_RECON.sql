@@ -1,0 +1,34 @@
+create table GLG_RECON
+(
+    ACCOUNT_ID     CHAR(21),
+    TRN_UNIT_ID    INTEGER,
+    GL_TRN_DATE    DATE,
+    DOC_ID         CHAR(4),
+    DOC_SERIES     CHAR(2),
+    DOC_NUM        INTEGER,
+    LINE_NUM       SMALLINT,
+    CURRENCY_ID    INTEGER,
+    RC_LINE_NUM    SMALLINT,
+    RECON_RECS     INTEGER,
+    RC_TRN_UNIT_ID INTEGER,
+    CUST_ID        INTEGER,
+    RC_DOC_NUM     INTEGER,
+    AMN_TO_RECON   DECIMAL(15, 2),
+    AMOUNT         DECIMAL(15, 2),
+    RC_GL_TRN_DATE DATE,
+    TIMESTMP       TIMESTAMP(6),
+    RECON_TYPE     CHAR(1),
+    ENTRY_TYPE     CHAR(1),
+    RC_DOC_SERIES  CHAR(2),
+    JUST_CODE      CHAR(4),
+    RC_DOC_ID      CHAR(4),
+    TRX_USR        CHAR(8),
+    RECON_REFNO    VARCHAR(40),
+    REC_REFNO      VARCHAR(40),
+    TUN            VARCHAR(40),
+    REMARKS        VARCHAR(100)
+);
+
+create unique index IXU_GLG_088
+    on GLG_RECON (ACCOUNT_ID, TRN_UNIT_ID, GL_TRN_DATE, DOC_ID, DOC_SERIES, DOC_NUM, LINE_NUM, CURRENCY_ID);
+

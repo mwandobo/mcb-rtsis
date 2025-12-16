@@ -1,0 +1,27 @@
+create table ISS_STATEMENT
+(
+    ISS_TRX_UNIT        INTEGER not null,
+    ISS_TRX_DATE        DATE    not null,
+    ISS_TRX_USR         CHAR(8) not null,
+    ISS_TRX_USR_SN      INTEGER not null,
+    OTHER_TRX_UNIT      INTEGER,
+    OTHER_TRX_DATE      DATE,
+    OTHER_TRX_USR       CHAR(8),
+    OTHER_TRX_USR_SN    INTEGER,
+    TP_SO_IDENTIFIER    DECIMAL(10),
+    ID_TRANSACT         INTEGER,
+    ID_JUSTIFIC         INTEGER,
+    DB_INSUR_AMNT       DECIMAL(15, 2),
+    CR_INSUR_AMNT       DECIMAL(15, 2),
+    DB_ACCNT_AMNT       DECIMAL(15, 2),
+    CR_ACCNT_AMOUNT     DECIMAL(15, 2),
+    PROGRESSIVE_BALANCE DECIMAL(15, 2),
+    I_COMMENTS          CHAR(40),
+    TMSTAMP             TIMESTAMP(6),
+    REVERSAL_FLAG       CHAR(1),
+    OUTSTANDING_AMNT    DECIMAL(15, 2)
+);
+
+create unique index IXU_ISS_STAT_1
+    on ISS_STATEMENT (ISS_TRX_UNIT, ISS_TRX_DATE, ISS_TRX_USR, ISS_TRX_USR_SN);
+

@@ -1,0 +1,12 @@
+create table TRMSGOUTDTL
+(
+    FK_MSGHDR_TRXDATE  DATE     not null,
+    FK_MSGHDR_SWIFTNUM SMALLINT not null,
+    FK_MSGHDR_MSGOUTSN SMALLINT not null,
+    MSGOUT_TAG_SN      SMALLINT not null,
+    MSGOUT_TAG         CHAR(3),
+    MSGOUT_TAG_VALUE   VARCHAR(251),
+    constraint IXU_DEP_152
+        primary key (FK_MSGHDR_TRXDATE, FK_MSGHDR_SWIFTNUM, FK_MSGHDR_MSGOUTSN, MSGOUT_TAG_SN)
+);
+

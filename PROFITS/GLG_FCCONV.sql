@@ -1,0 +1,19 @@
+create table GLG_FCCONV
+(
+    TRAN_ID            CHAR(6),
+    DEACTIVATION_DATE  DATE,
+    TIMESTMP           TIMESTAMP(6),
+    CHANGE_STATUS_FLAG CHAR(1),
+    STATUS             CHAR(1),
+    LEVEL0             CHAR(1),
+    FK_GLG_DOCUMENTDO0 CHAR(2),
+    FK_GLG_CNC_DOC_SER CHAR(2),
+    FK_GLG_CNC_DOC_ID  CHAR(4),
+    FK_GLG_JUSTIFYJUST CHAR(4),
+    FK_GLG_DOCUMENTDOC CHAR(4),
+    FK_GLG_ACCOUNTACCO CHAR(21)
+);
+
+create unique index IXU_GLG_071
+    on GLG_FCCONV (TRAN_ID);
+

@@ -1,0 +1,6 @@
+create table DIAS_STOIXEIA_SWIFT_PARAM
+(
+    DATE_FROM DATE,
+    DATE_TO   DATE
+);
+

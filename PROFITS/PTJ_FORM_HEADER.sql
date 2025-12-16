@@ -1,0 +1,19 @@
+create table PTJ_FORM_HEADER
+(
+    PTJ_HDR_LINK_ID  DECIMAL(10) not null,
+    FK_FORM_CODE     CHAR(20)    not null,
+    PTJ_HDR_DESC     VARCHAR(80),
+    PTJ_HDR_ANALYSIS LONG VARCHAR(32700),
+    CREATE_USER      CHAR(8),
+    CREATE_UNIT      INTEGER,
+    CREATE_DATE      DATE,
+    CREATE_TMSTAMP   TIMESTAMP(6),
+    UPDATE_USER      CHAR(8),
+    UPDATE_UNIT      INTEGER,
+    UPDATE_DATE      DATE,
+    UPDATE_TMSTAMP   TIMESTAMP(6),
+    ENTRY_STATUS     CHAR(1),
+    constraint PK_PTJ_PARAM_1
+        primary key (FK_FORM_CODE, PTJ_HDR_LINK_ID)
+);
+

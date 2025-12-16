@@ -1,0 +1,18 @@
+create table WRH_INTER_RESULT_M
+(
+    ACCOUNT_NUMBER     CHAR(40) not null,
+    PRFT_SYSTEM        SMALLINT not null,
+    PRODUCT_ID         INTEGER,
+    CURRENCY_ID        INTEGER,
+    UNIT_CODE          INTEGER,
+    CUST_ID            INTEGER,
+    OV_MONTH_STEP_AMN  DECIMAL(15, 2),
+    OV_MONTH_TRX_BAL   DECIMAL(15, 2),
+    NRM_MONTH_POS_BAL  DECIMAL(15, 2),
+    NRM_MONTH_NEG_STEP DECIMAL(15, 2),
+    NRM_MONTH_NEG_BAL  DECIMAL(15, 2),
+    NRM_MONTH_POS_STEP DECIMAL(15, 2),
+    constraint IXU_EOM_012
+        primary key (ACCOUNT_NUMBER, PRFT_SYSTEM)
+);
+

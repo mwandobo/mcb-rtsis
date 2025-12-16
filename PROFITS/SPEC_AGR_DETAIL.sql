@@ -1,0 +1,25 @@
+create table SPEC_AGR_DETAIL
+(
+    FK_SPEC_AGR_PARAM    CHAR(10) not null,
+    FK_SPEC_AGR_CATEG    CHAR(8)  not null,
+    TRX_ID               INTEGER  not null,
+    JUSTIF_ID            INTEGER  not null,
+    PROD_ID              INTEGER  not null,
+    AVAIL_DATE_SPREAD    SMALLINT,
+    VALUE_DATE_SPREAD    SMALLINT,
+    COMM_DISCOUNT        DECIMAL(8, 4),
+    CHARGES_DISCOUNT     DECIMAL(8, 4),
+    TMSTAMP              TIMESTAMP(6),
+    FK_TAX_FIRST         INTEGER,
+    FK_TAX_SECOND        INTEGER,
+    FK_TAX_THIRD         INTEGER,
+    FK_EXPENSE_FIRST     INTEGER,
+    FK_EXPENSE_SECOND    INTEGER,
+    FK_EXPENSE_THIRD     INTEGER,
+    FK_COMMISSION_FIRST  INTEGER,
+    FK_COMMISSION_SECOND INTEGER,
+    FK_COMMISSION_THIRD  INTEGER,
+    constraint IXU_SPE_001
+        primary key (FK_SPEC_AGR_PARAM, FK_SPEC_AGR_CATEG, TRX_ID, JUSTIF_ID, PROD_ID)
+);
+

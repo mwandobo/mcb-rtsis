@@ -1,0 +1,17 @@
+create table REG_BANK_POLICY
+(
+    CNTRY_ISO_CODE   CHAR(2),
+    REGION           SMALLINT,
+    TMSTAMP          TIMESTAMP(6),
+    DESCR1           CHAR(40),
+    DESCR            CHAR(40),
+    CENTRAL_BANK_T72 CHAR(12),
+    CENTRAL_BANK_BIC CHAR(12),
+    RECON_BANK_BIC   CHAR(12),
+    RECON_KEY1       CHAR(40),
+    RECON_FIN_COPY   VARCHAR(9)
+);
+
+create unique index IXU_REG_001
+    on REG_BANK_POLICY (CNTRY_ISO_CODE, REGION);
+

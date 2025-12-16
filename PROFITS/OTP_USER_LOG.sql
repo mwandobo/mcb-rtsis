@@ -1,0 +1,27 @@
+create table OTP_USER_LOG
+(
+    CHANNEL_ID        INTEGER      not null,
+    EXT_USER          VARCHAR(100) not null,
+    EXT_KEY           VARCHAR(100) not null,
+    CURR_TRX_DATE     DATE         not null,
+    TMSTAMP_KEY       TIMESTAMP(6) not null,
+    LOG_ACTION        VARCHAR(500),
+    LOG_RESULT        VARCHAR(250),
+    LOG_ERROR_AB      VARCHAR(100),
+    ALERT_SEND_EMAIL  CHAR(1),
+    ALERT_SEND_SMS    CHAR(1),
+    ALERT_EXT_EMAIL   VARCHAR(80),
+    ALERT_EXT_MOBILE  VARCHAR(80),
+    ALERT_CUST_EMAIL  VARCHAR(80),
+    ALERT_CUST_MOBILE VARCHAR(80),
+    CBS_CUSTOMER_ID   DECIMAL(10),
+    CBS_USER_ID       CHAR(40),
+    SEND_EMAIL_OTP    CHAR(1),
+    SEND_SMS_OTP      CHAR(1),
+    USR_COMMENTS      VARCHAR(500),
+    KEY_COMMENTS      VARCHAR(80),
+    KEY_REFERENCE     CHAR(40),
+    constraint PK_OTPLOG
+        primary key (TMSTAMP_KEY, CURR_TRX_DATE, EXT_KEY, EXT_USER, CHANNEL_ID)
+);
+

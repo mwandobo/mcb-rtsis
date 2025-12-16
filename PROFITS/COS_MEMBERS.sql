@@ -1,0 +1,42 @@
+create table COS_MEMBERS
+(
+    MEMBER_ID             DECIMAL(10),
+    MEMBER_STATUS         SMALLINT,
+    ASSEMBLY_NUMBER       SMALLINT,
+    COUNCIL_NUMBER        SMALLINT,
+    MONITORING_UNIT       INTEGER,
+    CUSTOMER_ID           INTEGER,
+    SHARES_TOTAL          DECIMAL(10),
+    DELETION_DATE         DATE,
+    CREATION_DATE         DATE,
+    UPDATED_DATE          DATE,
+    CREATED_DATE          DATE,
+    COUNCIL_DATE          DATE,
+    ASSEMBLY_DATE         DATE,
+    UPDATED_TIMESTAMP     TIMESTAMP(6),
+    UPDATED_BY            CHAR(8),
+    CREATED_BY            CHAR(8),
+    REG_ACCOUNT           CHAR(40),
+    DIVIDENT_ACCOUNT      CHAR(40),
+    ENTRY_STATUS          CHAR(1),
+    BL_INDICATOR          CHAR(1),
+    CURR_PRORATA_AMNT     DECIMAL(15, 2),
+    WITHDRAW_PERCENTAGE   DECIMAL(8, 4),
+    WITHDRAWAL_REASON     VARCHAR(40),
+    FKGH_HAS_SUBFLAG      CHAR(1),
+    FKGD_HAS_SUBFLAG      INTEGER,
+    PREV_SUB_FLAG         SMALLINT,
+    PENDING_WITHDRAWAL_DT DATE,
+    BLOCKED_DATE          DATE,
+    EMPLOYER_FEE          DECIMAL(15, 2),
+    WITHDRAWAL_DATE       DATE,
+    READMISSION_DATE      DATE,
+    BLOCKED_REASON        VARCHAR(40)
+);
+
+create unique index IXN_CP_998
+    on COS_MEMBERS (CUSTOMER_ID);
+
+create unique index IXU_COS_012
+    on COS_MEMBERS (MEMBER_ID);
+

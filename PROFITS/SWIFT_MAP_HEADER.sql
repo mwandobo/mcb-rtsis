@@ -1,0 +1,13 @@
+create table SWIFT_MAP_HEADER
+(
+    MESSAGE_TYPE  CHAR(20) not null,
+    ID_TRANSACT   INTEGER  not null,
+    MSG_CATEGORY  CHAR(1)  not null,
+    RUN_ORDER     SMALLINT,
+    RUN_REF_SWIFT SMALLINT,
+    INTERNAL_SN   DECIMAL(10),
+    DESCRIPTION   VARCHAR(500),
+    constraint IXU_FX_044
+        primary key (MESSAGE_TYPE, ID_TRANSACT, MSG_CATEGORY)
+);
+

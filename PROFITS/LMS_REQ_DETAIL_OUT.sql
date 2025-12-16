@@ -1,0 +1,29 @@
+create table LMS_REQ_DETAIL_OUT
+(
+    LMS_BANKS_SN         DECIMAL(10)  not null,
+    TMSTAMP              TIMESTAMP(6) not null,
+    SN                   DECIMAL(10)  not null,
+    DATE_KEY_ACTIVE      DATE,
+    HASH_INPUT           CHAR(240),
+    BANK_ACTIVATION_CODE CHAR(250),
+    BANK_ACTIVATION_FULL CHAR(250),
+    LICENSE_UNIQUE_ID    VARCHAR(16),
+    ACTIVATION_LENGTH    INTEGER,
+    EMAIL_FILENAME       CHAR(250),
+    K_BANK_CODE          SMALLINT     not null,
+    K_CURR_TRX_DATE      DATE,
+    K_SCHEDULED_DATE     DATE,
+    K_BANK_TAX_REG_NO    VARCHAR(10),
+    K_BANK_NAME          VARCHAR(40),
+    K_BANK_ADDRESS       VARCHAR(40),
+    K_VDATABASE_DBID     DECIMAL(15),
+    K_VDATABASE_NAME     CHAR(15),
+    K_VINSTANCE_HOST     CHAR(15),
+    K_VINSTANCE_NAME     CHAR(15),
+    K_MAC_ADDRESS        CHAR(80),
+    K_DATABASE_USER      CHAR(80),
+    LICENSE_COMMENTS     VARCHAR(500),
+    constraint PK_LMS_6
+        primary key (LMS_BANKS_SN, TMSTAMP, SN)
+);
+

@@ -1,0 +1,12 @@
+create table BRANCH_PORTFOLIO
+(
+    BRANCH         INTEGER,
+    PORTFOLIO_CODE INTEGER,
+    ENTRY_STATUS   CHAR(1),
+    FK_USRCODE     CHAR(8),
+    DESCRIPTION    CHAR(40)
+);
+
+create unique index IXU_BRA_002
+    on BRANCH_PORTFOLIO (BRANCH, PORTFOLIO_CODE);
+

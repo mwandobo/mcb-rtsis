@@ -1,0 +1,35 @@
+create table GLG_ATE_INTERFACE
+(
+    TRN_DATE           DATE     not null,
+    TRN_SNUM           INTEGER  not null,
+    GL_TRN_DATE        DATE,
+    DOC_NUM            INTEGER,
+    DOC_TYPE           CHAR(1),
+    LINE_NUM           SMALLINT not null,
+    REMARKS            CHAR(20),
+    TRN_ACTION_TYPE    CHAR(1),
+    TRN_TYPE           CHAR(1),
+    CANCEL_DATE        DATE,
+    ACCNT_LEVEL        CHAR(1),
+    RECON_FLAG         CHAR(1),
+    AMOUNT             DECIMAL(15, 2),
+    ENTRY_TYPE         CHAR(1),
+    VALEUR_DATE        DATE,
+    ENTRY_STATUS       CHAR(1),
+    AUTO_FLAG          CHAR(1),
+    SUBSYSTEM          CHAR(2),
+    REATE              DECIMAL(12, 6),
+    FK_USRCODE         CHAR(8)  not null,
+    FK_UNIT_MANIPULATE INTEGER  not null,
+    FK_CURRENCYID_CURR INTEGER,
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    FK_GLG_JOURNALJOUR CHAR(2),
+    FK_GLG_JUSTIFYJUST CHAR(4),
+    FK_GLG_DOCUMENTSER CHAR(2),
+    FK_GLG_DOCUMENT_ID CHAR(4),
+    FK_UNIT_TRANSACTIO INTEGER,
+    FK_UNIT_RECONSILIA INTEGER,
+    constraint PIXATEIN
+        primary key (FK_USRCODE, FK_UNIT_MANIPULATE, LINE_NUM, TRN_SNUM, TRN_DATE)
+);
+

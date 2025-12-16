@@ -1,0 +1,46 @@
+create table CUST_PROPERTY_DATA
+(
+    SERIAL_NUM              SMALLINT not null,
+    PROPERTY_VALUE          DECIMAL(15, 2),
+    REGISTER_NUMBER         CHAR(50),
+    FOLIO_NO                CHAR(40),
+    BLOCK_NO                CHAR(40),
+    PLOT_NO                 CHAR(40),
+    PERCENTAGE              SMALLINT,
+    AMOUNT_IN_LC            DECIMAL(15, 2),
+    TIMESTMP                TIMESTAMP(6),
+    FK_CUST_CUSTOMERCUST_ID INTEGER  not null,
+    FK_CUST_YEAR            SMALLINT not null,
+    FK_CURRENCYID_CURR      INTEGER  not null,
+    FK_GENERIC_DETAFK       CHAR(5)  not null,
+    FK_GENERIC_DETASER      INTEGER  not null,
+    FK0GENERIC_DETAFK       CHAR(5)  not null,
+    FK0GENERIC_DETASER      INTEGER  not null,
+    FK_CUST_ADDR_PASN       INTEGER  not null,
+    FK_CUST_ADDR_PACODE     CHAR(8)  not null,
+    FK1GENERIC_DETAFK       CHAR(5)  not null,
+    FK1GENERIC_DETASER      INTEGER  not null,
+    constraint PK_CUST_PROPERTY_DATA
+        primary key (FK0GENERIC_DETAFK, FK0GENERIC_DETASER, FK1GENERIC_DETAFK, FK1GENERIC_DETASER, FK_CUST_ADDR_PASN,
+                     FK_CUST_ADDR_PACODE, FK_CURRENCYID_CURR, FK_GENERIC_DETAFK, FK_GENERIC_DETASER,
+                     FK_CUST_CUSTOMERCUST_ID, FK_CUST_YEAR, SERIAL_NUM)
+);
+
+create unique index I0000629
+    on CUST_PROPERTY_DATA (FK_CUST_CUSTOMERCUST_ID, FK_CUST_YEAR);
+
+create unique index I0000631
+    on CUST_PROPERTY_DATA (FK_GENERIC_DETAFK, FK_GENERIC_DETASER);
+
+create unique index I0000632
+    on CUST_PROPERTY_DATA (FK_CURRENCYID_CURR);
+
+create unique index I0000635
+    on CUST_PROPERTY_DATA (FK0GENERIC_DETAFK, FK0GENERIC_DETASER);
+
+create unique index I0000696
+    on CUST_PROPERTY_DATA (FK1GENERIC_DETAFK, FK1GENERIC_DETASER);
+
+create unique index I0010694
+    on CUST_PROPERTY_DATA (FK_CUST_ADDR_PASN, FK_CUST_ADDR_PACODE);
+

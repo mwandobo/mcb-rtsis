@@ -1,0 +1,8 @@
+create table TMP_N128_PROG_BAL
+(
+    EUR_SUM_AMT DECIMAL(15, 2),
+    PROG_BAL    DECIMAL(15, 2),
+    TRX_DATE    DATE,
+    N128_PERC   VARCHAR(10)
+);
+

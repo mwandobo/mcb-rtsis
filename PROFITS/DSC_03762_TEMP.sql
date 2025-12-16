@@ -1,0 +1,38 @@
+create table DSC_03762_TEMP
+(
+    P_USER                CHAR(8)      not null,
+    P_TMSTAMP             TIMESTAMP(6) not null,
+    INTERNAL_SN           DECIMAL(10)  not null,
+    COLL_UNIT             INTEGER,
+    BUY_CASH_CNT_TXT      CHAR(20),
+    BUY_CASH_AMNT_TXT     CHAR(20),
+    BUY_CR_ACC_AMNT_TXT   CHAR(20),
+    BUY_CR_ACC_CNT_TXT    CHAR(20),
+    PAID_CR_ACC_CNT_TXT   CHAR(20),
+    PAID_CR_ACC_AMNT_TXT  CHAR(20),
+    PAID_CASH_AMNT_TXT    CHAR(20),
+    PAID_CASH_CNT_TXT     CHAR(20),
+    RETURN_CASH_AMNT_TXT  CHAR(20),
+    RETURN_CASH_CNT_TXT   CHAR(20),
+    RETURN_CRACC_AMNT_TXT CHAR(20),
+    RETURN_CRACC_CNT_TXT  CHAR(20),
+    CHAR_37               CHAR(37),
+    TOT_CURR_PAYABLE_AMNT DECIMAL(15, 2),
+    TOT_CURR_COUNT        INTEGER,
+    CURR_SHORT_DESCR      CHAR(5),
+    RET_CASH_AMNT         DECIMAL(15, 2),
+    RET_CASH_CNT          INTEGER,
+    RET_CRACC_AMNT        DECIMAL(15, 2),
+    RET_CRACC_CNT         INTEGER,
+    PAID_CASH_AMNT        DECIMAL(15, 2),
+    PAID_CASH_CNT         INTEGER,
+    PAID_CRACC_AMNT       DECIMAL(15, 2),
+    PAID_CRACC_CNT        INTEGER,
+    BUY_CASH_AMNT         DECIMAL(15, 2),
+    BUY_CASH_CNT          INTEGER,
+    BUY_CRACC_AMNT        DECIMAL(15, 2),
+    BUY_CRACC_CNT         INTEGER,
+    constraint IXU_DSC_001
+        primary key (INTERNAL_SN, P_USER, P_TMSTAMP)
+);
+

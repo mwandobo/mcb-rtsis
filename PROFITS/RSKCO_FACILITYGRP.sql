@@ -1,0 +1,10 @@
+create table RSKCO_FACILITYGRP
+(
+    FACILITY_REFERENCE CHAR(50) not null,
+    GROUP_REFERENCE    CHAR(30) not null,
+    PRFT_EXTRACTION_DT DATE,
+    PRFT_ROUTINE       CHAR(20),
+    constraint IXU_LNS_044
+        primary key (FACILITY_REFERENCE, GROUP_REFERENCE)
+);
+

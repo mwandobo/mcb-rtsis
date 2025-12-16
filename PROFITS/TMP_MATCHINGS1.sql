@@ -1,0 +1,7 @@
+create table TMP_MATCHINGS1
+(
+    ACQ_NUM     DECIMAL(10),
+    DIS_APPL_ID DECIMAL(11),
+    ACQ_APPL_ID DECIMAL(11)
+);
+

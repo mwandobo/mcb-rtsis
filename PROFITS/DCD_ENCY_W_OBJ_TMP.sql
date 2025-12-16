@@ -1,0 +1,36 @@
+create table DCD_ENCY_W_OBJ_TMP
+(
+    FK_PRFT_PROC_ID    INTEGER     not null,
+    ENCY_OBJ_ID        DECIMAL(12) not null,
+    OBJ_TAB_ORDER      DECIMAL(10),
+    OBJ_LENGTH         DECIMAL(10),
+    OBJ_PROMPT_TOP     DECIMAL(10),
+    OBJ_PROMPT_RIGHT   DECIMAL(10),
+    OBJ_PROMPT_BOTTON  DECIMAL(10),
+    OBJ_PROMPT_LEFT    DECIMAL(10),
+    OBJ_POS_TOP        DECIMAL(10),
+    OBJ_POS_RIGHT      DECIMAL(10),
+    OBJ_POS_BOTTON     DECIMAL(10),
+    OBJ_POS_LEFT       DECIMAL(10),
+    LIST_OBJECT_ID     DECIMAL(12),
+    OBJ_TYPE_CODE      DECIMAL(12),
+    TMPSTAMP           TIMESTAMP(6),
+    CHECK0             CHAR(1),
+    OBJ_AUTOSCROLL     CHAR(1),
+    USE_STATUS         CHAR(1),
+    STATUS0            CHAR(1),
+    OBJ_AUTOTAB        CHAR(1),
+    OBJ_EDIT_ALIGN     CHAR(1),
+    OBJ_MARGIN_BOX     CHAR(1),
+    OBJ_READ_ONLY      CHAR(1),
+    OBJ_UPPER_CASE     CHAR(1),
+    FK_TABLE_ATTRIBUTE CHAR(40),
+    OBJ_PROMPT         CHAR(40),
+    ALIAS0             CHAR(40),
+    OBJ_NAME           CHAR(40),
+    GROUP_NAME         CHAR(40),
+    FK_TABLE_NAME      CHAR(40),
+    constraint IXU_DEF_043
+        primary key (FK_PRFT_PROC_ID, ENCY_OBJ_ID)
+);
+

@@ -1,0 +1,34 @@
+create table IPS_METADATA
+(
+    ORDER_CODE        VARCHAR(20) not null
+        constraint PK_IPS_METADATA
+            primary key,
+    ORGANIZATION_CODE INTEGER,
+    REMITTANCE_CODE   CHAR(20),
+    REMITTANCE_SN     INTEGER,
+    DATAFIELD_1       CHAR(50),
+    DATAFIELD_2       CHAR(50),
+    DATAFIELD_3       CHAR(50),
+    DATAFIELD_4       CHAR(50),
+    DATAFIELD_5       CHAR(50),
+    DATAFIELD_6       CHAR(50),
+    ENTRY_COMMENTS    VARCHAR(40),
+    TRX_DATE          DATE,
+    DATA_TIMESTAMP    TIMESTAMP(6),
+    FULL_NAME         VARCHAR(100),
+    ADDRESS_LINE_1    VARCHAR(100),
+    ADDRESS_LINE_2    VARCHAR(100),
+    ADDRESS_COUNTRY   CHAR(2),
+    IDENTITY_VALUE    VARCHAR(20),
+    IDENTITY_TYPE     CHAR(5),
+    RESIDENCE_COUNTRY CHAR(2),
+    TELEPHONE_NO      VARCHAR(20),
+    WS_TRX_UNIT       INTEGER,
+    WS_TRX_DATE       DATE,
+    WS_TRX_USR        CHAR(8),
+    WS_TRX_USR_SN     INTEGER
+);
+
+create unique index INDX_DEBIT_2
+    on IPS_METADATA (TRX_DATE);
+

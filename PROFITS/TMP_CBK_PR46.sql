@@ -1,0 +1,30 @@
+create table TMP_CBK_PR46
+(
+    FK_UNITCODE       INTEGER,
+    ACC_TYPE          SMALLINT,
+    ACC_SN            INTEGER,
+    NUMBER_OF_LOANS   INTEGER,
+    ACCOUNT_NAME      VARCHAR(100),
+    ACCOUNT_NUMBER    CHAR(40) not null
+        constraint PK_TMP_CBK_PR46
+            primary key,
+    CUST_ID           INTEGER,
+    TAX_ID            CHAR(20),
+    ACCOUNT_TYPE      VARCHAR(9),
+    DIR_OWNER_CUSTID  DECIMAL(15, 2),
+    DIRECTOR_TAX_ID   CHAR(20),
+    DIRECTOR_OWNER    CHAR(100),
+    DRAWDOWN_FST_DT   DATE,
+    CREDIT_FACILITIES VARCHAR(80),
+    ACC_LIMIT_AMN     DECIMAL(15, 2),
+    EURO_BOOK_BAL     DECIMAL(15, 2),
+    NON_PERF_DATE     DATE,
+    PRINCIPAL_OWE     DECIMAL(15, 2),
+    INTEREST_ACCR     DECIMAL(15, 2),
+    RECOVERY_EXP      DECIMAL(15, 2),
+    CLASS_CATEG       CHAR(100)
+);
+
+create unique index IDX_TMP_CBK_PR46
+    on TMP_CBK_PR46 (CUST_ID);
+

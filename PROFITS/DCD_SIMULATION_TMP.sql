@@ -1,0 +1,27 @@
+create table DCD_SIMULATION_TMP
+(
+    SIMULATE_TMSTAMP   TIMESTAMP(6) not null,
+    SIMULATION_SN      DECIMAL(10)  not null,
+    PRFT_SYSTEM        SMALLINT,
+    GROUP_ID           INTEGER,
+    DEC_PLACES         INTEGER,
+    FIELD_LENGTH       INTEGER,
+    GROUP_CARDINALITY  DECIMAL(10),
+    RULE_ID            DECIMAL(12),
+    DATA_NUMBER_18_4   DECIMAL(18, 4),
+    DATA_DATE          DATE,
+    DATA_TMSTAMP       TIMESTAMP(6),
+    INPUT_OUTPUT_FLG   CHAR(1),
+    FIELD_TYPE         CHAR(2),
+    DATA_FLAG_2        CHAR(2),
+    SIMULATE_ATTRIBUTE CHAR(40),
+    SIMULATE_ENTITY    CHAR(40),
+    SIMULATE_ALIAS     CHAR(40),
+    DESCRIPTION        CHAR(40),
+    GROUP_NAME         CHAR(50),
+    DATA_TEXT          VARCHAR(100),
+    DATA_TIME          TIME,
+    constraint IXU_DEF_061
+        primary key (SIMULATE_TMSTAMP, SIMULATION_SN)
+);
+

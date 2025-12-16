@@ -1,0 +1,13 @@
+create table TMP_GLG_UNIT_TOTAL
+(
+    FK_CURRENCYID_CURR INTEGER,
+    FK_UNITCODE        INTEGER,
+    RATE               DECIMAL(12, 6),
+    SUM_CREDIT         DECIMAL(15, 2),
+    EUR_SUM_CREDIT     DECIMAL(15, 2),
+    SUM_DEBIT          DECIMAL(15, 2),
+    EUR_SUM_DEBIT      DECIMAL(15, 2),
+    SHORT_DESCR        CHAR(5),
+    FK_GLG_ACCOUNTACCO CHAR(21)
+);
+

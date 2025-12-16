@@ -1,0 +1,20 @@
+create table WSI_CHANNEL_TRX
+(
+    SERVICES_SN        DECIMAL(12) not null,
+    USAGE_REASON       LONG VARCHAR(32700),
+    FK_WSI_TRX_COMMAND CHAR(80)    not null,
+    FK_WSI_TRX_ID      VARCHAR(20) not null,
+    FK_DISTR_CHANNEL   INTEGER     not null,
+    CHANNEL_TRX_STS    CHAR(1),
+    CREATE_UNIT        INTEGER,
+    CREATE_USER        CHAR(8),
+    CREATE_DATE        DATE,
+    CREATE_TMSTAMP     TIMESTAMP(6),
+    UPDATE_UNIT        INTEGER,
+    UPDATE_USER        CHAR(8),
+    UPDATE_DATE        DATE,
+    UPDATE_TMSTAMP     TIMESTAMP(6),
+    constraint PK_WSI_1000
+        primary key (FK_WSI_TRX_COMMAND, FK_WSI_TRX_ID, FK_DISTR_CHANNEL, SERVICES_SN)
+);
+

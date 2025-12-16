@@ -1,0 +1,6 @@
+create table ACTUAL_DOCUMENT_SO
+(
+    CR_DR_AMOUNT DECIMAL(17, 2),
+    LG_AMOUNT    DECIMAL(17, 2)
+);
+

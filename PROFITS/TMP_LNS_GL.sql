@@ -1,0 +1,12 @@
+create table TMP_LNS_GL
+(
+    DR_CNTR_GL_ACC      VARCHAR(21),
+    SUM_OV_ACC_BOOK_BAL DECIMAL(15, 2),
+    SUM_LEGER_BALANCE   DECIMAL(15, 2),
+    SUM_DR_LEGER_DIFF   DECIMAL(15, 2),
+    SUM_GL_BALANCE      DECIMAL(15, 2),
+    SUM_DR_GL_DIFF      DECIMAL(15, 2),
+    FIXING              DECIMAL(8, 4),
+    ID_CURRENCY         INTEGER
+);
+

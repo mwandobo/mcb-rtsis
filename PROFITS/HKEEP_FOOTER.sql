@@ -1,0 +1,11 @@
+create table HKEEP_FOOTER
+(
+    FK_IDN             INTEGER,
+    TOTAL_ROWS_DELETED DECIMAL(20),
+    TOTAL_EXECUTIONS   DECIMAL(10),
+    AVG_TIME_ELAPSED   VARCHAR(50)
+);
+
+create unique index IXH_FTR_001
+    on HKEEP_FOOTER (FK_IDN);
+

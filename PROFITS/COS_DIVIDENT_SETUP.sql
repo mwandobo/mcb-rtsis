@@ -1,0 +1,23 @@
+create table COS_DIVIDENT_SETUP
+(
+    CUT_OFF_DATE    DATE                  not null,
+    DECISION_DATE   DATE                  not null,
+    DEP_TRANSACT    INTEGER,
+    DEP_JUSTIFIC    INTEGER,
+    DIVIDENT_AMOUNT DECIMAL(15, 2),
+    CREATED_DATE    DATE,
+    BLOCK_EXP_DT    DATE,
+    PAYMENT_DATE    DATE,
+    CREATED_TIME    TIMESTAMP(6),
+    YEAR_OF_USE     CHAR(4),
+    CREATED_BY      CHAR(8),
+    BUCKET_ACCOUNT  CHAR(40),
+    ACTIVE_FLAG     VARCHAR(1),
+    SERVICE_PRODUCT INTEGER default 38001 not null,
+    constraint IXU_CP_071
+        primary key (SERVICE_PRODUCT, CUT_OFF_DATE, DECISION_DATE)
+);
+
+create unique index IXU_CP_071
+    on COS_DIVIDENT_SETUP (CUT_OFF_DATE, DECISION_DATE);
+

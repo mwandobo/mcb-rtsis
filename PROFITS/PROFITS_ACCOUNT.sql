@@ -1,0 +1,91 @@
+create table PROFITS_ACCOUNT
+(
+    ACCOUNT_NUMBER     CHAR(40),
+    PRFT_SYSTEM        SMALLINT,
+    MONOTORING_UNIT    INTEGER,
+    ACCOUNT_CD         SMALLINT,
+    CUST_ID            INTEGER,
+    C_DIGIT            SMALLINT,
+    PRODUCT_ID         INTEGER,
+    ACC_STATUS         CHAR(1),
+    LNS_OPEN_UNIT      INTEGER,
+    LNS_TYPE           SMALLINT,
+    LNS_SN             INTEGER,
+    MOVEMENT_CURRENCY  INTEGER,
+    LIMIT_CURRENCY     INTEGER,
+    AGR_UNIT           INTEGER,
+    AGR_YEAR           SMALLINT,
+    AGR_SN             INTEGER,
+    AGR_MEMBERSHIP_SN  INTEGER,
+    LG_ACC_SN          DECIMAL(13),
+    LG_OPEN_UNIT       INTEGER,
+    DEP_ACC_NUMBER     DECIMAL(11),
+    DEP_OPEN_UNIT      INTEGER,
+    TR_OPEN_UNIT       INTEGER,
+    TR_TYPE            SMALLINT,
+    TR_SN              INTEGER,
+    ID_PACKAGE         INTEGER,
+    CURRENT_ACC_USAGE  CHAR(1),
+    CURRENT_FOR_ALL    CHAR(1),
+    CURRENT_ACCOUNT    CHAR(1),
+    MULTI_CURR_ORDER   SMALLINT,
+    MULTI_CURR_FLAG    CHAR(1),
+    ACCOUNT_SER_NUM    DECIMAL(11),
+    EXTSYS_FLG         CHAR(1),
+    EXTSYS_PROCESS_DT  DATE,
+    EXTSYS_AMN_1       DECIMAL(15, 2),
+    EXTSYS_AMN_2       DECIMAL(15, 2),
+    EXTSYS_AMN_3       DECIMAL(15, 2),
+    EXTSYS_AMN_4       DECIMAL(15, 2),
+    EXTSYS_AMN_5       DECIMAL(15, 2),
+    EXTSYS_AMN_6       DECIMAL(15, 2),
+    EXTSYS_AMN_7       DECIMAL(15, 2),
+    EXTSYS_AMN_8       DECIMAL(15, 2),
+    EXTSYS_AMN_9       DECIMAL(15, 2),
+    EXTSYS_AMN_10      DECIMAL(15, 2),
+    WFS_HEADER         DECIMAL(10),
+    WFE_HEADER         DECIMAL(12),
+    WFS_DETAIL         DECIMAL(10),
+    WFE_DETAIL         DECIMAL(12),
+    GENERIC_ACCOUNT_NO CHAR(40),
+    IBAN               CHAR(50),
+    ACCOUNT_NUM_CD     CHAR(42),
+    ATM_CARD_FLAG      CHAR(1),
+    APPLICATION_ID     CHAR(30),
+    SECONDARY_ACC      CHAR(1) default ' ',
+    CREATE_TIMESTAMP   TIMESTAMP(6)
+);
+
+create unique index IDX_ACCOUNT_SER_NUM
+    on PROFITS_ACCOUNT (ACCOUNT_SER_NUM);
+
+create unique index IXN_LOA_036
+    on PROFITS_ACCOUNT (AGR_SN, AGR_MEMBERSHIP_SN);
+
+create unique index IXN_PRO_000
+    on PROFITS_ACCOUNT (LNS_OPEN_UNIT, LNS_TYPE, LNS_SN);
+
+create unique index IXN_PRO_001
+    on PROFITS_ACCOUNT (AGR_UNIT, AGR_YEAR, AGR_SN, AGR_MEMBERSHIP_SN);
+
+create unique index IXN_PRO_002
+    on PROFITS_ACCOUNT (CUST_ID);
+
+create unique index IXN_PRO_003
+    on PROFITS_ACCOUNT (DEP_ACC_NUMBER, PRFT_SYSTEM);
+
+create unique index IXN_PRO_004
+    on PROFITS_ACCOUNT (DEP_ACC_NUMBER);
+
+create unique index IXN_PRO_006
+    on PROFITS_ACCOUNT (PRFT_SYSTEM, LG_ACC_SN);
+
+create unique index IXN_PRO_007
+    on PROFITS_ACCOUNT (LG_ACC_SN);
+
+create unique index IXN_PRO_008
+    on PROFITS_ACCOUNT (PRODUCT_ID);
+
+create unique index IXP_PRO_005
+    on PROFITS_ACCOUNT (ACCOUNT_NUMBER, PRFT_SYSTEM);
+

@@ -1,0 +1,12 @@
+create table PRF_ACC_CNT
+(
+    PRFT_SYSTEM SMALLINT,
+    FIELD1      DECIMAL(15),
+    FIELD2      DECIMAL(15),
+    FIELD3      DECIMAL(15),
+    FIELD4      DECIMAL(15)
+);
+
+create unique index IXU_PRF_005
+    on PRF_ACC_CNT (PRFT_SYSTEM, FIELD1, FIELD2, FIELD3);
+

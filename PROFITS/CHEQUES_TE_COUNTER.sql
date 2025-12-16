@@ -1,0 +1,12 @@
+create table CHEQUES_TE_COUNTER
+(
+    TYPE         CHAR(5),
+    TYPE_NUMBER1 INTEGER,
+    TYPE_NUMBER2 INTEGER,
+    CNTR         DECIMAL(10),
+    TMSTAMP      TIMESTAMP(6)
+);
+
+create unique index IXU_CHE_008
+    on CHEQUES_TE_COUNTER (TYPE, TYPE_NUMBER1, TYPE_NUMBER2);
+

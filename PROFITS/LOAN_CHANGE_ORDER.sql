@@ -1,0 +1,32 @@
+create table LOAN_CHANGE_ORDER
+(
+    VALIDITY_DATE     DATE     not null,
+    CHANGE_SN         INTEGER  not null,
+    ACC_UNIT          INTEGER  not null,
+    ACC_TYPE          SMALLINT not null,
+    ACC_SN            INTEGER  not null,
+    CALCULATION_DATE  DATE,
+    CALCULATION_IND   CHAR(1),
+    FIX_INTEREST      INTEGER,
+    FIX_START_DATE    DATE,
+    FIX_END_DATE      DATE,
+    FIX_SCALE_DATE    DATE,
+    FIX_AUTO_RENEWAL  CHAR(1),
+    FIX_CANCEL_DATE   CHAR(1),
+    FLOAT_INTEREST    INTEGER,
+    PENALTY_INTEREST  INTEGER,
+    CONTR_INTEREST    INTEGER,
+    TRX_USER          CHAR(8),
+    COMMENTS          VARCHAR(40),
+    TMSTAMP           TIMESTAMP(6),
+    ENTRY_STATUS      CHAR(1),
+    PROCESSED_STATUS  CHAR(1),
+    PROCESSED_TMSTAMP TIMESTAMP(6),
+    PROCESSED_ERROR   VARCHAR(100),
+    FREEZE_FLAG       CHAR(1),
+    UN_FREEZE_DATE    DATE,
+    INSTANCE_NO       CHAR(5),
+    constraint I0001135
+        primary key (ACC_SN, ACC_TYPE, ACC_UNIT, CHANGE_SN, VALIDITY_DATE)
+);
+

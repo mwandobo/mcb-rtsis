@@ -1,0 +1,23 @@
+create table PROFITS_INFORM
+(
+    KEY_USER_ID        VARCHAR(50)  not null,
+    KEY_SN             DECIMAL(10)  not null,
+    KEY_TMSTAMP        TIMESTAMP(6) not null,
+    KEY_RETURN         VARCHAR(60)  not null,
+    PROFITS_CUST_ID    INTEGER,
+    PROFITS_C_DIGIT    SMALLINT,
+    PROFITS_USER_ID    CHAR(8),
+    USER_NAME          VARCHAR(256),
+    USER_PASSWORD      VARCHAR(128),
+    USER_EMAIL         VARCHAR(256),
+    USER_MOBILE        VARCHAR(15),
+    FILE_PASSWORD      VARCHAR(128),
+    EXTSYS_FIRST_NAME  CHAR(20),
+    EXTSYS_SURNAME     CHAR(70),
+    EXTSYS_PERSON_TYPE CHAR(2),
+    EXTSYS_INDICATOR   CHAR(1),
+    EXTSYS_COMMENTS    VARCHAR(240),
+    constraint PK_PRFT_SEND_2
+        primary key (KEY_RETURN, KEY_TMSTAMP, KEY_SN, KEY_USER_ID)
+);
+

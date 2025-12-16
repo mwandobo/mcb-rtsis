@@ -1,0 +1,14 @@
+create table LG_TRIAL_BALANCE
+(
+    TRX_DATE        DATE,
+    ACC_SN          DECIMAL(15, 2),
+    COMMISSION_AMN  DECIMAL(15, 2),
+    LG_AMOUNT_BAL   DECIMAL(15, 2),
+    LG_AMOUNT_IN_DC DECIMAL(15, 2),
+    LG_INITIAL_AMN  DECIMAL(15, 2),
+    REQUEST_AMN     DECIMAL(15, 2)
+);
+
+create unique index IXU_LG_001
+    on LG_TRIAL_BALANCE (TRX_DATE, ACC_SN);
+

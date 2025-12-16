@@ -1,0 +1,61 @@
+create table GLG_FINAL_TRN
+(
+    FK_UNITCODE        INTEGER,
+    FK_USRCODE         CHAR(8),
+    LINE_NUM           SMALLINT,
+    TRN_SNUM           INTEGER,
+    TRN_DATE           DATE,
+    FK1UNITCODE        INTEGER,
+    DEPT_SN            INTEGER,
+    FK0UNITCODE        INTEGER,
+    FK_CURR_TABLE_PFK  INTEGER,
+    FK_CURRENCYID_CURR INTEGER,
+    FK_CUSTOMERCODE    INTEGER,
+    FK_CURR_TABLE_PFK0 INTEGER,
+    DOC_NUM            INTEGER,
+    DEAL_SLIP_NUM      DECIMAL(10),
+    REF_NUM            DECIMAL(10),
+    RATE               DECIMAL(12, 6),
+    AMOUNT             DECIMAL(15, 2),
+    VALEUR_DATE        DATE,
+    CANCEL_DATE        DATE,
+    GL_TRN_DATE        DATE,
+    ENTRY_TYPE         CHAR(1),
+    TRN_ACTION_TYPE    CHAR(1),
+    DOC_TYPE           CHAR(1),
+    AUTO_FLAG          CHAR(1),
+    RECON_FLAG         CHAR(1),
+    TRN_TYPE           CHAR(1),
+    STATUS0            CHAR(1),
+    LEVEL0             CHAR(1),
+    REF_NUM_FLAG       CHAR(1),
+    PRIM_AGRE_IND      CHAR(1),
+    FK_GLG_JOURNALJOUR CHAR(2),
+    SUBSYSTEM          CHAR(2),
+    FK_GLG_DOCUMENTDO0 CHAR(2),
+    FK_GLG_JUSTIFYJUST CHAR(4),
+    FK_GLG_DOCUMENTDOC CHAR(4),
+    FK_GLG_CURR_CATCUR CHAR(4),
+    FK_GLG_MODEL_TRTRN CHAR(6),
+    FK_COST_MODEL_TTRN CHAR(6),
+    FK_GLG_COST_PROCOS CHAR(10),
+    TAX_REG_NO         CHAR(10),
+    CUST_ADD_INFO      CHAR(20),
+    DOC_CTL_NUM        CHAR(20),
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    REMARKS            VARCHAR(80),
+    TERMINAL_NO        VARCHAR(99),
+    COMMENT_REMARKS    VARCHAR(80),
+    EOM_UPDATE         VARCHAR(1),
+    ID_PRODUCT         DECIMAL(5)
+);
+
+create unique index IXN_GLG_001
+    on GLG_FINAL_TRN (FK1UNITCODE, FK_CURRENCYID_CURR, FK_GLG_ACCOUNTACCO, GL_TRN_DATE);
+
+create unique index IXN_GLG_007
+    on GLG_FINAL_TRN (FK_CUSTOMERCODE);
+
+create unique index IXU_GLG_031
+    on GLG_FINAL_TRN (FK_UNITCODE, FK_USRCODE, LINE_NUM, TRN_SNUM, TRN_DATE);
+

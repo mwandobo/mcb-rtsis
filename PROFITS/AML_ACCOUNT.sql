@@ -1,0 +1,52 @@
+create table AML_ACCOUNT
+(
+    PRFT_SYSTEM       SMALLINT not null,
+    PRFT_ACCOUNT_NUM  CHAR(40) not null,
+    PRFT_ACCOUNT_CD   SMALLINT,
+    NUMBERACCOUNTS    SMALLINT,
+    BUSINESSTYPE      INTEGER,
+    GEN_DET_SER_NUM   INTEGER,
+    TARIFF            INTEGER,
+    CUST_CUSTNO       INTEGER,
+    ACCNO             DECIMAL(11),
+    SUMDEBRUNYEAR     DECIMAL(15, 2),
+    ACCLIMIT          DECIMAL(15, 2),
+    ACCBALANCE        DECIMAL(15, 2),
+    SUMCREDRUNYEAR    DECIMAL(15, 2),
+    CONTR_ENDDATE     DATE,
+    ACCCLOSE          DATE,
+    CONTR_DATINCEPT   DATE,
+    ACCOPENING        DATE,
+    BANK_DATE         DATE,
+    TRX_DATE          DATE,
+    ACCOUNT_STATUS    CHAR(1),
+    LIFE_LENTYN       CHAR(1),
+    LIFE_INCREASEYN   CHAR(1),
+    PAYM_TYPE         CHAR(1),
+    HOLD_MAIL         CHAR(1),
+    ACC_TYPE          CHAR(1),
+    PAYM_MODE         CHAR(2),
+    TPYE_ACQUIS       CHAR(2),
+    ACC_CURRENCYISO   CHAR(3),
+    ACCHOLD_INSTITUTE CHAR(4),
+    CUST_INSTITUTE    CHAR(4),
+    PAYM_PERIOD       CHAR(4),
+    PODTYPE           CHAR(5),
+    AML_PARAMTYPE     CHAR(5),
+    INTERMED_TYPE     CHAR(5),
+    BUSINESSNO        CHAR(11),
+    BIC_PREMPAYOR     CHAR(12),
+    FK_BETRNR         CHAR(12),
+    EMPLNO            CHAR(16),
+    ACCHOLDCUSTNO     CHAR(16),
+    ACC_FLAG_01_24    CHAR(24),
+    CONTR_STATUS      CHAR(32),
+    PURPOSE           CHAR(32),
+    IBAN              CHAR(35),
+    constraint IXU_AML_002
+        primary key (PRFT_SYSTEM, PRFT_ACCOUNT_NUM)
+);
+
+create unique index S1_AML_ACC_001
+    on AML_ACCOUNT (ACCNO);
+

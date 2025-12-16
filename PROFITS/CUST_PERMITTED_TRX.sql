@@ -1,0 +1,17 @@
+create table CUST_PERMITTED_TRX
+(
+    TIMESTMP                TIMESTAMP(6),
+    FK_CUST_CUSTOMERCUST_ID INTEGER  not null,
+    FK_YEAR                 SMALLINT not null,
+    FK_GENERIC_DETAFK       CHAR(5)  not null,
+    FK_GENERIC_DETASER      INTEGER  not null,
+    constraint PK_CUST_PERMITTED_TRX
+        primary key (FK_GENERIC_DETAFK, FK_GENERIC_DETASER, FK_CUST_CUSTOMERCUST_ID, FK_YEAR)
+);
+
+create unique index I0000651
+    on CUST_PERMITTED_TRX (FK_CUST_CUSTOMERCUST_ID, FK_YEAR);
+
+create unique index I0000653
+    on CUST_PERMITTED_TRX (FK_GENERIC_DETAFK, FK_GENERIC_DETASER);
+

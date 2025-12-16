@@ -1,0 +1,12 @@
+create table TMP_F74_TEK
+(
+    BEN               SMALLINT,
+    ID_PRODUCT        INTEGER,
+    BEN_CUST_ID       INTEGER,
+    LNS_OVERDUE       DECIMAL(15, 2),
+    ACCRUALS          DECIMAL(15, 2),
+    SUM_EURO_BOOK_BAL DECIMAL(15, 2),
+    ACCOUNT_NUMBER    CHAR(40),
+    DESCRIPTION       VARCHAR(40)
+);
+

@@ -1,0 +1,24 @@
+create table WFS_SCORECARD
+(
+    HDR_SCORECARD_SN    DECIMAL(10) not null
+        constraint PK_WFS_SCORECARD
+            primary key,
+    HDR_SCORECARD_LABEL VARCHAR(40) not null,
+    HDR_DESCRIPTION     VARCHAR(80),
+    HDR_ANALYSIS        VARCHAR(2048),
+    TOTAL_MAX_SCORES    DECIMAL(18, 4),
+    TOTAL_KPI_ITEMS     INTEGER,
+    CREATE_UNIT         INTEGER,
+    CREATE_DATE         DATE,
+    CREATE_USR          CHAR(8),
+    CREATE_TMSTAMP      TIMESTAMP(6),
+    UPDATE_UNIT         INTEGER,
+    UPDATE_DATE         DATE,
+    UPDATE_USR          CHAR(8),
+    UPDATE_TMSTAMP      TIMESTAMP(6),
+    OPT_INDIVIDUAL      CHAR(1),
+    OPT_CORPORATE       CHAR(1),
+    OPT_CORRESPONDENT   CHAR(1),
+    MANUAL_WEIGHT_FLG   CHAR(1)
+);
+

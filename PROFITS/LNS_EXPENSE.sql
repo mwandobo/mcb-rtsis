@@ -1,0 +1,18 @@
+create table LNS_EXPENSE
+(
+    ID_EXPENSE         INTEGER,
+    USAGE_COUNTER      SMALLINT,
+    FK_CURRENCYID_CURR INTEGER,
+    CONFIRM_DATE       DATE,
+    TMSTAMP            TIMESTAMP(6),
+    ENTRY_STATUS       CHAR(1),
+    CONFIRM_IND        CHAR(1),
+    CURRENCY_EXIST_FLG CHAR(1),
+    APPLY_EXP          CHAR(1),
+    SHORT_DESCR        CHAR(5),
+    DESCRIPTION        VARCHAR(40)
+);
+
+create unique index IXU_LNS_007
+    on LNS_EXPENSE (ID_EXPENSE);
+

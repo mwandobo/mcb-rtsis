@@ -1,0 +1,37 @@
+create table CHEQUE_BOOK_CORR
+(
+    CUST_ID            INTEGER      not null,
+    TIMESTMP           TIMESTAMP(6) not null,
+    ITEM_SERIAL_NUMBER DECIMAL(10)  not null,
+    ITEM_ACC_NUMBER    DECIMAL(11)  not null,
+    CR_TUN_INT_SN      SMALLINT,
+    DB_TUN_INT_SN      SMALLINT,
+    INTERM_ACC_CD      SMALLINT,
+    CORR_ACC_CD        SMALLINT,
+    INTERM_JUSTIFIC    INTEGER,
+    CR_TRX_UNIT        INTEGER,
+    BANK_ID            INTEGER,
+    CORR_JUSTIFIC      INTEGER,
+    DB_TRX_UNIT        INTEGER,
+    INS_UNIT           INTEGER,
+    REJECTED_CODE      INTEGER,
+    DB_TRX_USR_SN      INTEGER,
+    CR_TRX_USR_SN      INTEGER,
+    CHEQUE_AMOUNT      DECIMAL(15, 2),
+    DB_TRX_DATE        DATE,
+    CR_TRX_DATE        DATE,
+    INSERT_DATE        DATE,
+    SEND_DATE          DATE,
+    ITEM_STATUS        CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    ITEM_TYPE          CHAR(1),
+    DB_TRX_USR         CHAR(8),
+    CR_TRX_USR         CHAR(8),
+    INS_USER           CHAR(8),
+    FILE_NAME          CHAR(20),
+    INTERM_ACC_NUMBER  CHAR(40),
+    CORR_ACC_NUMBER    CHAR(40),
+    constraint IXU_CHE_011
+        primary key (CUST_ID, TIMESTMP, ITEM_SERIAL_NUMBER, ITEM_ACC_NUMBER)
+);
+

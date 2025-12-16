@@ -1,0 +1,19 @@
+create table TMP_KTIMATOSIMO
+(
+    ACC_CD       SMALLINT,
+    ACC_TYPE     SMALLINT,
+    ACC_UNIT     INTEGER,
+    PRODUCT_ID   INTEGER,
+    JUSTIFIC_2   INTEGER,
+    JUSTIFIC_1   INTEGER,
+    CUST_ID      INTEGER,
+    AMOUNT_2     DECIMAL(15, 2),
+    AMOUNT_1     DECIMAL(15, 2),
+    ACC_SN       DECIMAL(15),
+    PROCESS_DATE DATE,
+    AYS          CHAR(40)
+);
+
+create unique index PK_KTIMAT
+    on TMP_KTIMATOSIMO (ACC_SN, ACC_TYPE, ACC_UNIT);
+

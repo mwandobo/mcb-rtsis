@@ -1,0 +1,7 @@
+create table STAGE_W_DIM_GL_ACCOUNT
+(
+    ACCOUNT_ID    CHAR(21) not null,
+    ACCOUNT_LEVEL CHAR(1),
+    DESCRIPTION   VARCHAR(60)
+);
+

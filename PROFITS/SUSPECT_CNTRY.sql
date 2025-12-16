@@ -1,0 +1,14 @@
+create table SUSPECT_CNTRY
+(
+    COUNTRY_ID   INTEGER,
+    DATE_FROM    DATE,
+    DATE_TO      DATE,
+    ALERT_AGENCY CHAR(50),
+    ALERT_REASON CHAR(150),
+    ENTRY_STATUS CHAR(1),
+    TMSTAMP      TIMESTAMP(6)
+);
+
+create unique index IXP_SUS_000
+    on SUSPECT_CNTRY (COUNTRY_ID);
+

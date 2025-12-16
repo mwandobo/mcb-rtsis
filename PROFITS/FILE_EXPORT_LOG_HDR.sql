@@ -1,0 +1,12 @@
+create table FILE_EXPORT_LOG_HDR
+(
+    TMSTAMP        TIMESTAMP(6),
+    TMSTAMP_CLOSED TIMESTAMP(6),
+    PROGRAM_ID     CHAR(20),
+    FILE_NAME      CHAR(100),
+    NOTES          CHAR(254)
+);
+
+create unique index PK_FILE_EXPORT_LOG_HDR
+    on FILE_EXPORT_LOG_HDR (TMSTAMP);
+

@@ -1,0 +1,16 @@
+create table CUST_ADD_INFO1
+(
+    GENERAL_COMMENTS   VARCHAR(250),
+    FK0GENERIC_DETASER INTEGER,
+    RESIDENT_IND       CHAR(1),
+    LAST_CONTACT_DATE  DATE,
+    LAST_CONTACT_COMNT VARCHAR(30),
+    CARD_FLAG          CHAR(1),
+    CARD_COMNTS        VARCHAR(30),
+    CHAMBER_REG_NO     CHAR(10),
+    CHAMBER_COMMENTS   VARCHAR(30),
+    FK_CUSTOMERCUST_ID INTEGER not null
+        constraint PCUSTADI
+            primary key
+);
+

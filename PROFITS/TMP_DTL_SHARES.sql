@@ -1,0 +1,8 @@
+create table TMP_DTL_SHARES
+(
+    MONITORING_UNIT SMALLINT,
+    TOTAL_SHARES    INTEGER,
+    ID              INTEGER,
+    MEMBER_NO       INTEGER
+);
+

@@ -1,0 +1,2 @@
+CREATE VIEW DEP_BENEFS_VW  (     MAIN_BENEF_CUST_ID,     BENEF_CUST_ID,     DEP_ACC_NUMBER,     BENEFICIARY_SN  )  AS     SELECT (SELECT a1.fk_customercust_id               FROM beneficiary a1              WHERE     a1.beneficiary_sn = 1                    AND beneficiary.fk_deposit_accoacc = a1.fk_deposit_accoacc)               main_benef_cust_id,            beneficiary.fk_customercust_id benef_cust_id,            beneficiary.fk_deposit_accoacc dep_acc_number,            beneficiary.beneficiary_sn       FROM beneficiary;
+

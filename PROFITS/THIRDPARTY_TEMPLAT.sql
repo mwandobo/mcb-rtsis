@@ -1,0 +1,32 @@
+create table THIRDPARTY_TEMPLAT
+(
+    FK_DEPOSIT_ACCOACC DECIMAL(11),
+    SIZE_4             SMALLINT,
+    SIZE_3             SMALLINT,
+    VALID_ALGOR_IND_4  SMALLINT,
+    SIZE_1             SMALLINT,
+    VALID_ALGOR_IND_3  SMALLINT,
+    VALID_ALGOR_IND_1  SMALLINT,
+    SIZE_2             SMALLINT,
+    VALID_ALGOR_IND_2  SMALLINT,
+    TMPSTAMP           TIMESTAMP(6),
+    MANDATORY_FLAG_1   CHAR(1),
+    MANDATORY_FLAG_3   CHAR(1),
+    FORMAT_3           CHAR(1),
+    MANDATORY_FLAG_2   CHAR(1),
+    FORMAT_2           CHAR(1),
+    FORMAT_1           CHAR(1),
+    CR_DR_INDICATOR    CHAR(1),
+    MANDATORY_FLAG_4   CHAR(1),
+    FORMAT_4           CHAR(1),
+    FIELD_1_2_SEPERAT  CHAR(6),
+    FIELD_3_4_SEPERAT  CHAR(6),
+    PROMPT_1           CHAR(30),
+    PROMPT_2           CHAR(30),
+    PROMPT_4           CHAR(30),
+    PROMPT_3           CHAR(30)
+);
+
+create unique index IXU_THI_001
+    on THIRDPARTY_TEMPLAT (FK_DEPOSIT_ACCOACC);
+

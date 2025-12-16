@@ -1,0 +1,18 @@
+create table REL_THREE_DETAIL
+(
+    FKGD_THIRD_TYPE    CHAR(5) not null,
+    FKGD_THIRD_VALUE   INTEGER not null,
+    FKGH_THIRD_TYPE    CHAR(5) not null,
+    FKGD_SECOND_TYPE   CHAR(5) not null,
+    FKGD_SECOND_VALUE  INTEGER not null,
+    FKGH_SECOND_TYPE   CHAR(5) not null,
+    FKGD_PRIMARY_TYPE  CHAR(5) not null,
+    FKGD_PRIMARY_VALUE INTEGER not null,
+    FKGH_PRIMARY_TYPE  CHAR(5) not null,
+    TMSTAMP            TIMESTAMP(6),
+    ENTRY_STATUS       CHAR(1),
+    constraint IXU_REL_000
+        primary key (FKGD_THIRD_TYPE, FKGD_THIRD_VALUE, FKGH_THIRD_TYPE, FKGD_SECOND_TYPE, FKGD_SECOND_VALUE,
+                     FKGH_SECOND_TYPE, FKGD_PRIMARY_TYPE, FKGD_PRIMARY_VALUE, FKGH_PRIMARY_TYPE)
+);
+

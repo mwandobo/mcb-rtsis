@@ -1,0 +1,9 @@
+create table IFRS9_LINK_BETWEEN_ACCOUNTS
+(
+    REFERENCE_DTM            DATE         not null,
+    ORIGINAL_ACCOUNT_ID      CHAR(32)     not null,
+    NEW_ACCOUNT_ID           CHAR(32),
+    LINK_BETWEEN_ACCOUNTS_DT TIMESTAMP(6) not null,
+    primary key (REFERENCE_DTM, ORIGINAL_ACCOUNT_ID, LINK_BETWEEN_ACCOUNTS_DT)
+);
+

@@ -1,0 +1,12 @@
+create table HISSU_PROD_CUST_U
+(
+    VALIDITY_DATE   DATE    not null,
+    PRODUCT         INTEGER not null,
+    CUSTOMER        INTEGER not null,
+    CR_DEP_ACCOUNT  DECIMAL(11),
+    DEFAULT_IND     SMALLINT,
+    BANK_ACCOUNT_NO CHAR(40),
+    constraint IXU_CIU_041
+        primary key (CUSTOMER, PRODUCT, VALIDITY_DATE)
+);
+

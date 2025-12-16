@@ -1,0 +1,20 @@
+create table RELATIONSHIP_TYPE
+(
+    TYPE_ID               CHAR(12),
+    TMSTAMP               TIMESTAMP(6),
+    GENDER_ALLOW_FLAG     CHAR(1),
+    OTH_GENDER_ALLOW_F    CHAR(1),
+    OTH_CUSTOMER_MAX_N    CHAR(1),
+    OTH_CUSTOMER_ALLOW    CHAR(1),
+    CUSTOMER_ALLOW_FLA    CHAR(1),
+    CUSTOMER_MAX_NUMBE    CHAR(1),
+    OTHER_REL_DESCRIPT    CHAR(30),
+    REL_DESCRIPTION       CHAR(30),
+    CUST_ACCOUNT_CH       CHAR(1) default '0',
+    CUST_REL_TYPE_CH      CHAR(1) default '0',
+    SHOW_RELATED_ACCOUNTS CHAR(1)
+);
+
+create unique index IXU_REL_001
+    on RELATIONSHIP_TYPE (TYPE_ID);
+

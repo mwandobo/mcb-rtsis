@@ -1,0 +1,15 @@
+create table LOAN_SCENARIO_GRACE
+(
+    TMSTAMP           TIMESTAMP(6) not null,
+    INSTALL_SN_DATA   DECIMAL(10)  not null,
+    INSTALL_SN        INTEGER      not null,
+    INSTALL_DT        DATE,
+    TRX_USER          CHAR(8),
+    INSTALLMENT_AMN   DECIMAL(15, 2),
+    INSTALL_N128_AMN  DECIMAL(15, 2),
+    INSTALL_INSURANCE DECIMAL(15, 2),
+    INSTALL_COM_AMN   DECIMAL(15, 2),
+    constraint ILOAN_SCENARIO_GRACE
+        primary key (INSTALL_SN_DATA, INSTALL_SN, TMSTAMP)
+);
+

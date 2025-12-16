@@ -1,0 +1,14 @@
+create table SYNDICATED_PARTICIPANTS_COMNTS
+(
+    FACILITY_ID         DECIMAL(10) not null,
+    CUSTOMER_ID         INTEGER     not null,
+    CUSTOMER_CMNT_SN    DECIMAL(10) not null,
+    CUSTOMER_CMNT_VALUE VARCHAR(250),
+    ENTRY_STATUS        CHAR(1),
+    TRX_USER            CHAR(8),
+    TRX_DATE            DATE,
+    TRX_TIMESTAMP       TIMESTAMP(6),
+    constraint ISYNDICATED_PARTICIPANTS_COMNT
+        primary key (FACILITY_ID, CUSTOMER_ID, CUSTOMER_CMNT_SN)
+);
+

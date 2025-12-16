@@ -1,0 +1,15 @@
+create table PIG_ORG_TOTALS
+(
+    FIELD_USAGE         SMALLINT not null,
+    TABLE_ATTRIBUTE     CHAR(40) not null,
+    TABLE_ENTITY        CHAR(40) not null,
+    FIELD_SECTION       SMALLINT not null,
+    ORGANIZATION        CHAR(10) not null,
+    UTILIZE_AMOUNT      DECIMAL(15, 2),
+    TOTAL_AMOUNT        DECIMAL(15, 2),
+    DTL_TABLE_ATTRIBUTE CHAR(40),
+    DTL_TABLE_ENTITY    CHAR(40),
+    constraint IXU_PRD_031
+        primary key (FIELD_USAGE, TABLE_ATTRIBUTE, TABLE_ENTITY, FIELD_SECTION, ORGANIZATION)
+);
+

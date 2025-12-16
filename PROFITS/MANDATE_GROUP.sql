@@ -1,0 +1,23 @@
+create table MANDATE_GROUP
+(
+    ACCOUNT_NUMBER CHAR(40) not null,
+    PRFT_SYSTEM    SMALLINT not null,
+    ID_TRANSACT    INTEGER  not null,
+    CUST_ID        INTEGER  not null,
+    PARAMETER_TYPE CHAR(5)  not null,
+    SERIAL_NUM     INTEGER  not null,
+    ENTRY_STATUS   CHAR(1),
+    ENTRY_COMMENTS VARCHAR(500),
+    INSERT_USR     CHAR(8),
+    INSERT_UNIT    INTEGER,
+    INSERT_DT      DATE,
+    INSERT_STAMP   TIMESTAMP(6),
+    UPDATE_USR     CHAR(8),
+    UPDATE_UNIT    INTEGER,
+    UPDATE_DT      DATE,
+    UPDATE_STAMP   TIMESTAMP(6),
+    ORDER_SN       INTEGER,
+    constraint PK_MANDATE_GROUP
+        primary key (PARAMETER_TYPE, SERIAL_NUM, CUST_ID, ID_TRANSACT, PRFT_SYSTEM, ACCOUNT_NUMBER)
+);
+

@@ -1,0 +1,18 @@
+create table GLG_UNIT_CTL
+(
+    FK_UNITCODE        INTEGER,
+    LAST_FCCONV_DATE   DATE,
+    LAST_PRINT_DT_2    DATE,
+    LAST_PRINT_DT_1    DATE,
+    GL_LAST_CLOSED_DAT DATE,
+    LAST_PRINT_PRD_2   DATE,
+    LAST_PRINT_PRD_1   DATE,
+    LAST_CLOSED_DATE   DATE,
+    DATE_TO_CLOSE      DATE,
+    TIMESTMP           TIMESTAMP(6),
+    CLOSE_FLAG         CHAR(1)
+);
+
+create unique index IXU_GLG_096
+    on GLG_UNIT_CTL (FK_UNITCODE);
+

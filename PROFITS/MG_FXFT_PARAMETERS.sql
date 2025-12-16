@@ -1,0 +1,15 @@
+create table MG_FXFT_PARAMETERS
+(
+    MG_FT_OBJ_TYPE     CHAR(5) not null
+        constraint IXU_MIG_025
+            primary key,
+    SERVICE_PRODUCT_ID INTEGER,
+    SERVICE_ISS_JUSTIF INTEGER,
+    MG_FT_OBJ_ISS_DATE DATE,
+    MG_FT_OBJ_STATUS   CHAR(1),
+    MG_FT_OBJ_ISS_CURR CHAR(5),
+    MG_FT_OBJ_BENEF    CHAR(30),
+    MG_FT_OBJ_ISSUER   CHAR(30),
+    UPDATE_BOOK_ITEM_S CHAR(1)
+);
+

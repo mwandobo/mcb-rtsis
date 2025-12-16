@@ -1,0 +1,16 @@
+create table DCD_VOU_WORD_HEADER
+(
+    HEADER_SN    DECIMAL(15),
+    PRINTED_FLAG SMALLINT,
+    INTERNAL_SN  SMALLINT,
+    TRX_UNIT     INTEGER,
+    TRX_USR_SN   INTEGER,
+    TRX_DATE     DATE,
+    TMSTAMP      TIMESTAMP(6),
+    TRX_USER     CHAR(8),
+    VOUCHER_ID   VARCHAR(40)
+);
+
+create unique index IXU_DCD_041
+    on DCD_VOU_WORD_HEADER (HEADER_SN);
+

@@ -1,0 +1,19 @@
+create table DCD_GD_RELATION
+(
+    FK_DCD_GH_WINPRFT INTEGER  not null,
+    FK_DCD_GH_WINJUST INTEGER  not null,
+    FK_DCD_GH_WINPROD INTEGER  not null,
+    FK_DCD_GH_WINPRDA DATE     not null,
+    FK_DCD_GH_WINOTHV CHAR(5)  not null,
+    FK_DCD_GH_WINOTHT SMALLINT not null,
+    FK_DCD_GD_WINSER  INTEGER  not null,
+    SERIAL_NUMBER     INTEGER  not null,
+    REL_N_VALUE       SMALLINT,
+    TMSTAMP           TIMESTAMP(6),
+    REL_T_VALUE       CHAR(3),
+    DESCRIPTION       CHAR(40),
+    constraint IXU_DEF_048
+        primary key (FK_DCD_GH_WINPRFT, FK_DCD_GH_WINJUST, FK_DCD_GH_WINPROD, FK_DCD_GH_WINPRDA, FK_DCD_GH_WINOTHV,
+                     FK_DCD_GH_WINOTHT, FK_DCD_GD_WINSER, SERIAL_NUMBER)
+);
+

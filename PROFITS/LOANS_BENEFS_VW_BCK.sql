@@ -1,0 +1,3 @@
+CREATE VIEW LOANS_BENEFS_VW_BCK  (     MAIN_BENEF_CUST_ID,     ACCOUNT_NUMBER,     CUST_ID,     FK_AGREEMENTAGR_SN,     AGR_STATUS,     BENEF_STATUS  )  AS     SELECT profits_account.cust_id main_benef_cust_id,            profits_account.account_number,            loans_benef_agreem_vw.cust_id,            fk_agreementagr_sn,            agr_status,            benef_status       FROM profits_account  --          INNER JOIN loans_benef_agreem_vw USING (account_number)
+          INNER JOIN loans_benef_agreem_vw ON loans_benef_agreem_vw.account_number = profits_account.account_number      WHERE profits_account.prft_system = 19;
+

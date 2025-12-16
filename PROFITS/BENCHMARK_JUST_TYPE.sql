@@ -1,0 +1,11 @@
+create table BENCHMARK_JUST_TYPE
+(
+    JUSTIFIC_ID       INTEGER not null,
+    AMOUNT_TYPE       CHAR(1) not null,
+    TRANSACTION_CODE  INTEGER not null,
+    REVERSAL_JUSTIFIC CHAR(1),
+    EXECUTE_JUSTIFIC  CHAR(1),
+    constraint PK_BENCH_TYPE
+        primary key (TRANSACTION_CODE, AMOUNT_TYPE, JUSTIFIC_ID)
+);
+

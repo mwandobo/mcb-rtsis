@@ -1,0 +1,17 @@
+create table CUST_OUT_INFO_DTL
+(
+    FK_CUSTOMERCUST_ID INTEGER,
+    OUT_ACCOUNT        CHAR(21),
+    FK_CUST_OUT_INFHEA SMALLINT,
+    FK_GENERIC_DETASER INTEGER,
+    VALUE_4            DECIMAL(15, 2),
+    VALUE_3            DECIMAL(15, 2),
+    VALUE_2            DATE,
+    VALUE_1            CHAR(3),
+    FK_GENERIC_DETAFK  CHAR(5),
+    VALUE_5            CHAR(20)
+);
+
+create unique index IXU_CUS_011
+    on CUST_OUT_INFO_DTL (FK_CUSTOMERCUST_ID, OUT_ACCOUNT);
+

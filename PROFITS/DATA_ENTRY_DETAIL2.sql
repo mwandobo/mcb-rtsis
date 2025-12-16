@@ -1,0 +1,18 @@
+create table DATA_ENTRY_DETAIL2
+(
+    FK0DATA_ENTRY_HTRX DATE        not null,
+    FK_DATA_ENTRY_HSER DECIMAL(15) not null,
+    FK_DATA_ENTRY_HSUP INTEGER     not null,
+    FK_DATA_ENTRY_HTRX INTEGER     not null,
+    LINE_NUMBER        DECIMAL(15) not null,
+    OLD_ACC_UNIT       INTEGER,
+    OLD_ACC_NUMBER     DECIMAL(11),
+    NEW_ACC_NUMBER     DECIMAL(11),
+    TRANSFER_AMOUNT    DECIMAL(15, 2),
+    TIMESTMP           DATE,
+    NEW_ACC_CD         CHAR(2),
+    OLD_ACC_CD         CHAR(2),
+    constraint IXU_REP_165
+        primary key (FK0DATA_ENTRY_HTRX, FK_DATA_ENTRY_HSER, FK_DATA_ENTRY_HSUP, FK_DATA_ENTRY_HTRX, LINE_NUMBER)
+);
+

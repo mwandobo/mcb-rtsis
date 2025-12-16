@@ -1,0 +1,23 @@
+create table ITF_TRX_HEADER
+(
+    ORGANISATION_CODE  CHAR(10) not null,
+    BANK_ID            INTEGER  not null,
+    RECORD_TYPE        CHAR(2)  not null,
+    EXPIRY_DATE        DATE     not null,
+    RECEIVE_DATE       DATE,
+    REPLY_RECV_DATE    DATE,
+    CP_AGREEMENT_NO    DECIMAL(10),
+    HD_STATUS          CHAR(2),
+    TOTAL_DTL_RECORDS  DECIMAL(13),
+    TOTAL_AMOUNT       DECIMAL(15, 2),
+    TOTAL_SUCC_DTL_REC DECIMAL(13),
+    TOTAL_SUCC_AMOUNT  DECIMAL(15, 2),
+    ORGANIS_FILENAME   CHAR(20),
+    TIMESTMP           TIMESTAMP(6),
+    COMMENTS           CHAR(40),
+    INPUT_RECORD       CHAR(100),
+    REPLY_RECORD       CHAR(100),
+    constraint IXU_CP__053
+        primary key (BANK_ID, RECORD_TYPE, ORGANISATION_CODE, EXPIRY_DATE)
+);
+

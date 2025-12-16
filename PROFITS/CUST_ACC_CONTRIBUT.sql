@@ -1,0 +1,12 @@
+create table CUST_ACC_CONTRIBUT
+(
+    CUST_ID           INTEGER  not null,
+    ACCOUNT_NUMBER    CHAR(40) not null,
+    PRFT_SYSTEM       SMALLINT not null,
+    CONTRIBUTION_FREQ SMALLINT,
+    CONTRIBUTION_AMN  DECIMAL(18, 2)
+);
+
+create unique index IXP_CUST_ACC_CONTR
+    on CUST_ACC_CONTRIBUT (CUST_ID, ACCOUNT_NUMBER, PRFT_SYSTEM);
+

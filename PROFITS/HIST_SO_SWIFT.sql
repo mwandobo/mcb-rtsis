@@ -1,0 +1,28 @@
+create table HIST_SO_SWIFT
+(
+    ACTIVATION_DATE    DATE,
+    TP_SO_IDENTIFIER   DECIMAL(10),
+    VALUE_DAYS         SMALLINT,
+    SERVICE_CODE       CHAR(2),
+    ORIGIN_CODE        CHAR(2),
+    TRANS_CODE         CHAR(3),
+    DETAIL_OF_CHARGE   CHAR(3),
+    RECEIVER_DIAS_UNIT CHAR(4),
+    CR_ACCOUNT_DTL     CHAR(34),
+    INFORMATION4       CHAR(35),
+    INFORMATION3       CHAR(35),
+    INFORMATION5       CHAR(35),
+    INFORMATION6       CHAR(35),
+    INFORMATION2       CHAR(35),
+    JUSTIFIC1          CHAR(35),
+    INFORMATION1       CHAR(35),
+    JUSTIFIC4          CHAR(35),
+    JUSTIFIC3          CHAR(35),
+    JUSTIFIC2          CHAR(35),
+    IBAN               CHAR(37),
+    FREE_TEXT          CHAR(154)
+);
+
+create unique index IXU_HIS_026
+    on HIST_SO_SWIFT (ACTIVATION_DATE, TP_SO_IDENTIFIER);
+

@@ -1,0 +1,19 @@
+create table COLLAT_PARAMETERS
+(
+    BANK_CODE          SMALLINT not null
+        constraint IXU_PRD_004
+            primary key,
+    BLOCK_PER_ACC_COLL CHAR(1),
+    AUTO_MARGIN_PROD   INTEGER,
+    DONT_CHK_PREN_AMN  CHAR(1),
+    DISP_FIN_MORTGAGE  CHAR(1),
+    COL_ACC_FORMAT     SMALLINT,
+    UNIQUE_LAND_REG    CHAR(1),
+    GENERIC_DET_FLG    CHAR(1),
+    CENT_MAND_FIELDS   CHAR(1),
+    CHECK_COV_AMNTS    CHAR(1),
+    LIMIT_AMN_DEF      CHAR(1),
+    RESP_USER_CHECK    CHAR(1),
+    GET_COUNTER_WAY    CHAR(1)
+);
+

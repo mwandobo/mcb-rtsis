@@ -1,0 +1,18 @@
+create table CATEGORY
+(
+    CATEGORY_CODE      CHAR(8),
+    TMSTAMP            TIMESTAMP(6),
+    ENTRY_STATUS       CHAR(1),
+    OPT_INDIVIDUAL     CHAR(1),
+    OPT_CORPORATE      CHAR(1),
+    OPT_CORRESPONDENT  CHAR(1),
+    SHOW_FLAG          CHAR(1),
+    OWNER_SYSTEM       CHAR(3),
+    FK_GENERIC_HEADPAR CHAR(5),
+    DESCRIPTION        CHAR(20),
+    SECOND_DESCRIPTION VARCHAR(50)
+);
+
+create unique index IXU_CAT_004
+    on CATEGORY (CATEGORY_CODE);
+

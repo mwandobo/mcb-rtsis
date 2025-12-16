@@ -1,0 +1,31 @@
+create table TF_DOCUMENT
+(
+    FK_TFDOC_FK_TRFIN   CHAR(40) not null,
+    FK_TFDOC_LOT_SN     SMALLINT not null,
+    DOC_SN              SMALLINT not null,
+    FK_ADV_DT_PRFTS     SMALLINT,
+    COPIES_NUM          SMALLINT,
+    FK_CUS_DT_PRFTS     SMALLINT,
+    COPY_SN             SMALLINT,
+    FK_CUS_DT_LAN_GD    INTEGER,
+    FK_CURRENCYID_CURR  INTEGER,
+    FK_GEN_DET_SN       INTEGER,
+    FK_ADV_DT_LAN_GD    INTEGER,
+    FK_ADV_DT_CODE      INTEGER,
+    FK_CUS_DT_CODE      INTEGER,
+    CUS_NOT_FILESN      DECIMAL(15),
+    AMOUNT              DECIMAL(15, 2),
+    ADV_NOT_FILESN      DECIMAL(15),
+    EXPIRATION_DATE     DATE,
+    NOTIFY_FLG          CHAR(1),
+    FK_GEN_DET_GEN_HD   CHAR(5),
+    FK_CUS_DT_LAN_GH    CHAR(5),
+    FK_ADV_DT_LAN_GH    CHAR(5),
+    DOC_REF_NO          VARCHAR(40),
+    PAYMENT_DETAILS     VARCHAR(140),
+    DISCREPANT_FLG      CHAR(1),
+    DISCREPANCY_DETAILS CHAR(100),
+    constraint IXU_FX_032
+        primary key (FK_TFDOC_FK_TRFIN, FK_TFDOC_LOT_SN, DOC_SN)
+);
+

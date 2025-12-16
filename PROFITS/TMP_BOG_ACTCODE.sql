@@ -1,0 +1,6 @@
+create table TMP_BOG_ACTCODE
+(
+    ACTCD       INTEGER,
+    DESCRIPTION VARCHAR(40)
+);
+

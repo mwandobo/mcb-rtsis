@@ -1,0 +1,29 @@
+create table TRS_MATCHING
+(
+    COLLABORATION_BANK INTEGER,
+    BOND_ISIN          CHAR(15)    not null,
+    AMOUNT             DECIMAL(15, 2),
+    PROCESS_FLG        CHAR(1),
+    ERROR_DESC         VARCHAR(200),
+    ID_CURRENCY        INTEGER,
+    ID_PRODUCT         INTEGER     not null,
+    ID_JUSTIFIC        INTEGER,
+    CORRESP_JUSTFIC_ID INTEGER,
+    PRICE              DECIMAL(15, 8),
+    THEIR_COLLAB_BANK  INTEGER,
+    SN                 DECIMAL(15) not null,
+    PREMIUM_AMOUNT     DECIMAL(15, 2),
+    DISCOUNT_AMOUNT    DECIMAL(15, 2),
+    MTM_CUM_ACCR_PREM  DECIMAL(15, 2),
+    MTM_CUM_ACCR_DISC  DECIMAL(15, 2),
+    REALIZED_PL        DECIMAL(15, 2),
+    BUY_DEALS_PREM     DECIMAL(15, 2),
+    SELL_DEALS_PREM    DECIMAL(15, 2),
+    BUY_DEALS_DISC     DECIMAL(15, 2),
+    SELL_DEALS_DISC    DECIMAL(15, 2),
+    FINAL_PREM_TO_REV  DECIMAL(15, 2),
+    FINAL_DISC_TO_REV  DECIMAL(15, 2),
+    constraint PK_ISIN
+        primary key (BOND_ISIN, ID_PRODUCT)
+);
+

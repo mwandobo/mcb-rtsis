@@ -1,0 +1,20 @@
+create table PAR_VOUCHER_RUN
+(
+    TMSTAMP           TIMESTAMP(6),
+    TRX_DATE          DATE,
+    TRX_UNIT          INTEGER,
+    TRX_USER          CHAR(8),
+    TRX_USR_SN        INTEGER,
+    INTERNAL_SN       SMALLINT,
+    PRINTED_FLAG      SMALLINT,
+    VOUCHER_LINE      VARCHAR(2048),
+    COMPOSITE_VOUCHER CHAR(1),
+    ORDER_SN          SMALLINT
+);
+
+create unique index IXN_PVR_01
+    on PAR_VOUCHER_RUN (TRX_DATE, TRX_UNIT, TRX_USER, TRX_USR_SN);
+
+create unique index IXU_PAR_009
+    on PAR_VOUCHER_RUN (TMSTAMP, TRX_DATE, TRX_UNIT, TRX_USER, TRX_USR_SN, INTERNAL_SN, ORDER_SN);
+

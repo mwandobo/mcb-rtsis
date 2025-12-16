@@ -1,0 +1,11 @@
+create table FIGL_O02
+(
+    DATEGLKEY      DECIMAL(19) not null,
+    GL_ACCOUNT     VARCHAR(9),
+    PSTNG_DATE     DATE,
+    DEB_CRE_LC     DECIMAL(18, 2),
+    CUM_DEB_CRE_LC DECIMAL(18, 2),
+    DEB_CRE_FX     DECIMAL(18, 2),
+    CUM_DEB_CRE_FX DECIMAL(18, 2)
+);
+

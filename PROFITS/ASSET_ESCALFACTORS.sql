@@ -1,0 +1,12 @@
+create table ASSET_ESCALFACTORS
+(
+    CATEGORY_CODE   VARCHAR(10) not null,
+    OWNED_DATE_FROM DATE        not null,
+    PERCENTAGE      DECIMAL(8, 2),
+    OWNED_DATE_TO   DATE,
+    INDICATION      VARCHAR(1),
+    ADDITIONAL_INFO VARCHAR(1024),
+    constraint IXU_GL_012
+        primary key (CATEGORY_CODE, OWNED_DATE_FROM)
+);
+

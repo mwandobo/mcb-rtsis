@@ -1,0 +1,9 @@
+create table TMP_BOG_GROUPS1
+(
+    GROUP_FLG  SMALLINT,
+    GROUP_ID   INTEGER,
+    CUST_ID    INTEGER,
+    CUST_AMN   DECIMAL(15, 2),
+    GROUP_NAME VARCHAR(40)
+);
+

@@ -1,0 +1,32 @@
+create table LOAN_SG_ADD_INFO
+(
+    ACC_UNIT           INTEGER  not null,
+    ACC_TYPE           SMALLINT not null,
+    ACC_SN             INTEGER  not null,
+    LOAN_STATUS        CHAR(1),
+    ACC_STATUS         CHAR(1),
+    ACC_EXP_DT         DATE,
+    NON_PERMORMING_DT  DATE,
+    ACC_BALANCE        DECIMAL(15, 2),
+    NRM_MEAN_BAL       DECIMAL(15, 2),
+    OV_MEAN_BAL        DECIMAL(15, 2),
+    NRM_PRV_FCAST_AMT  DECIMAL(15, 2),
+    NRM_CUR_FCAST_AMT  DECIMAL(15, 2),
+    NRM_INT_PERIOD     DECIMAL(15, 2),
+    OV_PRV_FCAST_AMT   DECIMAL(15, 2),
+    OV_CUR_FCAST_AMT   DECIMAL(15, 2),
+    OV_INT_PERIOD      DECIMAL(15, 2),
+    DD_PRV_FCAST_AMT   DECIMAL(15, 2),
+    DD_CUR_FCAST_AMT   DECIMAL(15, 2),
+    DD_INT_PERIOD      DECIMAL(15, 2),
+    WO_PRV_FCAST_AMT   DECIMAL(15, 2),
+    WO_CUR_FCAST_AMT   DECIMAL(15, 2),
+    WO_INT_PERIOD      DECIMAL(15, 2),
+    NRM_INT_GL_ACCOUNT CHAR(21),
+    OV_INT_GL_ACCOUNT  CHAR(21),
+    DD_INT_GL_ACCOUNT  CHAR(21),
+    WO_INT_GL_ACCOUNT  CHAR(21),
+    constraint IXU_REP_021
+        primary key (ACC_UNIT, ACC_TYPE, ACC_SN)
+);
+

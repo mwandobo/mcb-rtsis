@@ -1,0 +1,25 @@
+create table TRS_PARAMETERS
+(
+    TRS_CURRENT_YEAR    SMALLINT not null
+        constraint IXU_PRD_028
+            primary key,
+    CREATE_SWIFT_210    CHAR(1),
+    CNCL_TRS_SWIFT      CHAR(1),
+    CR_SWIFT_MSG_ONL    CHAR(1),
+    CURR_TRX_EXECUTION  CHAR(1),
+    FIN_COPY            CHAR(20),
+    SWIFT_SYSTEM        CHAR(2),
+    PREMIUM_GL_NET_ACC  CHAR(21),
+    DISCOUNT_GL_NET_ACC CHAR(21),
+    CODE_A              CHAR(1),
+    YIELD_ROUND         SMALLINT,
+    PRICE_YIELD_DIFF    DECIMAL(15, 8),
+    YEAR_INTERPOLATE    SMALLINT,
+    BLOCKING_JUSTIFIC   DECIMAL(5),
+    UNBLOCKING_JUSTIFIC DECIMAL(5),
+    DATE_ST             TIMESTAMP(6),
+    PHASE_1             CHAR(1),
+    TAG72_TYPE          CHAR(5),
+    UNUSED_SWIFT        VARCHAR(100)
+);
+

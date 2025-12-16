@@ -1,0 +1,21 @@
+create table TMP_SUM_BSD10
+(
+    PRV_MONTH        SMALLINT,
+    ACC_TYPE         SMALLINT,
+    PRV_YEAR         SMALLINT,
+    ACC_UNIT         INTEGER,
+    ACC_SN           INTEGER,
+    POSITIVE_SUM     DECIMAL(15, 2),
+    COMMISSION_SUM   DECIMAL(15, 2),
+    EXPENSE_SUM      DECIMAL(15, 2),
+    RL_PNL_INT_SUM   DECIMAL(15, 2),
+    RL_INT_SUM       DECIMAL(15, 2),
+    CAPITAL_DB       DECIMAL(15, 2),
+    CAPITAL_SUM      DECIMAL(15, 2),
+    ACCOUNT_LOAN_STS VARCHAR(1),
+    FLAG             VARCHAR(3)
+);
+
+create unique index IX_TMP_SUM_BSD10
+    on TMP_SUM_BSD10 (ACC_UNIT, ACC_TYPE, ACC_SN);
+

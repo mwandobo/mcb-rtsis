@@ -1,0 +1,13 @@
+create table CP_KRA_TRANSFER_ADVICE
+(
+    ADVICE_ID       DECIMAL(10) not null
+        constraint PK_KRA_TRANSFER_ADVICE
+            primary key,
+    TRX_DATE        DATE,
+    REMITTANCE_ID   VARCHAR(50),
+    REMITTANCE_NAME VARCHAR(50),
+    BANK_CODE       VARCHAR(10),
+    TRANSFER_NUMBER VARCHAR(50),
+    TRANSFER_AMOUNT DECIMAL(15, 2)
+);
+

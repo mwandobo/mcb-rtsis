@@ -1,0 +1,6 @@
+create table TEMP_AGORES
+(
+    SUM_CHEQUE_AMOUNT DECIMAL(15, 2),
+    CORR_SEND_DATE    DATE
+);
+

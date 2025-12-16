@@ -1,0 +1,37 @@
+create table MOF_SDOE_EXTR_DT
+(
+    RECORD_TYPE       CHAR(2),
+    BATCH_ID          CHAR(12) not null,
+    FILE_ID           SMALLINT not null,
+    UNIQUE_REF_ID     CHAR(12) not null,
+    TUN               CHAR(50) not null,
+    TUN_REVERSAL      CHAR(50) not null,
+    RESPON_BANK_CD    CHAR(3),
+    TARGET_BANK_CD    CHAR(3),
+    TRX_SN            CHAR(12) not null,
+    ACCOUNT_NUMBER    CHAR(27),
+    TRX_DATE          CHAR(10),
+    TRX_TIME          CHAR(6),
+    UNIT_CODE         CHAR(4),
+    TRX_CODE          CHAR(10),
+    TRX_CODE_DESC     CHAR(30),
+    ID_JUSTIFIC       CHAR(6),
+    JUSTIFIC_DESCR    CHAR(150),
+    TRX_AMNT          CHAR(18),
+    TRX_TYPE          CHAR(1),
+    CCY_ISO_CODE      CHAR(3),
+    MIRROR_ACCOUNT    CHAR(27),
+    PROGRESSIVE_BAL   CHAR(18),
+    PROGR_BAL_TYPE    CHAR(1),
+    CHEQUE_NUMBER     CHAR(12),
+    USER_CD           CHAR(10),
+    ISO_TRNSFER_CNTRY CHAR(2),
+    TRANSFER_SENDER   CHAR(70),
+    TRX_DESCR         CHAR(2),
+    VALIDATION_CODE   CHAR(11),
+    ERROR_FIELD       CHAR(2),
+    ERROR_CODE        CHAR(2),
+    constraint PK_EXTR_DT
+        primary key (TRX_SN, FILE_ID, TUN_REVERSAL, TUN, UNIQUE_REF_ID, BATCH_ID)
+);
+

@@ -1,0 +1,41 @@
+create table LG_PARAMETER
+(
+    CODE                SMALLINT,
+    PUBLIC_ORG          INTEGER,
+    RELEASE_DAYS        INTEGER,
+    JUSTIFIC_ML         INTEGER,
+    COM_TRX_ID          INTEGER,
+    COM_JUSTIFIC_ID     INTEGER,
+    BANK_INSTITUTE      INTEGER,
+    LIMIT_AMN           DECIMAL(15, 2),
+    UTILIZED_LIMIT_AMN  DECIMAL(15, 2),
+    PUBLIC_LIMIT_AMN    DECIMAL(15, 2),
+    LG_LIMIT_AMN        DECIMAL(15, 2),
+    UTILISED_PL_AMN     DECIMAL(15, 2),
+    LG_PUBLIC_LIMIT_AMN DECIMAL(15, 2),
+    LG_ACCSN_AUTO       CHAR(1),
+    LG_COMMISSION_CALC  CHAR(1),
+    LG_ACCOUNT_FORMAT   CHAR(1),
+    LG_DIFF_LIMITS      CHAR(1),
+    CHARGING_LIMIT_IND  CHAR(1),
+    BASE_COUNTRY        INTEGER,
+    CR_LOW              INTEGER,
+    CR_MEDIUM           INTEGER,
+    CR_AVERAGE          INTEGER,
+    CR_HIGH             INTEGER,
+    BR_LOW              INTEGER,
+    BR_MEDIUM           INTEGER,
+    BR_AVERAGE          INTEGER,
+    BR_HIGH             INTEGER,
+    COL_CASH            INTEGER,
+    COL_CITIZEN_BLD     INTEGER,
+    COL_GUR_BANK        INTEGER,
+    COL_REST_ASF        INTEGER,
+    COL_NO_ASF          INTEGER,
+    LG_LIMIT_NO_UPD_FLG CHAR(1),
+    AUTO_CLOSING_DAYS   INTEGER
+);
+
+create unique index IXP_LG__003
+    on LG_PARAMETER (CODE);
+

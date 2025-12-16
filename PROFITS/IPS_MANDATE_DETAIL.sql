@@ -1,0 +1,23 @@
+create table IPS_MANDATE_DETAIL
+(
+    MANDATE_SN         DECIMAL(10) not null,
+    REFERENCE_NUMBER   CHAR(140)   not null,
+    ENTRY_STATUS       CHAR(1),
+    ISSUER_CUST_ID     INTEGER,
+    BENEF_FULLNAME     CHAR(90),
+    PRFT_ACCOUNT       CHAR(40),
+    AMOUNT             DECIMAL(15, 2),
+    ACTIVATION_DATE    DATE,
+    EXPIRY_DATE        DATE,
+    TRX_DATE           DATE,
+    BENEF_IBAN_ACC     CHAR(37),
+    COMMENTS           VARCHAR(100),
+    AMOUNT_INDICATOR   CHAR(1),
+    FIRST_PAYMENT_DATE DATE,
+    FREQUENCY          SMALLINT,
+    FREQUENCY_UNIT     CHAR(1)
+);
+
+create unique index IXU_IPS_MAND_1
+    on IPS_MANDATE_DETAIL (MANDATE_SN, REFERENCE_NUMBER);
+

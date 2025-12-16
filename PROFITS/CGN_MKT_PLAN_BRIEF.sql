@@ -1,0 +1,12 @@
+create table CGN_MKT_PLAN_BRIEF
+(
+    TMSTAMP             TIMESTAMP(6) not null,
+    FK_MARKET_PLAN_ID   CHAR(10)     not null,
+    FK_MARKET_PLAN_SN   INTEGER      not null,
+    EXECUTIVE_SUMMARY   VARCHAR(4000),
+    TARGET_CUSTOMER     VARCHAR(4000),
+    COMPETITOR_ANALYSIS VARCHAR(4000),
+    constraint PK_MKT_PLAN_BRIEF
+        primary key (FK_MARKET_PLAN_ID, FK_MARKET_PLAN_SN)
+);
+

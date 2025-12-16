@@ -1,0 +1,18 @@
+create table LOAN_TRANS_PENALTY
+(
+    ACCOUNT_NUMBER     CHAR(40),
+    ACC_CD             SMALLINT,
+    ACC_SN             INTEGER,
+    ACC_TYPE           SMALLINT,
+    ACC_UNIT           INTEGER,
+    PRFT_SYSTEM        SMALLINT,
+    ID_CHANNEL         INTEGER,
+    PERIOD_TRX_COUNT   INTEGER,
+    TRX_INTEREST_CNT   INTEGER,
+    TRX_PENALTY_SPREAD DECIMAL(8, 4),
+    TIMESTMP           DATE
+);
+
+create unique index IXU_LOAN_TRANS
+    on LOAN_TRANS_PENALTY (ACC_SN, ACC_TYPE, ACC_UNIT, ID_CHANNEL);
+

@@ -1,0 +1,25 @@
+create table W_LEASING_PRTFL_BUSINESS_CNTRL
+(
+    EOM_DATE              DATE         not null,
+    PRODUCT               INTEGER,
+    UNIT                  INTEGER,
+    CURRENCY_ID           INTEGER,
+    LOAN_STATUS           CHAR(1),
+    ACC_STATUS            CHAR(1),
+    SECTOR                VARCHAR(100),
+    ACCOUNT_NUMBER        VARCHAR(100) not null,
+    ACCOUNT_NAME          VARCHAR(100),
+    BRANCH_NAME           VARCHAR(100),
+    NET_VALUE_ASSETS      DECIMAL(15, 2),
+    VAT_AMMOUNT_ASSETS    DECIMAL(15, 2),
+    CLIENT_CONTRIBUTION   DECIMAL(15, 2),
+    CLNT_CNTRB_SUPL_DIR   DECIMAL(15, 2),
+    TOT_INTEREST_OF_LEASE DECIMAL(15, 2),
+    CPTLZ_PREM_ON_INSURAN DECIMAL(15, 2),
+    INV_PROC_FEES         DECIMAL(15, 2),
+    INV_REGISTRATION_FEES DECIMAL(15, 2),
+    OPTION_TO_BUY_FEE     DECIMAL(15, 2),
+    constraint W_LEASING_PRTFL_BUSINESS_CNTRL_PK
+        primary key (EOM_DATE, ACCOUNT_NUMBER)
+);
+

@@ -1,0 +1,26 @@
+create table BENCHMARK_ANALYSIS_VIEW
+(
+    SERIAL            DECIMAL(15) not null,
+    BENCHMARK_ID      DECIMAL(15) not null,
+    EXECUTION_SN      DECIMAL(15) not null,
+    INTERNAL_SN       DECIMAL(15) not null,
+    TRANSACTION       CHAR(30),
+    TRANSACTION_DESC  CHAR(80),
+    ACTION            CHAR(30),
+    TMSTAMP_START     TIMESTAMP(6),
+    TMSTAMP_END       TIMESTAMP(6),
+    ELAPSED_TIME      DECIMAL(15),
+    MONOTORING_UNIT   INTEGER,
+    ACCOUNT_NUMBER    CHAR(40)    not null,
+    ACCOUNT_CD        SMALLINT,
+    PRFT_SYSTEM       SMALLINT,
+    RESULT            CHAR(100),
+    CUST_ID           INTEGER     not null,
+    C_DIGIT           SMALLINT,
+    ELAPSED_TIME_MIN  SMALLINT,
+    ELAPSED_TIME_SEC  SMALLINT,
+    ELAPSED_TIME_MILI SMALLINT,
+    constraint PK_BNC_AN_VW
+        primary key (INTERNAL_SN, EXECUTION_SN, BENCHMARK_ID, SERIAL)
+);
+

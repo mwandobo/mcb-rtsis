@@ -1,0 +1,25 @@
+CREATE VIEW FDEMAND__OVERDRAFT_06_11_VW_BCK ( MONOTORING_UNIT , UNIT_NAME , ACCOUNT_NUMBER , ACCOUNT_CD , DEPOSIT_TYPE , CUST_ID , C_DIGIT , MOVEMENT_CURRENCY , PRODUCT_ID , FK_GENERIC_DETASER , FKGD_CATEGORY , BOOK_BALANCE , ACCR_CR_INTEREST , ACCR_DB_INTEREST , DB_PROGRESS_INTER , ACCR_N128_INTER , ACCR_N128_PROGESS , CR_CNTR_GL_ACC , CR_INT_ACCR_GL_ACC , CUST_TYPE , FK_GLG_ACCOUNTACCO , DR_CNTR_GL_ACC , DR_INT_ACCR_GL_ACC , NON_RESIDENT , CALCULAT_CURRENCY_FIX_RATE$ )  AS     SELECT         *      FROM         (           SELECT --  tab_to_string(t_varchar2_tab(
+            profits_account.monotoring_unit    ,              unit.unit_name                     ,              profits_account.account_number     ,              profits_account.account_cd         ,              deposit_type                       ,              profits_account.cust_id            ,              profits_account.c_digit            ,              profits_account.movement_currency  ,              profits_account.product_id         ,              deposit_account.fk_generic_detaser ,              deposit_account.fkgd_category      ,              deposit_account.book_balance       ,              deposit_account.accr_cr_interest               /*,(NVL(deposit_account.accr_db_interest, 0) - NVL(deposit_account.db_progress_inter, 0))
+            ,(NVL(deposit_account.accr_n128_inter, 0) - NVL(deposit_account.accr_n128_progess, 0))
+            */              ,              deposit_account.accr_db_interest  ,              deposit_account.db_progress_inter ,              deposit_account.accr_n128_inter   ,              deposit_account.accr_n128_progess ,              class_gl.cr_cntr_gl_acc           ,              class_gl.cr_int_accr_gl_acc               /*
+            ,DECODE(customer.cust_type
+            ,'1'
+            ,''
+            ,'2'
+            ,''
+            ,'3'
+            ,''
+            )
+            */              ,              customer.cust_type          ,              customer.fk_glg_accountacco ,              class_gl.dr_cntr_gl_acc     ,              class_gl.dr_int_accr_gl_acc ,              customer.non_resident               /*,DECODE(customer.non_resident
+            ,'1'
+            ,' '
+            ,'0'
+            ,''
+            )*/              /*,deposit_account.book_balance * get_fixing_rate(profits_account.movement_currency)
+            ,deposit_account.accr_cr_interest * get_fixing_rate(profits_account.movement_currency)
+            ,(NVL(deposit_account.accr_db_interest, 0) - NVL(deposit_account.db_progress_inter, 0)) *
+            get_fixing_rate(profits_account.movement_currency)
+            ,(NVL(deposit_account.accr_n128_inter, 0) - NVL(deposit_account.accr_n128_progess, 0)) *
+            get_fixing_rate(profits_account.movement_currency)*/              ,              get_fixing_rate ( profits_account.movement_currency , CAST ( NULL AS DATE ) ) calculat_currency_fix_rate$              --))
+         FROM               class_gl        class_gl        ,              customer        customer        ,              deposit_account deposit_account ,              profits_account profits_account ,              unit           WHERE               deposit_account.entry_status != '0'              AND               deposit_account.entry_status != '3'              AND               deposit_account.entry_status != '4'              AND               (                  (                     profits_account.prft_system = 3                  )                 AND                  (                     deposit_account.deposit_type = '1'                    OR                     deposit_account.deposit_type = '5'                  )                 AND                  (                     customer.cust_type <> '3'                  )                 AND                  (                     class_gl.loan_status = '1'                  )                 OR                  (                     profits_account.prft_system = 3                  )                 AND                  (                     deposit_account.deposit_type = '1'                    OR                     deposit_account.deposit_type = '5'                  )                 AND                  (                     customer.cust_type = '3'                  )                 AND                  (                     class_gl.loan_status = '1'                  )               )              AND               profits_account.dep_acc_number = deposit_account.account_number              AND               profits_account.cust_id = customer.cust_id              AND               deposit_account.fk_generic_detaser = class_gl.fk_generic_detaser              AND               deposit_account.fk_depositfk_produ = class_gl.fk_productid_produ              AND               deposit_account.fkgd_category = class_gl.fk_cust_categ_gd              AND               profits_account.monotoring_unit = unit.code           ORDER BY               1         );
+

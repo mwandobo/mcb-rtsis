@@ -1,0 +1,22 @@
+create table ATM_CONTROL
+(
+    ACTION_CODE      CHAR(1),
+    ACTION_SN        SMALLINT,
+    ATM_CODE         DECIMAL(10),
+    PRODUCTION_DATE  DATE,
+    TRANS_CCY        SMALLINT,
+    ATM_UNIT         INTEGER,
+    VISA_CASH_REV    DECIMAL(15, 2),
+    VISA_CASH        DECIMAL(15, 2),
+    DIAS_CASH_REV    DECIMAL(15, 2),
+    DIAS_CASH        DECIMAL(15, 2),
+    GB_CASH_REV      DECIMAL(15, 2),
+    GB_CASH          DECIMAL(15, 2),
+    TOTAL_AMT        DECIMAL(15, 2),
+    ACTIVE_REPLENISH CHAR(1),
+    ACTION_TIME      TIME
+);
+
+create unique index IXU_ATM_004
+    on ATM_CONTROL (ACTION_CODE, ACTION_SN, ATM_CODE, PRODUCTION_DATE, TRANS_CCY);
+

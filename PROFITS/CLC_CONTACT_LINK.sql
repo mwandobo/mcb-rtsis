@@ -1,0 +1,33 @@
+create table CLC_CONTACT_LINK
+(
+    CASE_ID           CHAR(40)    not null,
+    CONTACT_LINK_SN   DECIMAL(10) not null,
+    CONTACT_SERIAL_NO DECIMAL(10) not null,
+    CONTACT_DATE      DATE,
+    CONTACT_COMMENT   VARCHAR(100),
+    CONTACT_DETAILS   VARCHAR(2048),
+    PRFT_SYSTEM       SMALLINT,
+    ACCOUNT_NUMBER    CHAR(40),
+    PROMISED_AMOUNT   DECIMAL(18, 2),
+    EMAIL_SENT        CHAR(1),
+    PROMISED_DATE     DATE,
+    SMS_SENT          CHAR(1),
+    INSERT_UNIT       INTEGER,
+    INSERT_USER       CHAR(8),
+    INSERT_DATE       DATE,
+    INSERT_TMSTAMP    TIMESTAMP(6),
+    UPDATE_UNIT       INTEGER,
+    UPDATE_USER       CHAR(8),
+    UPDATE_DATE       DATE,
+    UPDATE_TMSTAMP    TIMESTAMP(6),
+    ENTRY_STATUS      CHAR(1),
+    FK_CASE_ID        CHAR(40)    not null,
+    FK_CONTACT_SN     INTEGER     not null,
+    FK_GH_REASON      CHAR(5),
+    FK_GD_REASON      INTEGER,
+    FK_GH_TYPE        CHAR(5),
+    FK_GD_TYPE        INTEGER,
+    constraint CLC_COLLECT_PK_10
+        primary key (FK_CASE_ID, FK_CONTACT_SN, CONTACT_LINK_SN, CASE_ID)
+);
+

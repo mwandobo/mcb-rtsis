@@ -1,0 +1,10 @@
+create table FINAL_DOCUMENT
+(
+    FILENAME      CHAR(24),
+    SERIAL_NUMBER SMALLINT,
+    DOC_TEXT      CHAR(100)
+);
+
+create unique index IXU_FIN_000
+    on FINAL_DOCUMENT (FILENAME, SERIAL_NUMBER);
+

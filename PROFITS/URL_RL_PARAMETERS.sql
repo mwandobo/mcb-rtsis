@@ -1,0 +1,14 @@
+create table URL_RL_PARAMETERS
+(
+    BANK_CODE         SMALLINT not null
+        constraint IXU_PRD_026
+            primary key,
+    CUST_CATEG_SN     SMALLINT,
+    REAL_ESTATE_SN    SMALLINT,
+    PERC_ON_INSTALL   SMALLINT,
+    PERC_ON_ACC_LIMIT SMALLINT,
+    GENERAL_COL_AMN   DECIMAL(15, 2),
+    REAL_ESTATE_AMN   DECIMAL(15, 2),
+    FIRM_AMOUNT       DECIMAL(15, 2)
+);
+

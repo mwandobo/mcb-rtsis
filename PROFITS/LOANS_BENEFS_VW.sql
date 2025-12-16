@@ -1,0 +1,2 @@
+CREATE VIEW PROFITS.LOANS_BENEFS_VW  AS  SELECT profits_account.cust_id main_benef_cust_id           ,profits_account.account_number           ,loans_benef_agreem_vw.cust_id           ,fk_agreementagr_sn           ,profits_account.account_ser_num acct_key ,BENEF_STATUS    FROM   profits_account            INNER JOIN loans_benef_agreem_vw             ON (profits_account.account_number = loans_benef_agreem_vw.account_number)    WHERE  profits_account.prft_system = 19  WITH NO ROW MOVEMENT;
+

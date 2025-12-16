@@ -1,0 +1,12 @@
+create table POS_HD_TLF
+(
+    FILE_SN       INTEGER,
+    CREATION_DATE DATE,
+    TOTAL_RECS    DECIMAL(10),
+    TOTAL_AMOUNT  DECIMAL(16, 2),
+    TIMESTMP      TIMESTAMP(6)
+);
+
+create unique index IXU_POS_000
+    on POS_HD_TLF (FILE_SN, CREATION_DATE);
+

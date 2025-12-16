@@ -1,0 +1,12 @@
+create table HPROD_RESTRICT
+(
+    DELIVERED_FLG      CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    TMSTAMP            TIMESTAMP(6),
+    FK_HPRODUCTVALIDIT DATE    not null,
+    FK_HPRODUCTID_PROD INTEGER not null,
+    FK_RESTR_TYPEID_RE INTEGER not null,
+    constraint PKEY0005
+        primary key (FK_HPRODUCTID_PROD, FK_HPRODUCTVALIDIT, FK_RESTR_TYPEID_RE)
+);
+

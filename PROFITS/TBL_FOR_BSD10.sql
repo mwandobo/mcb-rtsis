@@ -1,0 +1,37 @@
+create table TBL_FOR_BSD10
+(
+    ACC_TYPE           SMALLINT,
+    PRFT_SYSTEM        SMALLINT,
+    PROFITS_CD         SMALLINT,
+    NXT_MONTH          SMALLINT,
+    PRV_MONTH          SMALLINT,
+    NXT_YEAR           SMALLINT,
+    PRV_YEAR           SMALLINT,
+    CUSTOMER_GROUP     INTEGER,
+    FK_UNITCODE        INTEGER,
+    ACC_SN             INTEGER,
+    FK_LOANFK_PRODUCTI INTEGER,
+    FKCUR_IS_MOVED_IN  INTEGER,
+    FK_GENERIC_DETASER INTEGER,
+    CUST_ID            INTEGER,
+    NXT_FLAT_RATE      DECIMAL(8, 4),
+    PRV_RATE           DECIMAL(8, 4),
+    NXT_RATE           DECIMAL(8, 4),
+    DEP_ACCOUNT_NUMBER DECIMAL(11),
+    PRV_BALANCE        DECIMAL(15, 2),
+    NXT_BAL_X_INT      DECIMAL(15, 2),
+    NXT_CAPITAL        DECIMAL(15, 2),
+    PRV_CAPITAL        DECIMAL(15, 2),
+    NXT_BALANCE        DECIMAL(15, 2),
+    LST_TRX_DT         DATE,
+    LOAN_STATUS        CHAR(1),
+    LNS_ACC_STATUS     CHAR(1),
+    DEP_ACC_STATUS     CHAR(1),
+    INCLUDE_FLAG       CHAR(1),
+    FK_GENERIC_DETAFK  CHAR(5),
+    PROFITS_ACC        CHAR(40)
+);
+
+create unique index IX_TBL_FOR_BSD10
+    on TBL_FOR_BSD10 (FK_UNITCODE, ACC_TYPE, ACC_SN);
+

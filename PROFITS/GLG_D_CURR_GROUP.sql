@@ -1,0 +1,11 @@
+create table GLG_D_CURR_GROUP
+(
+    FK_CURRENCYID_CURR INTEGER,
+    FK_GLG_H_CURR_GGRO CHAR(4),
+    TIMESTMP           TIMESTAMP(6),
+    STATUS             CHAR(1)
+);
+
+create unique index IXU_GLG_059
+    on GLG_D_CURR_GROUP (FK_CURRENCYID_CURR, FK_GLG_H_CURR_GGRO);
+

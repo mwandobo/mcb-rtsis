@@ -1,0 +1,29 @@
+create table TMP_DEP_EXTRAIT
+(
+    C_DIGIT            SMALLINT,
+    PRFT_SYSTEM        SMALLINT,
+    ACCOUNT_CD         SMALLINT,
+    ENTRY_SER_NUM      SMALLINT,
+    ACCOUNT_CURRENCY   INTEGER,
+    TRANS_SER_NUM      INTEGER,
+    CUST_ID            INTEGER,
+    CHEQUE_NUMBER      DECIMAL(10),
+    FK_DEPOSIT_ACCOACC DECIMAL(11),
+    CREDIT_AMT         DECIMAL(15, 2),
+    DEBIT_AMT          DECIMAL(15, 2),
+    BOOK_BALANCE       DECIMAL(15, 2),
+    PREV_BALANCE       DECIMAL(15, 2),
+    VALUE_DATE         DATE,
+    TRX_DATE           DATE,
+    DEBIT_CREDIT_FLAG  CHAR(1),
+    LAG_NEW_SHEET      CHAR(9),
+    ZIP_CODE           CHAR(10),
+    CITY               CHAR(30),
+    ACCOUNT_NUMBER     CHAR(40),
+    ADDRESS_1          VARCHAR(40),
+    COUNTRY            VARCHAR(40),
+    ADDRESS_2          VARCHAR(40),
+    JUSTIFIC_DESC      VARCHAR(83),
+    CUST_NAME          VARCHAR(91)
+);
+

@@ -1,0 +1,30 @@
+create table STAGE_W_EOM_APPROV_INTER_RATE
+(
+    EOM_DATE           DATE,
+    DEALER_USER_CODE   CHAR(8),
+    DEALER_REF_NO      CHAR(20),
+    ACCT_KEY           DECIMAL(11),
+    C_DIGIT            SMALLINT,
+    TRX_UNIT           INTEGER,
+    ID_CURRENCY        INTEGER,
+    DB_INTEREST_RATE   DECIMAL(8, 4),
+    CR_INTEREST_RATE   DECIMAL(8, 4),
+    TRX_USR_SN         INTEGER,
+    ACCOUNT_NUMBER     DECIMAL(11),
+    RATE_AMOUNT        DECIMAL(15, 2),
+    TRX_DATE           DATE,
+    START_DATE         DATE,
+    TIMESTMP           DATE,
+    STATUS_FLAG        CHAR(1),
+    RENEWAL_FLAG       CHAR(1),
+    TRX_USR            CHAR(8),
+    REQUEST_USER_CODE  CHAR(8),
+    END_DATE           DATE,
+    TIME_DEP_TRANS_FLG CHAR(1),
+    INTER_PAY_OPTIONS  CHAR(1),
+    DAYS_DURATION      SMALLINT,
+    LOAN_ACC_CD        SMALLINT,
+    LOAN_ACC_NUMBER    VARCHAR(40),
+    PRFT_SYSTEM        SMALLINT
+);
+

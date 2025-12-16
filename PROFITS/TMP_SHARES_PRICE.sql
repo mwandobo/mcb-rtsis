@@ -1,0 +1,6 @@
+create table TMP_SHARES_PRICE
+(
+    PURCHASE_PRICE DECIMAL(15, 2),
+    SHARE_PRICE    DECIMAL(15, 2)
+);
+

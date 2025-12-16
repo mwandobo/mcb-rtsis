@@ -1,0 +1,15 @@
+create table LNS_OPTIONFORCAST
+(
+    ACC_UNIT        INTEGER,
+    ACC_TYPE        SMALLINT,
+    ACC_SN          INTEGER,
+    EXPIRE_DATE     DATE,
+    CUST_ID         INTEGER,
+    COST_OPTION     DECIMAL(8, 4),
+    COST_OPTION_AMN DECIMAL(15, 2),
+    CAPITAL_AMN     DECIMAL(15, 2)
+);
+
+create unique index IXU_LNS_002
+    on LNS_OPTIONFORCAST (ACC_UNIT, ACC_TYPE, ACC_SN, EXPIRE_DATE);
+

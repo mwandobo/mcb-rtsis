@@ -1,0 +1,33 @@
+create table REP_74553
+(
+    LOAN_ACC_NUMBER    CHAR(40) not null
+        constraint IXU_REP_060
+            primary key,
+    LOAN_ACC_CD        SMALLINT,
+    VALUATION_COL_CUR  INTEGER,
+    PRODUCT_ID         INTEGER,
+    BRANCH_CODE        INTEGER,
+    SERVICE_CENTR_CODE INTEGER,
+    REG_BRANCH_CODE    INTEGER,
+    CUST_ID            INTEGER,
+    COL_VALUE_AMN      DECIMAL(15, 2),
+    CUR_LOAN_RATIO     DECIMAL(15, 2),
+    FST_LOAN_RATIO     DECIMAL(15, 2),
+    LOAN_BOOK_BAL      DECIMAL(15, 2),
+    CAP_BAL            DECIMAL(15, 2),
+    ACC_LIMIT_AMN      DECIMAL(15, 2),
+    COLLATERAL_STATUS  CHAR(1),
+    ACCOUNT_CURRENCY   CHAR(5),
+    OFFICER_ID         CHAR(8),
+    OFFICER_NAME       CHAR(20),
+    CUST_PID           CHAR(20),
+    CUST_NAME          CHAR(20),
+    OFFICER_SURNAME    CHAR(20),
+    CUST_CATEGORY      CHAR(40),
+    COLLATERAL_DESC    CHAR(40),
+    COLLATERAL_TYPE    CHAR(40),
+    PROD_DESCRIPTION   CHAR(40),
+    CUST_SURNAME       CHAR(70),
+    MECHANISM          CHAR(153)
+);
+

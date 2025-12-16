@@ -1,0 +1,11 @@
+create table SPECIAL_HLD
+(
+    FK_UNITCODE       INTEGER,
+    DATE_ID           DATE,
+    FKGD_IS_JUSTIFIED INTEGER,
+    FKGH_IS_JUSTIFIED CHAR(5)
+);
+
+create unique index IXU_SPE_004
+    on SPECIAL_HLD (FK_UNITCODE, DATE_ID);
+

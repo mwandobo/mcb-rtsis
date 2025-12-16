@@ -1,0 +1,12 @@
+create table STAGE_W_FACT_USER_ACC_RI
+(
+    USER_CODE           VARCHAR(8),
+    ROLE_CATEGORY_IND   VARCHAR(6),
+    PROFILE_ID          VARCHAR(8),
+    WINDOW_CODE         VARCHAR(8),
+    GUI_CODE            VARCHAR(8),
+    ROW_EFFECTIVE_DATE  DATE,
+    ROW_EXPIRATION_DATE DATE,
+    ROW_CURRENT_FLAG    DECIMAL(15) default 0
+);
+

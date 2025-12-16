@@ -1,0 +1,12 @@
+create table DAYS_SLICE
+(
+    REPORT_ID     INTEGER,
+    SERIAL_NUMBER SMALLINT,
+    DAYS_FROM     INTEGER,
+    DAYS_TO       INTEGER,
+    DESCRIPTION   CHAR(30)
+);
+
+create unique index IXU_DAY_000
+    on DAYS_SLICE (REPORT_ID, SERIAL_NUMBER);
+

@@ -1,0 +1,13 @@
+create table CONTENTIOUS_LOANS
+(
+    FK_UNITCODE      INTEGER  not null,
+    ACC_TYPE         SMALLINT not null,
+    ACC_SN           INTEGER  not null,
+    ACCOUNT_NUMBER   VARCHAR(40),
+    ACCOUNT_CD       SMALLINT,
+    PRFT_SYSTEM      SMALLINT,
+    NAME_OF_BORROWER VARCHAR(91),
+    CAPITAL_AMOUNT   DECIMAL(15, 2),
+    OTHERS_AMOUNT    DECIMAL(15, 2)
+);
+

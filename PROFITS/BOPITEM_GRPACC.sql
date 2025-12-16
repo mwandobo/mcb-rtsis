@@ -1,0 +1,13 @@
+create table BOPITEM_GRPACC
+(
+    ENTRY_STATUS       CHAR(1),
+    TMSTAMP            DATE,
+    FKGH_CREDIT_GRPACC CHAR(5) not null,
+    FKGD_CREDIT_GRPACC INTEGER not null,
+    FKGH_DEBIT_GRPACC  CHAR(5) not null,
+    FKGD_DEBIT_GRPACC  INTEGER not null,
+    FK_BOP_ITEMCODE    INTEGER not null,
+    constraint PKBOPACC
+        primary key (FKGH_CREDIT_GRPACC, FKGD_CREDIT_GRPACC, FKGH_DEBIT_GRPACC, FKGD_DEBIT_GRPACC, FK_BOP_ITEMCODE)
+);
+

@@ -1,0 +1,19 @@
+create table MG_CUST_RELATION
+(
+    FILE_NAME         CHAR(50) not null,
+    SERIAL_NO         INTEGER  not null,
+    PRF_COMP_CUST_ID  INTEGER,
+    PRF_REPR_CUST_ID  INTEGER,
+    CUST_PROCESS_DATE DATE,
+    EXPIRE_DATE       DATE,
+    RELATION_TYPE     CHAR(2),
+    ROW_STATUS        CHAR(1),
+    FILE_DETAIL_ID    CHAR(2),
+    CUST_ACTIONDESC   CHAR(20),
+    COMPANY_CUST_ID   CHAR(20),
+    REPRESENT_CUST_ID CHAR(20),
+    CUST_ERR_DESC     CHAR(80),
+    constraint IXU_MIG_021
+        primary key (FILE_NAME, SERIAL_NO)
+);
+

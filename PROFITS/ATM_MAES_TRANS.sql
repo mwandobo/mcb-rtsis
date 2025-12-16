@@ -1,0 +1,30 @@
+create table ATM_MAES_TRANS
+(
+    PRODUCTION_DATE    DATE        not null,
+    CARD_NUMBER        CHAR(19)    not null,
+    BANK_ACCOUNT_NUM   DECIMAL(18) not null,
+    TRX_CODE           SMALLINT    not null,
+    TRX_DATE           DATE        not null,
+    DELTA_REFERENCE    INTEGER     not null,
+    AUTHORIZATION_REFE DECIMAL(15),
+    YEAR0              SMALLINT,
+    PROCESS_STATE      CHAR(1),
+    TRX_AMOUNT         DECIMAL(15, 2),
+    CUR_ID_ISO         SMALLINT,
+    MERCHANT_NAME      CHAR(25),
+    MERCHANT_CITY      CHAR(13),
+    MERCH_COUNTRY_CODE CHAR(2),
+    SOURCE_AMOUNT      DECIMAL(15, 2),
+    SOURCE_CUR_ID_ISO  SMALLINT,
+    SOURCE_CUR_LITERAL CHAR(3),
+    AUTHORIZATION_CODE CHAR(6),
+    BILLING_AMOUNT     DECIMAL(15, 2),
+    BILLING_CUR_ID_ISO SMALLINT,
+    MERCHANT_ID        CHAR(15),
+    ACQUIRER_ID        CHAR(8),
+    PROFITS_RESULT     CHAR(80),
+    SEQUENCE_NUM       INTEGER,
+    constraint I0000340
+        primary key (DELTA_REFERENCE, TRX_DATE, TRX_CODE, BANK_ACCOUNT_NUM, CARD_NUMBER, PRODUCTION_DATE)
+);
+

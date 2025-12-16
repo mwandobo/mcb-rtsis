@@ -1,0 +1,16 @@
+create table MT940_BANK_EXTRAIT_HD
+(
+    MT940_YEAR         SMALLINT not null,
+    STATEMENT_NUM      CHAR(11) not null,
+    TRN_REFERENCE_NO   CHAR(16),
+    ACCOUNT_INFO       CHAR(35),
+    OPT_OPEN_BALANCE   CHAR(1),
+    OPENING_BALANCE    CHAR(25),
+    OPT_CLOSE_BALANCE  CHAR(1),
+    CLOSING_BALANCE    CHAR(25),
+    CLOSING_AV_BALANCE CHAR(25),
+    FK_COLLAB_BANK     INTEGER  not null,
+    constraint IXU_MT940_002
+        primary key (FK_COLLAB_BANK, STATEMENT_NUM, MT940_YEAR)
+);
+

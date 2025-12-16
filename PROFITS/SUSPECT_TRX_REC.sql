@@ -1,0 +1,29 @@
+create table SUSPECT_TRX_REC
+(
+    TRX_UNIT           SMALLINT,
+    TRX_DATE           DATE,
+    TRX_USER           CHAR(8),
+    TRX_USER_SN        INTEGER,
+    INTERNAL_SN        SMALLINT,
+    ACCOUNT_CD         SMALLINT,
+    PRFT_SYSTEM        SMALLINT,
+    PRODUCT_ID         INTEGER,
+    TRX_CODE           INTEGER,
+    JUSTIFICATION_ID   INTEGER,
+    TRX_CURR           INTEGER,
+    PROHIBITED_COUNTRY INTEGER,
+    TRANSACTION_ID     INTEGER,
+    CUST_ID            INTEGER,
+    SUSPECT_CUST_ID    DECIMAL(10),
+    TRX_AMOUNT         DECIMAL(15, 2),
+    TMSTAMP            TIMESTAMP(6),
+    FIRST_NAME         CHAR(20),
+    ACCOUNT_NUMBER     CHAR(40),
+    SURNAME            CHAR(70),
+    TRX_DETAILS        VARCHAR(2048),
+    PRFT_SYSTEM_SN     INTEGER
+);
+
+create unique index IXU_SUS_003
+    on SUSPECT_TRX_REC (TRX_UNIT, TRX_DATE, TRX_USER, TRX_USER_SN, INTERNAL_SN);
+

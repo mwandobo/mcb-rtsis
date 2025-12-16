@@ -1,0 +1,18 @@
+create table WSI_LOG_MESSAGE
+(
+    KEY_CHANNEL_EXT_ID INTEGER      not null,
+    KEY_CHANNEL_USER   VARCHAR(40)  not null,
+    KEY_CURR_TRX_DATE  DATE         not null,
+    KEY_USER_SN        INTEGER      not null,
+    KEY_REF_NUMBER     CHAR(40)     not null,
+    KEY_TMSTAMP_BIND   TIMESTAMP(6) not null,
+    IN_MSG_CHANNEL     BLOB(104857600),
+    IN_MSG_GATEWAY     BLOB(104857600),
+    OUT_MSG_PROXY      BLOB(104857600),
+    OUT_MSG_GATEWAY    BLOB(104857600),
+    SERVER_EXCEPTION   VARCHAR(2000),
+    constraint PK_WSI_1006
+        primary key (KEY_TMSTAMP_BIND, KEY_REF_NUMBER, KEY_USER_SN, KEY_CURR_TRX_DATE, KEY_CHANNEL_USER,
+                     KEY_CHANNEL_EXT_ID)
+);
+

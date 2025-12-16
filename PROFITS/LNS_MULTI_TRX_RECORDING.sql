@@ -1,0 +1,23 @@
+create table LNS_MULTI_TRX_RECORDING
+(
+    PROGRAM_SN       DECIMAL(5) not null,
+    APPLICATION_ID   CHAR(15)   not null,
+    CUST_ID          DECIMAL(7) not null,
+    TRAN_SERIAL      DECIMAL(3) not null,
+    INTERNAL_SN      DECIMAL(3) not null,
+    ACCOUNT_NUMBER   CHAR(40),
+    PRFT_SYSTEM      DECIMAL(3),
+    TRX_AMOUNT       DECIMAL(15, 2),
+    TRX_CODE         DECIMAL(5),
+    TRX_DATE         DATE,
+    TRX_UNIT         DECIMAL(5),
+    TRX_USR          CHAR(8),
+    TRX_SN           DECIMAL(5),
+    TRX_TIMESTAMP    TIMESTAMP(6),
+    REVERSED_FLAG    CHAR(1),
+    INSERT_TIMESTAMP TIMESTAMP(6),
+    UPDATE_TIMESTAMP TIMESTAMP(6),
+    constraint PK_LNSMULTITRXRECORDING
+        primary key (PROGRAM_SN, CUST_ID, APPLICATION_ID, TRAN_SERIAL, INTERNAL_SN)
+);
+

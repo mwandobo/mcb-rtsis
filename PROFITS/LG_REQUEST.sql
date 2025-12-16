@@ -1,0 +1,17 @@
+create table LG_REQUEST
+(
+    REQUEST_SN          INTEGER,
+    FK_LG_ACCOUNTACC_SN DECIMAL(13),
+    REQUEST_AMN         DECIMAL(15, 2),
+    RQ_ACR_PNL_INT_BAL  DECIMAL(15, 2),
+    RQ_CAPITAL_BAL      DECIMAL(15, 2),
+    RQ_CREATION_DT      DATE,
+    REQUEST_STS         CHAR(1),
+    REQUEST_TYPE        CHAR(1),
+    REQUEST_LOAN_STS    CHAR(1),
+    COMMENTS            CHAR(40)
+);
+
+create unique index IXU_LG__015
+    on LG_REQUEST (FK_LG_ACCOUNTACC_SN, REQUEST_SN);
+

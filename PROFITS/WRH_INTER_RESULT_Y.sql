@@ -1,0 +1,18 @@
+create table WRH_INTER_RESULT_Y
+(
+    ACCOUNT_NUMBER    CHAR(40) not null,
+    PRFT_SYSTEM       SMALLINT not null,
+    PRODUCT_ID        INTEGER,
+    CURRENCY_ID       INTEGER,
+    UNIT_CODE         INTEGER,
+    CUST_ID           INTEGER,
+    OV_YEAR_STEP_AMN  DECIMAL(15, 2),
+    OV_YEAR_TRX_BAL   DECIMAL(15, 2),
+    NRM_YEAR_POS_BAL  DECIMAL(15, 2),
+    NRM_YEAR_NEG_STEP DECIMAL(15, 2),
+    NRM_YEAR_NEG_BAL  DECIMAL(15, 2),
+    NRM_YEAR_POS_STEP DECIMAL(15, 2),
+    constraint IXU_EOM_013
+        primary key (ACCOUNT_NUMBER, PRFT_SYSTEM)
+);
+

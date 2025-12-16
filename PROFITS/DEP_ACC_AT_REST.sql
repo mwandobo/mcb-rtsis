@@ -1,0 +1,22 @@
+create table DEP_ACC_AT_REST
+(
+    ACCOUNT_NUMBER    DECIMAL(11),
+    REST_DB_CR_FLAG   CHAR(1),
+    REST_TRX_UNIT     INTEGER,
+    REST_TRX_DATE     DATE,
+    REST_TRX_USR      CHAR(8),
+    REST_TRX_SN       INTEGER,
+    REST_DATE         DATE,
+    ACTIVE_TRX_UNIT   INTEGER,
+    ACTIVE_TRX_DATE   DATE,
+    ACTIVE_TRX_USR    CHAR(8),
+    ACTIVE_TRX_SN     INTEGER,
+    ACTIVE_DB_CR_FLAG CHAR(1),
+    ENTRY_STATUS      CHAR(1),
+    AMOUNT            DECIMAL(15, 2),
+    BOOK_BALANCE      DECIMAL(15, 2)
+);
+
+create unique index IXU_DEP_074
+    on DEP_ACC_AT_REST (ACCOUNT_NUMBER);
+

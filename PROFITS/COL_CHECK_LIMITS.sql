@@ -1,0 +1,35 @@
+create table COL_CHECK_LIMITS
+(
+    TRX_DATE              DATE     not null,
+    ID_CURRENCY           INTEGER  not null,
+    PRFT_SYSTEM           SMALLINT not null,
+    ACCOUNT_NUMBER        CHAR(40) not null,
+    ACCOUNT_CD            SMALLINT,
+    AGR_ACCOUNT_CD        SMALLINT,
+    CUST_ID               INTEGER,
+    ACC_UTIL_LIMIT        DECIMAL(15, 2),
+    AGR_CORR_UTIL_LIMIT   DECIMAL(15, 2),
+    ACC_LIMIT             DECIMAL(15, 2),
+    CORR_COL_LIQ_AVAIL    DECIMAL(15, 2),
+    CORR_COL_NO_LIQ_AVAIL DECIMAL(15, 2),
+    COL_NO_LIQ_LIMIT      DECIMAL(15, 2),
+    CRL_UTIL_AMOUNT       DECIMAL(15, 2),
+    COL_LIQ_LIMIT         DECIMAL(15, 2),
+    COL_LIQ_UTIL          DECIMAL(15, 2),
+    CRL_AMOUNT            DECIMAL(15, 2),
+    COL_NO_LIQ_UTIL       DECIMAL(15, 2),
+    CORR_COL_LIQ_LIMIT    DECIMAL(15, 2),
+    CORR_COL_NO_LIQ_LIMIT DECIMAL(15, 2),
+    CORR_COL_LIQ_UTIL     DECIMAL(15, 2),
+    CORR_COL_NO_LIQ_UTIL  DECIMAL(15, 2),
+    CORR_CRL_AVAIL        DECIMAL(15, 2),
+    ACC_AVAIL_LIMIT       DECIMAL(15, 2),
+    CORR_CRL_UTIL_AMOUNT  DECIMAL(15, 2),
+    ERROR_FLAG            CHAR(1),
+    CORRECTED_FLAG        CHAR(1),
+    AGR_LIMIT_IND         CHAR(1),
+    AGR_ACCOUNT_NUMBER    CHAR(40),
+    constraint IXU_LNS_048
+        primary key (TRX_DATE, ID_CURRENCY, PRFT_SYSTEM, ACCOUNT_NUMBER)
+);
+

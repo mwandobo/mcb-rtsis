@@ -1,0 +1,26 @@
+create table ITEM_MASTER
+(
+    ITEM_ID           VARCHAR(10) not null
+        constraint IXU_ITEM_M
+            primary key,
+    DESCRIPTION       VARCHAR(100),
+    SHORT_DESCRIPTION VARCHAR(40),
+    ITEM_COUNTRY      DECIMAL(5),
+    MANUFACTURER      DECIMAL(5),
+    TAX_PERCENT       DECIMAL(5),
+    MEASUREMENT_UNIT  DECIMAL(5),
+    OWNED_UNIT        DECIMAL(5),
+    ITEM_STATUS       CHAR(1),
+    TRX_USR           CHAR(8),
+    GL_ACCOUNT        CHAR(21),
+    ITEM_CATEGORY     DECIMAL(5),
+    ITEM_SUBCATEGORY  DECIMAL(5),
+    SERIAL_NUMBER     VARCHAR(13),
+    UNIT_VALUE        DECIMAL(18, 2),
+    FK_CURRENCY_ID    DECIMAL(5),
+    FREE_VALUE        VARCHAR(1),
+    LIMIT             DECIMAL(18),
+    ITEM_BARCODE      VARCHAR(200),
+    ADDITIONAL_INFO   VARCHAR(2000)
+);
+

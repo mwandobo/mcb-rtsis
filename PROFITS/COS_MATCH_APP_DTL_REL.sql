@@ -1,0 +1,10 @@
+create table COS_MATCH_APP_DTL_REL
+(
+    FK_MATCHED_APPLIC DECIMAL(11) not null,
+    FK_MATCHED_SHARES DECIMAL(10) not null,
+    FK_DETFK_COS_APPL DECIMAL(11) not null,
+    FK_DETACTION_SN   INTEGER     not null,
+    constraint IXU_CP_072
+        primary key (FK_MATCHED_APPLIC, FK_MATCHED_SHARES, FK_DETFK_COS_APPL, FK_DETACTION_SN)
+);
+

@@ -1,0 +1,23 @@
+create table CUST_MEC_MEETINGS
+(
+    MEC_MEETING_DATE     DATE        not null,
+    MEETING_DESC         VARCHAR(40),
+    MEETING_CANCELLATION VARCHAR(500),
+    MEETING_DAY_DESC     VARCHAR(20),
+    MEETING_STS          CHAR(1),
+    HOLIDAY_INDICATOR    CHAR(1),
+    INSERT_USR           CHAR(8),
+    INSERT_UNIT          INTEGER,
+    INSERT_DT            DATE,
+    INSERT_STAMP         TIMESTAMP(6),
+    UPDATE_USR           CHAR(8),
+    UPDATE_UNIT          INTEGER,
+    UPDATE_DT            DATE,
+    UPDATE_STAMP         TIMESTAMP(6),
+    MEETING_ANALYSIS     LONG VARCHAR(32700),
+    FK_CUST_MECMEC_ID    DECIMAL(10) not null,
+    MEETING_TIME         TIME,
+    constraint PK_CUST_MEC_MEET
+        primary key (FK_CUST_MECMEC_ID, MEC_MEETING_DATE)
+);
+

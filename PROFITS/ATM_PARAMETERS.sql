@@ -1,0 +1,41 @@
+create table ATM_PARAMETERS
+(
+    PROGRAM_ID          CHAR(10),
+    ATM_PROTOCOL_ID     SMALLINT,
+    GL_RULE_OTH_AMEX    INTEGER,
+    GL_RULE_OTH_VISA    INTEGER,
+    GL_RULE_OTH_MCRD    INTEGER,
+    GL_RULE_OUR_MCRD    INTEGER,
+    GL_RULE_OUR_VISA    INTEGER,
+    GL_RULE_DIAS        INTEGER,
+    VAT                 DECIMAL(8, 4),
+    BIN                 DECIMAL(11),
+    RULE_ID             DECIMAL(12),
+    INTERBANK_FEES      DECIMAL(15, 2),
+    ERROR_CONTROL       CHAR(1),
+    ACC_LEAD_SPACES     CHAR(1),
+    TERMINAL            CHAR(4),
+    POS_USR             CHAR(8),
+    DIAS_USR            CHAR(8),
+    LAST_ID_PROCESSED   DECIMAL(10),
+    TRY_ACC_MATCHING    CHAR(1),
+    CMS                 CHAR(1),
+    WRITE_COMM_LOG      CHAR(1),
+    ALLOW_DOUBLE_TRX    CHAR(1),
+    CMS_LIMITS_IND      CHAR(1),
+    WITHDRAWAL_LIMIT    DECIMAL(15, 2),
+    OFFLINE_LIMIT       DECIMAL(15, 2),
+    CHARGES_ACCOUNT     CHAR(40),
+    MULTI_THREAD        CHAR(1),
+    ENABLE_127          CHAR(1),
+    MAX_WTHDRW_AMN      DECIMAL(15, 2),
+    MAX_PURCH_AMN       DECIMAL(15, 2),
+    SECOND_RULE_ID      DECIMAL(12),
+    THIRD_RULE_ID       DECIMAL(12),
+    FOREIGN_CUP_POS_USR CHAR(8),
+    FOREIGN_MC_POS_USR  CHAR(8)
+);
+
+create unique index IXU_ATM_015
+    on ATM_PARAMETERS (PROGRAM_ID);
+

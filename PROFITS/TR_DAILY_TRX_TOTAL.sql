@@ -1,0 +1,21 @@
+create table TR_DAILY_TRX_TOTAL
+(
+    TRX_DATE           DATE     not null,
+    FK_UNITCODE        INTEGER  not null,
+    FK_TRBONDBOND_CODE CHAR(15) not null,
+    TRN_TYPE           CHAR(1)  not null,
+    DB_TRX_AMOUNT      DECIMAL(15, 2),
+    PREV_RETAIL_BAL    DECIMAL(15, 2),
+    REV_DB_TRX_AMOUNT  DECIMAL(15, 2),
+    REV_CR_TRX_AMOUNT  DECIMAL(15, 2),
+    CR_TRX_AMOUNT      DECIMAL(15, 2),
+    CURR_RETAIL_BAL    DECIMAL(15, 2),
+    REV_CR_FACE_VALUE  DECIMAL(18, 3),
+    CR_FACE_VALUE      DECIMAL(18, 3),
+    REV_DB_FACE_VALUE  DECIMAL(18, 3),
+    DB_FACE_VALUE      DECIMAL(18, 3),
+    TMSTAMP            TIMESTAMP(6),
+    constraint IXU_DEP_162
+        primary key (TRX_DATE, FK_UNITCODE, FK_TRBONDBOND_CODE, TRN_TYPE)
+);
+

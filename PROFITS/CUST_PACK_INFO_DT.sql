@@ -1,0 +1,22 @@
+create table CUST_PACK_INFO_DT
+(
+    PRFT_SYSTEM        SMALLINT,
+    ACC_TYPE           SMALLINT,
+    ACCOUNT_CD         SMALLINT,
+    PACKAGE_USAGE      SMALLINT,
+    ID_PRODUCT         INTEGER,
+    ACC_UNIT_CODE      INTEGER,
+    SN                 INTEGER,
+    ID_PACKAGE         INTEGER,
+    CUST_ID            INTEGER,
+    INSERTION_DT       DATE,
+    MODIFICATION_DT    DATE,
+    ACCOUNT_STATUS_FLG CHAR(1),
+    PROFITS_ACC_FLG    CHAR(1),
+    MODIFICATION_USER  CHAR(8),
+    ACCOUNT_NUMBER     CHAR(40)
+);
+
+create unique index IXP_CUS_002
+    on CUST_PACK_INFO_DT (ID_PRODUCT, ID_PACKAGE, SN, CUST_ID);
+

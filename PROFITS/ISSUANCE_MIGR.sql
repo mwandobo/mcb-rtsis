@@ -1,0 +1,20 @@
+create table ISSUANCE_MIGR
+(
+    LOAN_UNIT        INTEGER,
+    CUSTOMER_ID      INTEGER,
+    MIGR_ID          INTEGER,
+    PAYABLE_AMOUNT   DECIMAL(15, 2),
+    ENTRY_STATUS     CHAR(1),
+    APPL_STATUS      CHAR(1),
+    ISSU_TYPE        CHAR(2),
+    INSU_COMP_ID     CHAR(2),
+    FREQUENCY        CHAR(4),
+    LOAN_CURRENCY    CHAR(5),
+    ACC_NUMBER       CHAR(40),
+    LOAN_ACCOUNT     CHAR(40),
+    MIGR_STATUS_DESC VARCHAR(80)
+);
+
+create unique index PK_ISSUANCE_MIGR
+    on ISSUANCE_MIGR (MIGR_ID);
+

@@ -1,0 +1,36 @@
+create table TEMP_91051_PENDING
+(
+    ACCOUNT_NUMBER     DECIMAL(11) not null,
+    PENDING_SN         DECIMAL(10) not null,
+    OFF_LAST_PRINT_LN  SMALLINT,
+    USR_PSB_PRINT_LINE SMALLINT,
+    TUN_TRX_UNIT       INTEGER,
+    PSB_LINE_SN        INTEGER,
+    ID_PEND_JUSTIF     INTEGER,
+    ID_FIN_JUSTIF_DB   INTEGER,
+    ID_FIN_JUSTIF_CR   INTEGER,
+    SERIAL_NO          INTEGER,
+    TUN_TRX_USR_SN     INTEGER,
+    OFF_PSB_SN         INTEGER,
+    USER_PSB_SN        INTEGER,
+    TRX_AMOUNT         DECIMAL(15, 2),
+    NEW_BALANCE        DECIMAL(15, 2),
+    OFF_PSB_LAST_BAL   DECIMAL(15, 2),
+    PREV_LINE_BALANCE  DECIMAL(15, 2),
+    USER_AMOUNT        DECIMAL(15, 2),
+    TUN_TRX_DATE       DATE,
+    VALEUR_DATE        DATE,
+    TRX_DATE           DATE,
+    OFF_LAST_PSB_DATE  DATE,
+    TRX_TYPE           CHAR(1),
+    MATCHED_FLAG       CHAR(1),
+    OFFLINE_FLAG       CHAR(1),
+    ORIGIN_FLAG        CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    USER_JUSTIFIC      CHAR(3),
+    TUN_TRX_USR        CHAR(8),
+    FILE_NAME          CHAR(50),
+    constraint IXU_REP_074
+        primary key (ACCOUNT_NUMBER, PENDING_SN)
+);
+

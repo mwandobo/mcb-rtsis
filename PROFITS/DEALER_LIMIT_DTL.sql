@@ -1,0 +1,15 @@
+create table DEALER_LIMIT_DTL
+(
+    DEALER_CODE        CHAR(8) not null,
+    AGREEMENT_LIMIT    DECIMAL(15, 2),
+    UTILISED_LIMIT     DECIMAL(15, 2),
+    AVAILABLE_LIMIT    DECIMAL(15, 2),
+    MATURITY_DATE      DATE,
+    TMSTAMP            TIMESTAMP(6),
+    FK_GENERIC_DETAFK  CHAR(5) not null,
+    FK_GENERIC_DETASER INTEGER not null,
+    ONE_TRX_LIMIT      DECIMAL(15, 2),
+    constraint PK_DEALERCODE_DTL
+        primary key (FK_GENERIC_DETAFK, FK_GENERIC_DETASER, DEALER_CODE)
+);
+

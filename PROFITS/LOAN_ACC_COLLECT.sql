@@ -1,0 +1,27 @@
+create table LOAN_ACC_COLLECT
+(
+    COLLECTION_AGENCY INTEGER,
+    ACC_UNIT          INTEGER,
+    ACC_TYPE          SMALLINT,
+    ACC_SN            INTEGER,
+    TMPSTAMP          TIMESTAMP(6),
+    COLLECTION_TRIES  SMALLINT,
+    REQUEST_SN        SMALLINT,
+    TRX_UNIT          INTEGER,
+    TRX_CODE          INTEGER,
+    TRX_AMOUNT        DECIMAL(15, 2),
+    TRX_DATE          DATE,
+    PROCESS_DATE      DATE,
+    COLLECT_DATE      DATE,
+    ENTRY_STATUS      CHAR(1),
+    REQUEST_LOAN_STS  CHAR(1),
+    COLLECTION_STATUS CHAR(1),
+    COLLECTION_FLG    CHAR(1),
+    REQUEST_TYPE      CHAR(1),
+    ACC_NO            CHAR(8),
+    TRX_USR           CHAR(8)
+);
+
+create unique index IXU_LOA_030
+    on LOAN_ACC_COLLECT (COLLECTION_AGENCY, ACC_UNIT, ACC_TYPE, ACC_SN, TMPSTAMP);
+

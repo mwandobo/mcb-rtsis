@@ -1,0 +1,19 @@
+create table COS_ACTUAL_CONTR
+(
+    SERVICE_PRODUCT INTEGER     not null,
+    MEMBER_ID       DECIMAL(10) not null,
+    TRX_DATE        DATE        not null,
+    UTIL_INS_AMNT   DECIMAL(15, 2),
+    UTIL_FUN_AMNT   DECIMAL(15, 2),
+    UTIL_CAP_AMNT   DECIMAL(15, 2),
+    INSURANCE_FEE   DECIMAL(15, 2),
+    FUNERAL_FEE     DECIMAL(15, 2),
+    CAPITAL_AMNT    DECIMAL(15, 2),
+    SAYE_AMOUNT     DECIMAL(15, 2),
+    UTIL_SAYE_AMNT  DECIMAL(15, 2),
+    BL_AMOUNT       DECIMAL(15, 2),
+    UTIL_BL_AMNT    DECIMAL(15, 2),
+    constraint PK_COS_ACT_CONTR
+        primary key (TRX_DATE, MEMBER_ID, SERVICE_PRODUCT)
+);
+

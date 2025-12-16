@@ -1,0 +1,10 @@
+create table ASYN_AUTHORIZ_TABLE
+(
+    FK_UNIT_CATEGORID CHAR(8),
+    TRX_CODE          INTEGER,
+    RECORD_STATUS     CHAR(1)
+);
+
+create unique index IXU_ASY_000
+    on ASYN_AUTHORIZ_TABLE (FK_UNIT_CATEGORID, TRX_CODE);
+

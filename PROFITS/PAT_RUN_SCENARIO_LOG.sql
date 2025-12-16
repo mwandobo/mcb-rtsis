@@ -1,0 +1,43 @@
+create table PAT_RUN_SCENARIO_LOG
+(
+    ID                  INTEGER not null
+        constraint PATRSLPK
+            primary key,
+    SCEN_NAME           CHAR(15),
+    SCEN_TYPE           CHAR(2),
+    SCEN_DESCRIPTION    CHAR(240),
+    DOC_SAVED_DIRECTORY CHAR(240),
+    STATUS              CHAR(1),
+    SCEN_RUN_COUNT      INTEGER,
+    SCEN_EXECUTABLE     CHAR(20),
+    SCEN_ARG_HINT       CHAR(10),
+    SCEN_PROJECT        CHAR(20),
+    SCEN_SCHEDULER      CHAR(1),
+    SCEN_EXE_PATH       CHAR(200),
+    SCEN_PARAMETER6     CHAR(20),
+    LOOP_INDEX1         SMALLINT,
+    LOOP_NAME           CHAR(32),
+    PROFILE_ID          CHAR(10),
+    BANK_NAME           CHAR(10),
+    DB_CONNECT_STRING   CHAR(240),
+    PROFILE_DESCRIPTION CHAR(32),
+    SCEN_OUTPUT_DIR     CHAR(60),
+    CLIENT_TYPE         CHAR(1),
+    LANGUAGE_CODE       CHAR(2),
+    VALUE_OWNERSHIP     CHAR(1),
+    MACHINE_ACCOUNT     CHAR(32),
+    PERCENT_EXECUTED    SMALLINT,
+    STARTED             TIMESTAMP(6),
+    TERMINATED          TIMESTAMP(6),
+    COMMENTS            CHAR(250),
+    TXN_TOTAL           INTEGER,
+    COMMENTED_TOTAL     INTEGER,
+    FK_PAT_RUN_SCENID   INTEGER,
+    SCHED_SESSION_ID    VARCHAR(20),
+    SCHED_ITEM_ID       VARCHAR(40),
+    SCHED_RERUN_SEQ     SMALLINT default 0
+);
+
+create unique index PATRSLI1
+    on PAT_RUN_SCENARIO_LOG (FK_PAT_RUN_SCENID);
+

@@ -1,0 +1,12 @@
+create table ATM_MESSAGES
+(
+    PROTOCOL_ID        SMALLINT,
+    CHANNEL_ID         SMALLINT,
+    MESSAGE_ID         SMALLINT,
+    ELEMENT_ID         SMALLINT,
+    EXCLUDE_UPON_ERROR CHAR(1)
+);
+
+create unique index IXU_ATM_012
+    on ATM_MESSAGES (PROTOCOL_ID, CHANNEL_ID, MESSAGE_ID, ELEMENT_ID);
+

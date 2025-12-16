@@ -1,0 +1,43 @@
+create table RSKCO_DIRECTCLAIMS
+(
+    REFERENCE_ID       CHAR(30) not null
+        constraint IXU_LNS_055
+            primary key,
+    INTEREST_RATE_DEC  SMALLINT,
+    AMOUNT2_DEC        SMALLINT,
+    DEAL_PRICE_DEC     SMALLINT,
+    AMOUNT1_DEC        SMALLINT,
+    FEE_DECIMALS       SMALLINT,
+    PAYMENT_FREQUENCY  SMALLINT,
+    BASIS              SMALLINT,
+    INTEREST_RATE      INTEGER,
+    DEAL_PRICE         DECIMAL(10),
+    TAX                DECIMAL(10),
+    TRANS_EXPENSES     DECIMAL(10),
+    EXPENSES           DECIMAL(10),
+    FEES               DECIMAL(10),
+    AMOUNT2            DECIMAL(15),
+    AMOUNT1            DECIMAL(15),
+    END_DATE           DATE,
+    START_DATE         DATE,
+    PRFT_EXTRACTION_DT DATE,
+    DEAL_DATE          DATE,
+    BOOK               CHAR(1),
+    FIXED_FLOATING     CHAR(1),
+    BUY_SELL           CHAR(1),
+    CURRENCY2          CHAR(3),
+    CURRENCY1          CHAR(3),
+    DAY_COUNT          CHAR(6),
+    LOAN_TYPE          CHAR(10),
+    OBLIGOR            CHAR(15),
+    MANAGED_ACCOUNT    CHAR(15),
+    CLEARING_ACCOUNT   CHAR(17),
+    TRADING_ACCOUNT    CHAR(17),
+    PRFT_ROUTINE       CHAR(20),
+    ACCOUNTINGNUMBER   CHAR(25),
+    ORDER_NB           CHAR(25),
+    CATEGORY           CHAR(30),
+    SECURITY_ID        CHAR(30),
+    FACILITY_REF       CHAR(50)
+);
+

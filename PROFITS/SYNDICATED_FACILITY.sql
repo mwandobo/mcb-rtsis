@@ -1,0 +1,25 @@
+create table SYNDICATED_FACILITY
+(
+    FACILITY_ID              DECIMAL(10) not null
+        constraint ISYNDICATED_FACILITY
+            primary key,
+    IS_LEADER                CHAR(1),
+    FACILITY_DESCR           VARCHAR(100),
+    CUSTOMER_ID              INTEGER,
+    LNS_ACCOUNT_NUMBER       CHAR(40),
+    LNS_ACCOUNT_SYSTEM       SMALLINT,
+    CAPITAL_TOTAL_DRAWN      DECIMAL(15, 2),
+    CAPITAL_CURRENT_BAL      DECIMAL(15, 2),
+    CAPITAL_UNUSED_FACIL     DECIMAL(15, 2),
+    INTER_TOTAL_CALCULAT     DECIMAL(15, 2),
+    INTER_CURRENT_BAL        DECIMAL(15, 2),
+    COMM_TOTAL_CALCULAT      DECIMAL(15, 2),
+    COMM_CURRENT_BAL         DECIMAL(15, 2),
+    ENTRY_STATUS             CHAR(1),
+    TRX_USER                 CHAR(8),
+    TRX_DATE                 DATE,
+    TRX_TIMESTAMP            TIMESTAMP(6),
+    BORROWING_CUSTOMER       INTEGER,
+    SYNDICATED_AGREEMENT_NUM CHAR(60)
+);
+

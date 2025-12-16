@@ -1,0 +1,12 @@
+create table BLK_GENERIC_DETAIL
+(
+    SERIAL_NUM  INTEGER not null,
+    DESCRIPTION VARCHAR(40),
+    DATA_LABEL  VARCHAR(40),
+    DATA_TYPE   CHAR(1),
+    DATA_VALUE  CHAR(20)
+);
+
+create unique index IXU_BLK_DETA_1
+    on BLK_GENERIC_DETAIL (SERIAL_NUM);
+

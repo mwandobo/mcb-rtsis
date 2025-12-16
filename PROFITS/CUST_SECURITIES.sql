@@ -1,0 +1,15 @@
+create table CUST_SECURITIES
+(
+    FK_CUSTOMERCUST_ID INTEGER,
+    AEDAK_CODE         DECIMAL(10),
+    TMSTAMP            TIMESTAMP(6),
+    CUST_SPECIFICATION CHAR(1),
+    AEDAK_FLG          CHAR(1),
+    PARTY_IND          CHAR(1),
+    INSTITUTIONAL      CHAR(1),
+    PORTFOLIO_OWNER    CHAR(1)
+);
+
+create unique index IXU_CUS_037
+    on CUST_SECURITIES (FK_CUSTOMERCUST_ID);
+

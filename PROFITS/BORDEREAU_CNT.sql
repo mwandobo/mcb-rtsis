@@ -1,0 +1,9 @@
+create table BORDEREAU_CNT
+(
+    CURRENT_YEAR  SMALLINT,
+    BORDEREAU_CNT DECIMAL(13)
+);
+
+create unique index IXU_BOR_002
+    on BORDEREAU_CNT (CURRENT_YEAR);
+

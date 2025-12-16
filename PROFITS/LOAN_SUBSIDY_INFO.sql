@@ -1,0 +1,27 @@
+create table LOAN_SUBSIDY_INFO
+(
+    ACC_UNIT          INTEGER,
+    ACC_TYPE          SMALLINT,
+    ACC_SN            INTEGER,
+    TMPSTAMP          TIMESTAMP(6),
+    ACC_CD            SMALLINT,
+    REQUEST_SN        SMALLINT,
+    TRX_CODE          INTEGER,
+    ID_SUBSIDY        INTEGER,
+    TOT_INTEREST_AMN  DECIMAL(15, 2),
+    INTEREST_CALC_AMN DECIMAL(15, 2),
+    SUBSIDY_AMN       DECIMAL(15, 2),
+    NRM_NXT_VALEUR_DT DATE,
+    CREATION_DT       DATE,
+    NRM_LST_VALEUR_DT DATE,
+    PRINT_DT          DATE,
+    REQUEST_LOAN_STS  CHAR(1),
+    REVERSAL_FLAG     CHAR(1),
+    PAY_DEPEND_FLG    CHAR(1),
+    REQUEST_TYPE      CHAR(1),
+    TRANSFER_FLG      CHAR(1)
+);
+
+create unique index IXU_LOA_002
+    on LOAN_SUBSIDY_INFO (ACC_UNIT, ACC_TYPE, ACC_SN, TMPSTAMP);
+

@@ -1,0 +1,9 @@
+create table CLOSED_UNIT
+(
+    FK_UNITCODE      INTEGER,
+    TRANSACTION_DATE DATE
+);
+
+create unique index IXU_CLO_000
+    on CLOSED_UNIT (FK_UNITCODE, TRANSACTION_DATE);
+

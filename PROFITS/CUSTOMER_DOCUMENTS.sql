@@ -1,0 +1,37 @@
+create table CUSTOMER_DOCUMENTS
+(
+    CUST_ID                  INTEGER not null,
+    FK_GH_RQTP1              CHAR(5) not null,
+    FK_GD_RQTP1              INTEGER not null,
+    FK_GH_RQTP2              CHAR(5) not null,
+    FK_GD_RQTP2              INTEGER not null,
+    FK_GH_RQTP3              CHAR(5) not null,
+    FK_GD_RQTP3              INTEGER not null,
+    INSERT_UNIT              INTEGER,
+    UPDATE_UNIT              INTEGER,
+    SCANNED_IMAGE_ID         DECIMAL(12),
+    LINKED_FILE_SN           DECIMAL(15),
+    UPDATE_DATE              DATE,
+    INSERT_DATE              DATE,
+    TMSTAMP                  TIMESTAMP(6),
+    LINKED_FILE              CHAR(1),
+    SCANNED_FILE             CHAR(1),
+    GIVEN_FLAG               CHAR(1),
+    UPDATE_USER              CHAR(8),
+    INSERT_USER              CHAR(8),
+    ENTRY_COMMENTS           CHAR(254),
+    EXPIRY_DATE              DATE,
+    FILE_NAME                VARCHAR(40),
+    FILE_EXTENSION           VARCHAR(4),
+    INSERT_CHANNEL_USER      VARCHAR(40),
+    INSERT_REFERENCE_NUMBER  CHAR(40),
+    INSERT_SOFT_ID           VARCHAR(10),
+    UPDATED_CHANNEL_USER     VARCHAR(40),
+    UPDATED_REFERENCE_NUMBER CHAR(40),
+    UPDATED_SOFT_ID          VARCHAR(10),
+    WS_ID                    VARCHAR(20),
+    COMMAND                  VARCHAR(80),
+    constraint IXU_CIS_172
+        primary key (CUST_ID, FK_GH_RQTP1, FK_GD_RQTP1, FK_GH_RQTP2, FK_GD_RQTP2, FK_GH_RQTP3, FK_GD_RQTP3)
+);
+

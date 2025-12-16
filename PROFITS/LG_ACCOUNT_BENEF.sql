@@ -1,0 +1,11 @@
+create table LG_ACCOUNT_BENEF
+(
+    FK_LG_BENEFICIACOD INTEGER,
+    FK_LG_ACCOUNTACC_S DECIMAL(13),
+    SN                 SMALLINT,
+    ENTRY_STATUS       CHAR(1)
+);
+
+create unique index IXU_LG__008
+    on LG_ACCOUNT_BENEF (FK_LG_BENEFICIACOD, FK_LG_ACCOUNTACC_S);
+

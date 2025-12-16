@@ -1,0 +1,10 @@
+create table OLD_FIXINGRATE
+(
+    FK_CURRENCYID_CURR INTEGER,
+    ACTIVATION_DATE    DATE,
+    MULTIPLIER         INTEGER,
+    RATE               DECIMAL(12, 6),
+    TMSTAMP            TIMESTAMP(6),
+    ACTIVATION_TIME    TIME
+);
+

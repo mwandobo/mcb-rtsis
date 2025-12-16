@@ -1,0 +1,14 @@
+create table GLG_ORDER_PAIRS
+(
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    FK_GLG_ACCOUNTACC0 CHAR(21),
+    TIMESTMP           TIMESTAMP(6),
+    DEACTIVATION_DATE  DATE,
+    CHANGE_STATUS_FLAG CHAR(1),
+    STATUS             CHAR(1),
+    SUBSY_LEVEL        CHAR(1) default '0' not null
+);
+
+create unique index IXU_GLG_084
+    on GLG_ORDER_PAIRS (FK_GLG_ACCOUNTACCO, FK_GLG_ACCOUNTACC0);
+

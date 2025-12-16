@@ -1,0 +1,21 @@
+create table CP_INTERFACE_HEADER
+(
+    CP_HASH_CODE    VARCHAR(100) not null
+        constraint PK_CP_INTHD
+            primary key,
+    TRX_UNIT        INTEGER,
+    TRX_DATE        DATE,
+    TRX_USR         CHAR(8),
+    TRX_USR_SN      INTEGER,
+    TRX_TIMESTAMP   TIMESTAMP(6),
+    CP_AGREEMENT_NO DECIMAL(10),
+    CP_DATA_FIELD_1 CHAR(80),
+    CP_DATA_FIELD_2 CHAR(80),
+    CP_DATA_FIELD_3 CHAR(80),
+    CP_DATA_FIELD_4 CHAR(80),
+    CP_AMOUNT       DECIMAL(15, 2),
+    CP_CURRENCY     INTEGER,
+    WS_CODE         VARCHAR(20),
+    PARTIAL_PAYMENT CHAR(1)
+);
+

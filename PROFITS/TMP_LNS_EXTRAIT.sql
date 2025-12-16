@@ -1,0 +1,29 @@
+create table TMP_LNS_EXTRAIT
+(
+    C_DIGIT         SMALLINT,
+    ACC_TYPE        SMALLINT,
+    TRX_INTERNAL_SN SMALLINT,
+    ACCOUNT_CD      SMALLINT,
+    PRFT_SYSTEM     SMALLINT,
+    TRX_CURR        INTEGER,
+    ACC_UNIT        INTEGER,
+    ACC_CURR        INTEGER,
+    ACC_SN          INTEGER,
+    CUST_ID         INTEGER,
+    DEBIT_AMT       DECIMAL(15, 2),
+    BOOK_BALANCE    DECIMAL(15, 2),
+    PREV_BALANCE    DECIMAL(15, 2),
+    CREDIT_AMT      DECIMAL(15, 2),
+    VALUE_DATE      DATE,
+    TRX_DATE        DATE,
+    TMSTAMP         TIMESTAMP(6),
+    ZIP_CODE        CHAR(10),
+    CITY            CHAR(30),
+    ACCOUNT_NUMBER  CHAR(40),
+    ADDRESS_1       VARCHAR(40),
+    DESCRIPTION     VARCHAR(40),
+    ADDRESS_2       VARCHAR(40),
+    COUNTRY         VARCHAR(40),
+    CUST_NAME       VARCHAR(91)
+);
+

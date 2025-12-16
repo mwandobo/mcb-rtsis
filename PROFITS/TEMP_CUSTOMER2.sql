@@ -1,0 +1,23 @@
+create table TEMP_CUSTOMER2
+(
+    CUST_ID          INTEGER,
+    TRX_DATE         DATE,
+    TMSTAMP          DATE,
+    DAI_NUMBER       CHAR(12),
+    COMPANY_CATEG    INTEGER,
+    COMPANY_SUBCATEG INTEGER,
+    BASILEIA         INTEGER,
+    SPM_NUMBER       CHAR(7),
+    ECONOMIC_GROUP   INTEGER,
+    ACTIVITY         INTEGER,
+    ACTIVITY_TYPE    INTEGER,
+    FIN_RANGE        DECIMAL(15, 2),
+    FIN_RANGE_DT     DATE,
+    FICLI_CODE       INTEGER,
+    FICLI_DESC       CHAR(42),
+    PROCESSED_FLG    CHAR(1)
+);
+
+create unique index SYS_C002001023
+    on TEMP_CUSTOMER2 (TRX_DATE, CUST_ID);
+

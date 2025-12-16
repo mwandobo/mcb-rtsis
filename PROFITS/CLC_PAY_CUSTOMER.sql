@@ -1,0 +1,37 @@
+create table CLC_PAY_CUSTOMER
+(
+    CASE_ID                CHAR(40)    not null,
+    CUST_ID                INTEGER     not null,
+    TOTAL_PAYMENTS         INTEGER     not null,
+    TOTAL_PAY_AMN          DECIMAL(18, 2),
+    TOTAL_PAID_AMN         DECIMAL(18, 2),
+    CREATE_UNIT            INTEGER,
+    CREATE_DATE            DATE,
+    CREATE_USER            CHAR(8),
+    CREATE_TMSTAMP         TIMESTAMP(6),
+    UPDATE_UNIT            INTEGER,
+    UPDATE_DATE            DATE,
+    UPDATE_USER            CHAR(8),
+    UPDATE_TMSTAMP         TIMESTAMP(6),
+    PAY_PROMISE_ID         DECIMAL(15) not null,
+    PAY_PROMISE_STATUS     CHAR(2),
+    PAY_PROMISE_NOTES      VARCHAR(200),
+    OWED_WRITEOFF_AMN      DECIMAL(18, 2),
+    PAY_CUSTOMER_TYPE      CHAR(1),
+    MIGRATION_FLG          CHAR(1),
+    MIGRATION_DT           DATE,
+    MIGRATION_START_DT     DATE,
+    MIGRATION_START_AMN    DECIMAL(18, 2),
+    MIGRATION_PAID_AMN     DECIMAL(18, 2),
+    MIGRATION_COMMENTS     VARCHAR(200),
+    FK_GH_REASON           CHAR(5),
+    FK_GD_REASON           INTEGER,
+    FK_CLC_SECOND_STATUS   DECIMAL(5),
+    FK_CLC_JUSTIFIC_REASON DECIMAL(5),
+    SETTLEMENT_TYPE        INTEGER,
+    MIGRATION_INSTALL_NO   INTEGER,
+    OLD_SETTLEMENT_CODE    CHAR(100),
+    constraint CLC_COLLECT_PK_11
+        primary key (CASE_ID, CUST_ID, PAY_PROMISE_ID)
+);
+

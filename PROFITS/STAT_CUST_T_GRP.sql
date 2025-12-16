@@ -1,0 +1,11 @@
+create table STAT_CUST_T_GRP
+(
+    ID_PROGRAM    CHAR(5),
+    CUST_GROUP    SMALLINT,
+    ID_TABLE      INTEGER,
+    CUST_GRP_DESC CHAR(30)
+);
+
+create unique index IXP_STA_004
+    on STAT_CUST_T_GRP (ID_PROGRAM, CUST_GROUP, ID_TABLE);
+

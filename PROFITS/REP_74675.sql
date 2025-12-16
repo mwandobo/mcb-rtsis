@@ -1,0 +1,11 @@
+create table REP_74675
+(
+    UNIT_CODE          DECIMAL(18),
+    TOT_CRD_LIMIT_DR   DECIMAL(15, 2),
+    ACCOUNTING_BALANCE DECIMAL(15, 2),
+    AGREEMENT_LIMIT    DECIMAL(17, 2)
+);
+
+create unique index IXU_REP_015
+    on REP_74675 (UNIT_CODE);
+

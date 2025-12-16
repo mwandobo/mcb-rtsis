@@ -1,0 +1,21 @@
+create table GENERIC_TABLE
+(
+    FK_GENERIC_HEADPAR CHAR(5),
+    SERIAL_NUM         INTEGER,
+    SIZE_DECIMAL       SMALLINT,
+    GENERIC_SIZE       SMALLINT,
+    FK_GENERIC_DETASER INTEGER,
+    TMSTAMP            DATE,
+    MANDATORY          CHAR(1),
+    REL_FLAG           CHAR(1),
+    ITEM_TYPE          CHAR(1),
+    ITEM_FLAG          CHAR(2),
+    GENERIC_TYPE       CHAR(2),
+    FK_GENERIC_DETAFK  CHAR(5),
+    TYPE_INFO          CHAR(5),
+    DESCRIPTION        VARCHAR(40)
+);
+
+create unique index IXU_GEN_001
+    on GENERIC_TABLE (FK_GENERIC_HEADPAR, SERIAL_NUM);
+

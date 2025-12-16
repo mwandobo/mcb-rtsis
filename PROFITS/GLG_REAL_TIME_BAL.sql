@@ -1,0 +1,14 @@
+create table GLG_REAL_TIME_BAL
+(
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    FK_CURRENCYID_CURR INTEGER,
+    NODE               CHAR(2),
+    CYDB_AMOUNT        DECIMAL(15, 2),
+    NYDB_AMOUNT        DECIMAL(15, 2),
+    CYCR_AMOUNT        DECIMAL(15, 2),
+    NYCR_AMOUNT        DECIMAL(15, 2)
+);
+
+create unique index IXU_GLG_087
+    on GLG_REAL_TIME_BAL (FK_GLG_ACCOUNTACCO, FK_CURRENCYID_CURR, NODE);
+

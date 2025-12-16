@@ -1,0 +1,11 @@
+create table COLL_ISSUER_INFO
+(
+    SOURCE      CHAR(1),
+    TRX_DATE    DATE,
+    ISSUER_CODE INTEGER,
+    COMMENTS    VARCHAR(250)
+);
+
+create unique index IXU_COL_017
+    on COLL_ISSUER_INFO (SOURCE, TRX_DATE, ISSUER_CODE);
+

@@ -1,0 +1,42 @@
+create table UW_INTERFACE
+(
+    FK_UW_TERMUW_CODE  INTEGER,
+    NEW_ORDER_CODE     INTEGER,
+    STOCK_TYPE         SMALLINT,
+    OLD_BANK_CODE      SMALLINT,
+    BANK_CODE          SMALLINT,
+    UNIT_CODE          INTEGER,
+    FK_UWINTERF_SERNUM INTEGER,
+    COLL_UW_CODE       INTEGER,
+    ZIP_CODE           INTEGER,
+    OLD_ORDER_CODE     INTEGER,
+    ORDER_ITEMS        INTEGER,
+    CONFIRMATION_ITEMS INTEGER,
+    SAT_ACCOUNT_NO     DECIMAL(11),
+    SAT_REG_NO         DECIMAL(11),
+    ORDER_DATE         DATE,
+    TIMESTMP           DATE,
+    INTERFACE_STATUS   CHAR(1),
+    CUSTOMER_TYPE      CHAR(1),
+    INSTITUTIONAL_FLAG CHAR(1),
+    ID_TYPE            CHAR(1),
+    NATIONALITY_CODE   CHAR(3),
+    NEW_ZIP_CODE       CHAR(5),
+    FK_UWINTERF_COLLAB CHAR(5),
+    FATHER_NAME        CHAR(10),
+    FIRST_NAME         CHAR(10),
+    BLANK              CHAR(10),
+    SAT_USER           CHAR(10),
+    AFM                CHAR(15),
+    SAT_SHORT_DESCR    CHAR(15),
+    CITY               CHAR(15),
+    JOB_DESCRIPTION    CHAR(15),
+    ID_CODE            CHAR(20),
+    SURNAME            CHAR(23),
+    ADDRESS            CHAR(30),
+    RETURN_ERROR       CHAR(50)
+);
+
+create unique index IXU_UW__006
+    on UW_INTERFACE (FK_UW_TERMUW_CODE, NEW_ORDER_CODE);
+

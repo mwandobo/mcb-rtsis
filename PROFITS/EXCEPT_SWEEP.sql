@@ -1,0 +1,16 @@
+create table EXCEPT_SWEEP
+(
+    SWEEP_TYPE         CHAR(1)     not null,
+    SWEEP_ACCOUNT      DECIMAL(11) not null,
+    SERVICE_ACCOUNT    DECIMAL(11) not null,
+    MIN_MAX_BAL_LIMIT  DECIMAL(15, 2),
+    MIN_SWEEP_AMOUNT   DECIMAL(15, 2),
+    SERVICE_ACC_STS    CHAR(1),
+    SERV_ACC_AVAIL_BAL DECIMAL(15, 2),
+    SWEEP_ACC_STS      CHAR(1),
+    SWEEP_ACC_AVL_BAL  DECIMAL(15, 2),
+    ERROR_DESCR        VARCHAR(80),
+    constraint PK_EXCEPT_SWEEP
+        primary key (SERVICE_ACCOUNT, SWEEP_TYPE, SWEEP_ACCOUNT)
+);
+

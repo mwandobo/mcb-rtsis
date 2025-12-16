@@ -1,0 +1,20 @@
+create table LOAN_ADD_INFO
+(
+    ACC_SN          DECIMAL(15),
+    ACC_UNIT        INTEGER,
+    ACC_TYPE        SMALLINT,
+    ROW_ID          INTEGER,
+    ROW_INTERNAL_SN INTEGER,
+    RATE_DATA       DECIMAL(8, 4),
+    AMOUNT_DATA     DECIMAL(15, 2),
+    NUM_DATA        DECIMAL(15),
+    DATE_DATA       DATE,
+    TMSTAMP_DATA    TIMESTAMP(6),
+    SHOW_FLAG       CHAR(1),
+    TEXT_DATA       CHAR(100),
+    ACC_MESSAGE     VARCHAR(4000)
+);
+
+create unique index IXU_LOA_039
+    on LOAN_ADD_INFO (ACC_SN, ACC_UNIT, ACC_TYPE, ROW_ID, ROW_INTERNAL_SN);
+

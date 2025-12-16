@@ -1,0 +1,9 @@
+create table STAGE_W_CUSTOMER_UDF
+(
+    CUST_ID             DECIMAL(5),
+    SEGMENT_IND_NAME    CHAR(40),
+    SEGMENT_IND         CHAR(2),
+    SUBSEGMENT_IND_NAME CHAR(40),
+    SUBSEGMENT_IND      CHAR(2)
+);
+

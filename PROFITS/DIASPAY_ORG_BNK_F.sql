@@ -1,0 +1,36 @@
+create table DIASPAY_ORG_BNK_F
+(
+    FILE_DATE          DATE        not null,
+    FILE_TIME          CHAR(4)     not null,
+    FILE_RECORD_SN     DECIMAL(10) not null,
+    RECORD_TYPE        SMALLINT,
+    ORGANIZATION_CODE  CHAR(5),
+    ORGANIZATION_NAME  CHAR(30),
+    PAYROLL_TYPE       SMALLINT,
+    PAYROLL_MONTH      SMALLINT,
+    PAYROLL_YEAR       SMALLINT,
+    ORG_ACC_UNIT       SMALLINT,
+    ORG_ACC_NUMBER     DECIMAL(13),
+    ORG_CUST_ID        CHAR(16),
+    SETTLEMENT_DATE    DATE,
+    ORG_DB_AMN         DECIMAL(15, 2),
+    ORG_CR_AMN         DECIMAL(15, 2),
+    OTH_BNK_DB_AMN     DECIMAL(15, 2),
+    OTH_BNK_CR_AMN     DECIMAL(15, 2),
+    IBAN               CHAR(27),
+    PROFITS_ACC_NUM    CHAR(40),
+    PRFT_SYSTEM        SMALLINT,
+    REC_COUNT          INTEGER,
+    TOT_ORG_DB_AMN     DECIMAL(15, 2),
+    TOT_ORG_CR_AMN     DECIMAL(15, 2),
+    TOT_OTH_BNK_DB_AMN DECIMAL(15, 2),
+    TOT_OTH_BNK_CR_AMN DECIMAL(15, 2),
+    ERROR_DESCR        CHAR(40),
+    REPLY_FLAG         CHAR(1),
+    RESULT_FLAG        CHAR(1),
+    CRE_DEB_DATE       DATE,
+    SEND_DATE          DATE,
+    constraint IXU_CP__55
+        primary key (FILE_DATE, FILE_TIME, FILE_RECORD_SN)
+);
+

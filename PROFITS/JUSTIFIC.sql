@@ -1,0 +1,30 @@
+create table JUSTIFIC
+(
+    ID_JUSTIFIC        INTEGER,
+    M_F_AVAILABILITY   SMALLINT,
+    FK_JUSTIFICID_JUST INTEGER,
+    COMPOSITE_JUSTIFIC INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    JUSTIFIC_FLG       CHAR(1),
+    URL_COM_FLG        CHAR(1),
+    TRANSITION_FLG     CHAR(1),
+    UPDATES_LOG        CHAR(1),
+    UPDATES_TOTAL      CHAR(1),
+    UPDATES_TRN        CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    FOR_ATM            CHAR(1),
+    UPDATES_DBASE      CHAR(1),
+    TRN_TYPE           CHAR(1),
+    PSB_CODE           CHAR(3),
+    SWIFT_SHORT_DESC   CHAR(3),
+    SHORT_DESCR        CHAR(5),
+    ENGL_DESCRIPTION   CHAR(40),
+    EXTR_DESC          CHAR(50),
+    DESCRIPTION        VARCHAR(40),
+    GER_DESCRIPTION    VARCHAR(40),
+    NO_REVERSAL        CHAR(1)
+);
+
+create unique index IXU_JUS_001
+    on JUSTIFIC (ID_JUSTIFIC);
+

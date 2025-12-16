@@ -1,0 +1,6 @@
+create table LOAN_EXTRAIT_COMMENTS
+(
+    REC_SN   SMALLINT,
+    COMMENTS VARCHAR(255)
+);
+

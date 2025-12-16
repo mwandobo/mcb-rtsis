@@ -1,0 +1,18 @@
+create table PROFILE_UNIT
+(
+    FK_UNITCODE    INTEGER not null,
+    FK_PROFILEID   CHAR(8) not null,
+    ENTRY_STATUS   CHAR(1),
+    TMSTAMP        TIMESTAMP(6),
+    UPDATE_TMSTAMP TIMESTAMP(6),
+    UPDATE_USR     CHAR(8),
+    UPDATE_DATE    DATE,
+    UPDATE_UNIT    INTEGER,
+    CREATE_TMSTAMP TIMESTAMP(6),
+    CREATE_USR     CHAR(8),
+    CREATE_DATE    DATE,
+    CREATE_UNIT    INTEGER,
+    constraint FK_PROFUNIT
+        primary key (FK_UNITCODE, FK_PROFILEID)
+);
+

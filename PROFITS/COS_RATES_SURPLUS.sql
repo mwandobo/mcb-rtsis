@@ -1,0 +1,22 @@
+create table COS_RATES_SURPLUS
+(
+    SURPLUS_TYPE     SMALLINT              not null,
+    ACTIVATION_DATE  DATE                  not null,
+    BASE_DATE_IND    SMALLINT,
+    SURPLUS_PERCENT  SMALLINT,
+    SHARE_AGE_UPPER  SMALLINT,
+    SPREAD_MIN_VALUE DECIMAL(15, 2),
+    CREATED_DATE     DATE,
+    UPDATED_DATE     DATE,
+    DECISION_DATE    DATE,
+    UPDATED_BY       CHAR(8),
+    CREATED_BY       CHAR(8),
+    COMMENTS         VARCHAR(255),
+    SERVICE_PRODUCT  INTEGER default 38001 not null,
+    constraint IXU_CP_112
+        primary key (SERVICE_PRODUCT, SURPLUS_TYPE, ACTIVATION_DATE)
+);
+
+create unique index IXU_CP_112
+    on COS_RATES_SURPLUS (SURPLUS_TYPE, ACTIVATION_DATE);
+

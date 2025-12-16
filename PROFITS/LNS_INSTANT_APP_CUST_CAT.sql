@@ -1,0 +1,11 @@
+create table LNS_INSTANT_APP_CUST_CAT
+(
+    APPLICATION_ID    DECIMAL(18) not null,
+    SERIAL_NUM        INTEGER,
+    CATEGORY_CODE     CHAR(8)     not null,
+    BENEFICIARY_SN    SMALLINT    not null,
+    REPRESENTATIVE_SN SMALLINT    not null,
+    constraint PK_INSTANT_APP_CUST_CAT
+        primary key (REPRESENTATIVE_SN, APPLICATION_ID, CATEGORY_CODE, BENEFICIARY_SN)
+);
+

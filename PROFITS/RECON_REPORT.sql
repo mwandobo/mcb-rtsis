@@ -1,0 +1,30 @@
+create table RECON_REPORT
+(
+    TRX_SEL_DATE      DATE        not null,
+    CUSTOMER_NUMBER   INTEGER     not null,
+    DEP_ACC_NUMBER    DECIMAL(11) not null,
+    SN                DECIMAL(10) not null,
+    REC_TYPE          CHAR(10),
+    CUST_SHORT_NAME   CHAR(15),
+    ACCOUNT_NUMBER    CHAR(40),
+    NOSTRO_ACCOUNT    VARCHAR(20),
+    ACCOUNT_CURRENCY  INTEGER,
+    ACC_CURR_DESC     CHAR(60),
+    DEBIT_CREDIT_FLAG CHAR(1),
+    ENTRY_AMOUNT      DECIMAL(17, 2),
+    PREV_ACC_BALANCE  DECIMAL(15, 2),
+    TRX_DATE          DATE,
+    VALUE_DATE        DATE,
+    IN_REFERENCE      VARCHAR(40),
+    ENTRY_COMMENTS    CHAR(40),
+    GLG_ACCOUNT_ID    CHAR(21),
+    SWIFT_ADDRESS     VARCHAR(12),
+    DESIGNATION       VARCHAR(60),
+    COMMENTS1         VARCHAR(40),
+    COMMENTS2         VARCHAR(40),
+    COMMENTS4         VARCHAR(40),
+    COMMENTS10        VARCHAR(40),
+    constraint PK_RECON_REP
+        primary key (SN, DEP_ACC_NUMBER, CUSTOMER_NUMBER, TRX_SEL_DATE)
+);
+

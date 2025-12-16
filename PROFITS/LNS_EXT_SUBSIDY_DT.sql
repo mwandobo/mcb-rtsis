@@ -1,0 +1,20 @@
+create table LNS_EXT_SUBSIDY_DT
+(
+    APPLICATION_NO     CHAR(40) not null,
+    DEBT_NUMBER        CHAR(40) not null,
+    ACCOUNT_NUMBER     CHAR(40) not null,
+    PAYMENT_NO         CHAR(40) not null,
+    PAYMENT_AMOUNT     DECIMAL(15, 2),
+    ALLOCATED_AMOUNT   DECIMAL(15, 2),
+    REMAINING_AMOUNT   DECIMAL(15, 2),
+    PAYMENT_DT         DATE,
+    SUBSIDY_PRC        DECIMAL(15, 2),
+    INSTALL_AMOUNT     DECIMAL(15, 2),
+    MAX_SUBSIDY_AMOUNT DECIMAL(15, 2),
+    SUBSIDY_DT         DATE,
+    PAYMENT_STATUS     CHAR(1),
+    TMSTAMP            TIMESTAMP(6),
+    constraint PK_SUB_DT
+        primary key (APPLICATION_NO, DEBT_NUMBER, ACCOUNT_NUMBER, PAYMENT_NO)
+);
+

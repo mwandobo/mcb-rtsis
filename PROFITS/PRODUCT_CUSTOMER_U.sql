@@ -1,0 +1,9 @@
+create table PRODUCT_CUSTOMER_U
+(
+    FK_CUSTOMERCUST_ID INTEGER not null,
+    FK_PRODUCTID_PRODU INTEGER not null,
+    ACCOUNT_COUNTER    SMALLINT,
+    constraint IXU_CIU_051
+        primary key (FK_PRODUCTID_PRODU, FK_CUSTOMERCUST_ID)
+);
+

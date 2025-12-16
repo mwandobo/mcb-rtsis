@@ -1,0 +1,20 @@
+create table WFS_SCORECARD_DEFAULT
+(
+    SCORECARD_SN    DECIMAL(10) not null,
+    KPI_SN          DECIMAL(10) not null,
+    KPI_VALUE_SN    DECIMAL(10) not null,
+    PRIORITY        DECIMAL(5)  not null,
+    SCORE_RESULT_SN DECIMAL(5),
+    CREATE_UNIT     DECIMAL(5),
+    CREATE_DATE     DATE,
+    CREATE_USR      CHAR(8),
+    CREATE_TMSTAMP  TIMESTAMP(6),
+    UPDATE_UNIT     DECIMAL(5),
+    UPDATE_DATE     DATE,
+    UPDATE_USR      CHAR(8),
+    UPDATE_TMSTAMP  TIMESTAMP(6),
+    ENTRY_STATUS    CHAR(1),
+    constraint PK_WFS_SCORECARD_DEFAULT
+        primary key (SCORECARD_SN, KPI_SN, KPI_VALUE_SN)
+);
+

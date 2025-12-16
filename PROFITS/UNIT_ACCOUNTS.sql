@@ -1,0 +1,16 @@
+create table UNIT_ACCOUNTS
+(
+    ACCNT_BRANCH3   INTEGER  not null,
+    ACCNT_ACC_TYPE  SMALLINT not null,
+    ACCNT_SERIAL_NO INTEGER  not null,
+    ACCNT_CHECH_DG  SMALLINT not null,
+    ENTRY_STATUS    CHAR(1),
+    TRX_UNIT        INTEGER,
+    TRX_DATE        DATE,
+    TRX_USR         CHAR(8),
+    FK_PRODUCTID    INTEGER,
+    FK_UNITCODE     INTEGER,
+    constraint I0000251
+        primary key (ACCNT_BRANCH3, ACCNT_ACC_TYPE, ACCNT_SERIAL_NO, ACCNT_CHECH_DG)
+);
+

@@ -1,0 +1,15 @@
+create table SECMARKET_RATE_TAB
+(
+    FK_TRBONDBOND_CODE CHAR(15)    not null,
+    FK_BONDRATETAB_NUM DECIMAL(10) not null,
+    PROFIT_PERCENTAGE  DECIMAL(8, 4),
+    SPECIAL_SELL_RATE  DECIMAL(12, 6),
+    SPECIAL_BUY_RATE   DECIMAL(12, 6),
+    INT_ACCR           DECIMAL(14, 8),
+    BUY_RATE           DECIMAL(14, 8),
+    REFERENCE_VALUE    DECIMAL(14, 8),
+    SELL_RATE          DECIMAL(14, 8),
+    constraint IXU_DEP_141
+        primary key (FK_TRBONDBOND_CODE, FK_BONDRATETAB_NUM)
+);
+

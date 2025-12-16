@@ -1,0 +1,28 @@
+create table CP_BARCODE_DEFINITION
+(
+    FK_CP_AGREEMENT  DECIMAL(10) not null
+        constraint IXU_CP_113
+            primary key,
+    DECIMAL_DIGITS_5 SMALLINT,
+    SEGMENT_LENGTH_3 SMALLINT,
+    START_POS_4      SMALLINT,
+    SEGMENT_LENGTH_4 SMALLINT,
+    START_POS_5      SMALLINT,
+    SEGMENT_LENGTH_5 SMALLINT,
+    START_POS_3      SMALLINT,
+    SEGMENT_LENGTH_2 SMALLINT,
+    START_POS_2      SMALLINT,
+    SEGMENT_LENGTH_1 SMALLINT,
+    START_POS_1      SMALLINT,
+    ACTIVE_3         CHAR(1),
+    ACTIVE_4         CHAR(1),
+    ACTIVE_2         CHAR(1),
+    ACTIVE_5         CHAR(1),
+    ACTIVE_1         CHAR(1),
+    DELIMITER_3      CHAR(2),
+    DELIMITER_4      CHAR(2),
+    DELIMITER_5      CHAR(2),
+    DELIMITER_2      CHAR(2),
+    DELIMITER_1      CHAR(2)
+);
+

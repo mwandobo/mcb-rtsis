@@ -1,0 +1,10 @@
+create table PARTY_CLEAR_SYSTEM
+(
+    FK_CUSTOMERCUST_ID INTEGER  not null,
+    FK_CLEARING_SYSCOD CHAR(10) not null,
+    PARTY_CLEAR_CODE   DECIMAL(10),
+    TMSTAMP            TIMESTAMP(6),
+    constraint IXU_DEP_172
+        primary key (FK_CUSTOMERCUST_ID, FK_CLEARING_SYSCOD)
+);
+

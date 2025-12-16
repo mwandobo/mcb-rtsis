@@ -1,0 +1,8 @@
+create table PDOC_RESULTS
+(
+    ACCOUNT        CHAR(40),
+    ENTRY_COMMENTS VARCHAR(500),
+    ENTRY_STATUS   CHAR(1),
+    PROCESS_DATE   DATE
+);
+

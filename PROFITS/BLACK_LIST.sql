@@ -1,0 +1,19 @@
+create table BLACK_LIST
+(
+    FK_COLLABORATIOBAN INTEGER,
+    CHEQUE_NUMBER      VARCHAR(20),
+    FK_CURRENCYID_CURR INTEGER,
+    AMOUNT             DECIMAL(15, 2),
+    TMSTAMP            DATE,
+    ISSUE_DATE         DATE,
+    BLOCK_INDICATOR    CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    CHEQUE_TYPE        CHAR(1),
+    UNIT_CODE          CHAR(5),
+    DRAWN_BANK         VARCHAR(40),
+    ENTRY_COMMENTS     VARCHAR(40)
+);
+
+create unique index IXU_BLA_000
+    on BLACK_LIST (FK_COLLABORATIOBAN, CHEQUE_NUMBER);
+

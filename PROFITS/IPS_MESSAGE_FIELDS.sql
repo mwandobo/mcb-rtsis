@@ -1,0 +1,21 @@
+create table IPS_MESSAGE_FIELDS
+(
+    ORDER_CODE      VARCHAR(20) not null,
+    FIELD_NAME      VARCHAR(10) not null,
+    FIELD_SN        DECIMAL(10) not null,
+    VALUE_TYPE      CHAR(2),
+    VALUE_TEXT      VARCHAR(150),
+    VALUE_DATE      DATE,
+    VALUE_NUMBER    DECIMAL(15, 2),
+    VALUE_TIMESTAMP TIMESTAMP(6),
+    VALUE_FLAG      VARCHAR(2),
+    FORMATTED_VALUE CHAR(150),
+    SUB_FIELD_SN    SMALLINT,
+    VALUE_TIME      TIME,
+    constraint IXU_CP__60
+        primary key (ORDER_CODE, FIELD_SN)
+);
+
+create unique index IPS_MESSSAGE_FIELDS_IND1
+    on IPS_MESSAGE_FIELDS (FIELD_NAME, ORDER_CODE);
+

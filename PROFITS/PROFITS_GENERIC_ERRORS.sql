@@ -1,0 +1,33 @@
+create table PROFITS_GENERIC_ERRORS
+(
+    TRX_DATE         DATE,
+    PROF_ACC_NUMBER  CHAR(40),
+    ACC_TYPE         INTEGER,
+    PROF_ACC_CD      INTEGER,
+    ACC_CD           INTEGER,
+    UNITCODE         INTEGER,
+    ID_JUSTIFIC      INTEGER,
+    TRX_CODE         INTEGER,
+    TRX_UNIT         INTEGER,
+    ID_PRODUCT       INTEGER,
+    MONITORING_UNIT  INTEGER,
+    ACC_SN           INTEGER,
+    TRX_USER         CHAR(8),
+    DCD_ACTION       CHAR(20),
+    DCD_PROCEDURE    CHAR(40),
+    DCD_ENTITY       CHAR(40),
+    DCD_ACTION_BLOCK CHAR(40),
+    DCD_KEYVAL2      CHAR(80),
+    DCD_KEYVAL4      CHAR(80),
+    DCD_KEYVAL1      CHAR(80),
+    DCD_KEYVAL5      CHAR(80),
+    DCD_COMMENT      CHAR(80),
+    DCD_KEYVAL3      CHAR(80),
+    DCD_KEYVAL6      CHAR(80),
+    ERROR_MSG        CHAR(80),
+    TMSTAMP          TIMESTAMP(6) not null
+);
+
+create unique index PK_PGE
+    on PROFITS_GENERIC_ERRORS (TRX_DATE, PROF_ACC_NUMBER, TMSTAMP);
+

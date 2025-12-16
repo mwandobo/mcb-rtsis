@@ -1,0 +1,31 @@
+create table TPT_EXTRAIT
+(
+    TRX_INTERNAL_SN    SMALLINT,
+    TMSTAMP            TIMESTAMP(6),
+    TP_NUMBER          DECIMAL(15),
+    TP_TYPE            CHAR(5),
+    TP_TASK            CHAR(8),
+    AMOUNT_TYPE        SMALLINT,
+    SALES_PURC_IND     SMALLINT,
+    GOVERMENT_IND      SMALLINT,
+    CONSUMABLE_IND     SMALLINT,
+    INVOICE_CNT        SMALLINT,
+    BAL_PARTICIPATION  SMALLINT,
+    TRANSACTION_STATUS SMALLINT,
+    TRX_UNIT           INTEGER,
+    TRX_CURRENCY       INTEGER,
+    TRX_CODE           INTEGER,
+    ID_JUSTIFIC        INTEGER,
+    TRX_USR_SN         INTEGER,
+    PREV_BALANCE       DECIMAL(15, 2),
+    AMNT               DECIMAL(15, 2),
+    TRX_DATE           DATE,
+    ISSUE_DATE         DATE,
+    TRX_USR            CHAR(8),
+    INVOICE_NUMBER     CHAR(12),
+    TRX_COMMENTS       VARCHAR(70)
+);
+
+create unique index IXU_TPT_005
+    on TPT_EXTRAIT (TRX_INTERNAL_SN, TMSTAMP, TP_NUMBER, TP_TYPE, TP_TASK);
+

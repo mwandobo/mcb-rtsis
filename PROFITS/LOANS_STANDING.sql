@@ -1,0 +1,34 @@
+create table LOANS_STANDING
+(
+    CREATION_DT        DATE     not null,
+    ACC_UNIT_LOAN      INTEGER  not null,
+    ACC_TYPE_LOAN      SMALLINT not null,
+    ACC_SN_LOAN        INTEGER  not null,
+    ACC_CD_LOAN        SMALLINT not null,
+    REQUEST_TYPE       CHAR(1)  not null,
+    REQUEST_SN         SMALLINT not null,
+    CREDEB_LOAN        SMALLINT,
+    CREDEB_DEP         SMALLINT,
+    ACC_CD_DEP         SMALLINT,
+    ACC_ACC_TYPE_DEP   SMALLINT,
+    ERROR_CODE         SMALLINT,
+    BIG_CUST_CODE      INTEGER,
+    ACC_UNIT_DEP       INTEGER,
+    CURENCY_ID         INTEGER,
+    ACC_SN_DEP         DECIMAL(11),
+    REQUEST_TOT_AMOUNT DECIMAL(15, 2),
+    COLLECT_AMOUNT     DECIMAL(15, 2),
+    ACCRUALS_AMN       DECIMAL(15, 2),
+    RQ_CREATION_DT     DATE,
+    EFFECT_DATE        DATE,
+    VALEUR             DATE,
+    REQUEST_LOAN_ST    CHAR(1),
+    FLAG_PROCESSED     CHAR(1),
+    CHANGE_TO_PAYOFF   CHAR(1),
+    OVER_ACCRUALS_FLG  CHAR(1),
+    PARTPAY_PAYOFF_FLG CHAR(1),
+    SORT_DESCR_CUR_LOA CHAR(3),
+    constraint IXU_DEF_133
+        primary key (CREATION_DT, ACC_UNIT_LOAN, ACC_TYPE_LOAN, ACC_SN_LOAN, ACC_CD_LOAN, REQUEST_TYPE, REQUEST_SN)
+);
+

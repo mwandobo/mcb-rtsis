@@ -1,0 +1,16 @@
+create table ACC_REPRES_REASON
+(
+    FKGD_HAS_AS_REL    INTEGER     not null,
+    FKGH_HAS_AS_REL    CHAR(5)     not null,
+    FK_BOUND_RELATIONS CHAR(12)    not null,
+    FK_BOUND_RELATION1 INTEGER     not null,
+    FK_BOUND_RELATION2 INTEGER     not null,
+    FK_REPR_BENEFICIAR DECIMAL(11) not null,
+    FK_REPR_BENEFICIA1 INTEGER     not null,
+    REPRESENTATIVE_SN  SMALLINT    not null,
+    ACCOUNT_NUMBER     DECIMAL(11) not null,
+    constraint PK_ACC_REPRES_REASON
+        primary key (FK_BOUND_RELATIONS, FK_BOUND_RELATION1, FK_BOUND_RELATION2, FK_REPR_BENEFICIAR, FK_REPR_BENEFICIA1,
+                     REPRESENTATIVE_SN, FKGD_HAS_AS_REL)
+);
+

@@ -1,0 +1,22 @@
+create table MSG_PTJ_DETAIL_MAP
+(
+    HEADER_ENTRY_SN DECIMAL(10) not null,
+    INTERNAL_SN     DECIMAL(10) not null,
+    MESSAGE_TYPE    CHAR(20)    not null,
+    ID_JUSTIFIC     INTEGER     not null,
+    ID_PRODUCT      INTEGER     not null,
+    ID_TRANSACT     INTEGER     not null,
+    MSG_CATEGORY    CHAR(1)     not null,
+    SUBTAG_SN       SMALLINT,
+    FIELD_TYPE      CHAR(2),
+    TAG             CHAR(10),
+    DEFAULT_VALUE   CHAR(40),
+    TABLE_ATTRIBUTE CHAR(40),
+    TABLE_ENTITY    CHAR(40),
+    constraint IXU_CIS_176
+        primary key (HEADER_ENTRY_SN, INTERNAL_SN, MESSAGE_TYPE, ID_JUSTIFIC, ID_PRODUCT, ID_TRANSACT, MSG_CATEGORY)
+);
+
+create unique index IXN_MSG_PTJ_DTL_01
+    on MSG_PTJ_DETAIL_MAP (ID_PRODUCT, ID_TRANSACT, ID_JUSTIFIC, MESSAGE_TYPE, MSG_CATEGORY, HEADER_ENTRY_SN, TAG);
+

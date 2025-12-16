@@ -1,0 +1,18 @@
+create table TR_PROXY_VOTE_HD
+(
+    PROXY_CODE         INTEGER not null
+        constraint IXU_DEP_176
+            primary key,
+    NO_OF_ARTICLES     SMALLINT,
+    FK_JUSTIFICID_JUST INTEGER,
+    FK_TR_AGENDA_CODE  INTEGER,
+    TMSTAMP            TIMESTAMP(6),
+    RECORD_DATE        DATE,
+    CREATION_DATE      DATE,
+    END_PARTICIP_DATE  DATE,
+    PROXY_STATUS       CHAR(1),
+    FK_TRBONDBOND_CODE CHAR(15),
+    PROXY_DESC         CHAR(40),
+    ENTRY_COMMENTS     VARCHAR(250)
+);
+

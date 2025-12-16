@@ -1,0 +1,11 @@
+create table TEMP_FX_REP_01
+(
+    CURR_ORDER     SMALLINT,
+    CURRENCY       INTEGER,
+    ISO_CODE       INTEGER,
+    CLOSING_RATE   DECIMAL(12, 6),
+    AMOUNT_FC      DECIMAL(15, 2),
+    AMOUNT_DC      DECIMAL(15, 2),
+    CURRENCY_DESCR VARCHAR(8)
+);
+

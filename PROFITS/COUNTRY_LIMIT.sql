@@ -1,0 +1,12 @@
+create table COUNTRY_LIMIT
+(
+    FK_GENERIC_DETAFK  CHAR(5) not null,
+    FK_GENERIC_DETASER INTEGER not null,
+    UTILISED_LIMIT     DECIMAL(15, 2),
+    AGREEMENT_LIMIT    DECIMAL(15, 2),
+    TMSTAMP            TIMESTAMP(6),
+    MATURITY_DATE      DATE,
+    constraint IXU_FX_058
+        primary key (FK_GENERIC_DETAFK, FK_GENERIC_DETASER)
+);
+

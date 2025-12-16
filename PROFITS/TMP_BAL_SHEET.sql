@@ -1,0 +1,8 @@
+create table TMP_BAL_SHEET
+(
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    FK_CURRENCYID_CURR INTEGER,
+    FK_UNITCODE        INTEGER,
+    AMT                DECIMAL(15, 2)
+);
+

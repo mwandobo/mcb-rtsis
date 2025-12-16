@@ -1,0 +1,30 @@
+create table ISS_PREMIUM_CALC
+(
+    ANNUAL_PREMIUM      DECIMAL(15, 2),
+    PRORATA_PREMIUM     DECIMAL(15, 4),
+    MONTHLY_PREMIUM     DECIMAL(15, 2),
+    REMAINING_AMNT      DECIMAL(15, 2),
+    DAILY_PREMIUM       DECIMAL(15, 2),
+    ADD_INSTALM_AMNT    DECIMAL(15, 2),
+    LOADING_AMNT        DECIMAL(15, 2),
+    TRX_DATE            DATE,
+    TRX_CODE            INTEGER,
+    TRX_UNIT            INTEGER,
+    TRX_USR             CHAR(8),
+    TRX_SN              INTEGER,
+    TMSTAMP             TIMESTAMP(6),
+    FK_TP_SO_IDENTIFIER DECIMAL(10) not null
+        constraint PK_ISS_PREMIUM_CALC
+            primary key,
+    FK_PRFT_SYSTEM      SMALLINT,
+    FK_PRFT_ACC_NUMBER  CHAR(40),
+    FACTOR_CD1          CHAR(40),
+    FACTOR_VAL1         DECIMAL(18, 6),
+    FK_ID_CURRENCY      INTEGER,
+    LOADING_AMOUNT1     DECIMAL(15, 2),
+    LOADING_AMOUNT2     DECIMAL(15, 2),
+    COMMENTS            VARCHAR(80),
+    INITIAL_AMNT        DECIMAL(15, 2),
+    OUTSTANDING_AMNT    DECIMAL(15, 2)
+);
+

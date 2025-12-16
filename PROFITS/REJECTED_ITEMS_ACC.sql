@@ -1,0 +1,10 @@
+create table REJECTED_ITEMS_ACC
+(
+    ID_CURRENCY    INTEGER,
+    UNIT_CODE      INTEGER,
+    ACCOUNT_NUMBER DECIMAL(11)
+);
+
+create unique index IXU_REJ_000
+    on REJECTED_ITEMS_ACC (ID_CURRENCY, UNIT_CODE);
+

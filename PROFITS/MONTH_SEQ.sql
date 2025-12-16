@@ -1,0 +1,18 @@
+create table MONTH_SEQ
+(
+    MONTH_SEQ_NO SMALLINT,
+    FLAG_01      SMALLINT,
+    FLAG_02      SMALLINT,
+    FLAG_03      SMALLINT,
+    FLAG_04      SMALLINT,
+    FLAG_05      SMALLINT,
+    FLAG_06      SMALLINT,
+    FLAG_07      SMALLINT,
+    FLAG_08      SMALLINT,
+    FLAG_09      SMALLINT,
+    FLAG_10      SMALLINT,
+    FLAG_11      SMALLINT,
+    FLAG_12      SMALLINT,
+    FLAG_13      SMALLINT
+);
+

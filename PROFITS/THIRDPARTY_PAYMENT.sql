@@ -1,0 +1,25 @@
+create table THIRDPARTY_PAYMENT
+(
+    TRX_DATE           DATE,
+    TRX_UNIT           INTEGER,
+    TRX_USR            CHAR(8),
+    TRX_USR_SN         INTEGER,
+    C_DIGIT            SMALLINT,
+    ACCOUNT_NUMBER     DECIMAL(11),
+    FINAL_ACC_AMOUNT   DECIMAL(15, 2),
+    AMOUNT             DECIMAL(15, 2),
+    REVERSED_FLAG      CHAR(1),
+    TRANS_SHORT_DESCR  CHAR(5),
+    JUSTIF_SHORT_DESCR CHAR(5),
+    CURR_SHORT_DESCR   CHAR(5),
+    FIELD_3_4_SEPERAT  CHAR(6),
+    FIELD_1_2_SEPERAT  CHAR(6),
+    TPP_FIELD_2        CHAR(30),
+    TPP_FIELD_4        CHAR(30),
+    TPP_FIELD_3        CHAR(30),
+    TPP_FIELD_1        CHAR(30)
+);
+
+create unique index IXU_THI_002
+    on THIRDPARTY_PAYMENT (TRX_DATE, TRX_UNIT, TRX_USR, TRX_USR_SN);
+

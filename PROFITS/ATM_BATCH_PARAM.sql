@@ -1,0 +1,27 @@
+create table ATM_BATCH_PARAM
+(
+    PROGRAM_ID      CHAR(5),
+    CURRENCY_FROM   INTEGER,
+    CURRENCY_TO     INTEGER,
+    UNIT_TO         INTEGER,
+    BATCH_CMD       INTEGER,
+    UNIT_FROM       INTEGER,
+    NUMBER_FROM     INTEGER,
+    NUMBER_TO       INTEGER,
+    ACCOUNT_FROM    DECIMAL(11),
+    ACCOUNT_TO      DECIMAL(11),
+    TMSTAMP         DATE,
+    SELECTED_DATE   DATE,
+    DATE_TO         DATE,
+    DATE_FROM       DATE,
+    ATM_ELTA_FLG    CHAR(1),
+    ON_REQUEST_FLAG CHAR(1),
+    TRAN_CODE_FROM  CHAR(6),
+    TRAN_CODE_TO    CHAR(6),
+    ATM_FROM        CHAR(8),
+    ATM_TO          CHAR(8)
+);
+
+create unique index IXU_ATM_002
+    on ATM_BATCH_PARAM (PROGRAM_ID);
+

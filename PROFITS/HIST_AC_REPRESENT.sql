@@ -1,0 +1,19 @@
+create table HIST_AC_REPRESENT
+(
+    REPRESENTATIVE_SN  SMALLINT    not null,
+    FK_BOUND_RELATION1 INTEGER     not null,
+    FK_BOUND_RELATION2 INTEGER     not null,
+    FK_REPR_BENEFICIAR DECIMAL(11) not null,
+    FK_REPR_BENEFICIA1 INTEGER     not null,
+    FK_BOUND_RELATIONS CHAR(12)    not null,
+    TMSTAMP            TIMESTAMP(6),
+    EFFECTIVE_FROM     DATE,
+    EXPIRE_DATE        DATE,
+    RESTRICT           CHAR(1),
+    CODE_NUMBER        CHAR(20),
+    ENTRY_COMMENT      CHAR(30),
+    constraint IXU_DEP_136
+        primary key (REPRESENTATIVE_SN, FK_BOUND_RELATION1, FK_BOUND_RELATION2, FK_REPR_BENEFICIAR, FK_REPR_BENEFICIA1,
+                     FK_BOUND_RELATIONS)
+);
+

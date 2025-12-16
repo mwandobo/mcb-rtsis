@@ -1,0 +1,42 @@
+create table GENERIC_BATCH_RUN
+(
+    RECORD_SN          DECIMAL(15) not null
+        constraint IXU_REP_049
+            primary key,
+    STATUS             SMALLINT,
+    CUST_CD_2          SMALLINT,
+    CUST_CD_1          SMALLINT,
+    DCD_PRFT_SYSTEM    SMALLINT,
+    PRFT_TRANSACTION_2 INTEGER,
+    JUSTIFIC_1         INTEGER,
+    JUSTIFIC_2         INTEGER,
+    CURRENCY_ID        INTEGER,
+    PRODUCT_ID_2       INTEGER,
+    PRFT_TRANSACTION_1 INTEGER,
+    UNIT_2             INTEGER,
+    PRODUCT_ID_1       INTEGER,
+    UNIT_1             INTEGER,
+    TRX_UNIT           INTEGER,
+    CUST_ID_2          INTEGER,
+    CUST_ID_1          INTEGER,
+    SN_2               DECIMAL(10),
+    SN_1               DECIMAL(10),
+    SN_4               DECIMAL(10),
+    SN_3               DECIMAL(10),
+    DCD_RULE_ID        DECIMAL(12),
+    AMOUNT_4           DECIMAL(15, 2),
+    AMOUNT_3           DECIMAL(15, 2),
+    AMOUNT_2           DECIMAL(15, 2),
+    AMOUNT_1           DECIMAL(15, 2),
+    AVAIL_DATE         DATE,
+    TRX_DATE           DATE,
+    VALUE_DATE         DATE,
+    START_TMSTAMP      TIMESTAMP(6),
+    END_TMSTAMP        TIMESTAMP(6),
+    GENERIC_FLAG       CHAR(1),
+    TRX_USR            CHAR(8),
+    PROFITS_ACC_2      VARCHAR(40),
+    PROFITS_ACC_1      VARCHAR(40),
+    PROCESS_DESC       VARCHAR(40)
+);
+

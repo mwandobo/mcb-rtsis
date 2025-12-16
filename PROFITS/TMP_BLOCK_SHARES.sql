@@ -1,0 +1,13 @@
+create table TMP_BLOCK_SHARES
+(
+    C_DIGIT          SMALLINT,
+    TRX_UNIT         INTEGER,
+    CUST_ID          INTEGER,
+    APPLICATION_ID   DECIMAL(11),
+    EVALUATION_PRICE DECIMAL(15, 2),
+    APPL_AMOUNT      DECIMAL(15, 2),
+    DATE_BLOCKED     DATE,
+    EVALUATION_DATE  DATE,
+    FULL_NAME        CHAR(90)
+);
+

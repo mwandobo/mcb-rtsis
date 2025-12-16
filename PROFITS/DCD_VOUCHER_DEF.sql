@@ -1,0 +1,17 @@
+create table DCD_VOUCHER_DEF
+(
+    VOUCHER_ID      DECIMAL(12) not null,
+    CUST_LANGUAGE   INTEGER     not null,
+    VOUCHER_ROW     SMALLINT    not null,
+    VOUCHER_COLUMN  SMALLINT    not null,
+    VAR_LIT_IND     SMALLINT,
+    DISPLAY_LENGTH  SMALLINT,
+    FORMAT_NAME     CHAR(30),
+    TABLE_ENTITY    CHAR(40),
+    TABLE_ATTRIBUTE CHAR(40),
+    FIELD_TYPE      CHAR(2),
+    VOUCHER_DATA    VARCHAR(200),
+    constraint PKDCDVCH
+        primary key (VOUCHER_ID, CUST_LANGUAGE, VOUCHER_ROW, VOUCHER_COLUMN)
+);
+

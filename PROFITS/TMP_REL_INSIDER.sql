@@ -1,0 +1,16 @@
+create table TMP_REL_INSIDER
+(
+    BORROWER_NAME         VARCHAR(91),
+    RELATED_NAME          VARCHAR(91),
+    RELATED               VARCHAR(40),
+    REL_DESCRIPTION       CHAR(30),
+    PRODUCT_DESC          VARCHAR(40),
+    ACC_LIMIT_AMN         DECIMAL(15, 2),
+    ACC_EXP_DT            DATE,
+    FINAL_INTEREST        DECIMAL(5),
+    LC_GROSS_TOTAL        DECIMAL(15, 2),
+    LOAN_CLASS            VARCHAR(14),
+    PRODUCT_DYNAMIC_DESCR VARCHAR(1000),
+    COL_EST_VALUE_AMN     DECIMAL(15, 2)
+);
+

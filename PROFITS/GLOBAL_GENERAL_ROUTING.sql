@@ -1,0 +1,21 @@
+create table GLOBAL_GENERAL_ROUTING
+(
+    SN                DECIMAL(8) not null
+        constraint PKX_GLOBAL_ROUT
+            primary key,
+    INTERNAL_ORDER_SN DECIMAL(8),
+    ORDERING_CURRENCY CHAR(5),
+    CHARGING_METHOD   DECIMAL(5),
+    FILENAME          DECIMAL(5),
+    UPPER_LIMIT       DECIMAL(15, 2),
+    PERIOD
+    DECIMAL
+(
+    5
+) ,
+	TRANSACTION_INDICATOR CHAR(1),
+	CUT_OFF_TIME CHAR(1),
+	ROUTE DECIMAL(5),
+	TMSTAMP TIMESTAMP(6)
+);
+

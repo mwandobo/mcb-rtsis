@@ -1,0 +1,10 @@
+create table PAR_VOUCHER_FRM
+(
+    FORMAT_NAME CHAR(30),
+    DESCRIPTION CHAR(80),
+    VAR_TYPE    SMALLINT
+);
+
+create unique index IXP_PAR_000
+    on PAR_VOUCHER_FRM (FORMAT_NAME);
+

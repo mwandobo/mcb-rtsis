@@ -1,0 +1,51 @@
+create table IPS_STATEMENT_RCN
+(
+    ID                         DECIMAL(15)  not null,
+    RCN_FILE_NAME              VARCHAR(100) not null,
+    RCN_TXDTLS_TX_ID           VARCHAR(40)  not null,
+    RCN_TX_INSTR_ID            VARCHAR(40),
+    RCN_TX_END_TO_END_ID       VARCHAR(40),
+    RCN_TX_AMT                 DECIMAL(15, 2),
+    RCN_TX_CURRENCY            VARCHAR(5),
+    RCN_TX_CDTDBTIND           VARCHAR(5),
+    RCN_TX_CODE                VARCHAR(5),
+    RCN_TX_FAMILY_CODE         VARCHAR(5),
+    RCN_TX_SUB_FAMILY_CODE     VARCHAR(5),
+    RCN_TX_INITG_PARTY_ORG_ID  VARCHAR(11),
+    RCN_TX_DEBTOR_ACCOUNT      VARCHAR(40),
+    RCN_TX_CREDITOR_ACCOUNT    VARCHAR(40),
+    RCN_TX_DEBTOR_AGENT_BIC    VARCHAR(12),
+    RCN_TX_CREDITOR_AGENT_BIC  VARCHAR(12),
+    RCN_TX_ACCP_DATETIME       VARCHAR(40),
+    RCN_TX_SETTLE_DATE         DATE,
+    PRFT_TXDTLS_TX_ID          VARCHAR(40),
+    PRFT_TX_INSTR_ID           VARCHAR(40),
+    PRFT_TX_END_TO_END_ID      VARCHAR(40),
+    PRFT_TX_AMT                DECIMAL(15, 2),
+    PRFT_TX_CURRENCY           VARCHAR(5),
+    PRFT_TX_CDTDBTIND          VARCHAR(5),
+    PRFT_TX_CODE               VARCHAR(5),
+    PRFT_TX_FAMILY_CODE        VARCHAR(5),
+    PRFT_TX_SUB_FAMILY_CODE    VARCHAR(5),
+    PRFT_TX_INITG_PARTY_ORG_ID VARCHAR(11),
+    PRFT_TX_DEBTOR_ACCOUNT     VARCHAR(40),
+    PRFT_TX_CREDITOR_ACCOUNT   VARCHAR(40),
+    PRFT_TX_DEBTOR_AGENT_BIC   VARCHAR(12),
+    PRFT_TX_CREDITOR_AGENT_BIC VARCHAR(12),
+    PRFT_TX_ACCP_DATETIME      VARCHAR(40),
+    PRFT_TX_SETTLE_DATE        DATE,
+    STATUS_RECONCILED          VARCHAR(1),
+    RCN_RESULT                 VARCHAR(70),
+    RCN_EXEC_TMSTAMP           DATE,
+    RCN_TRX_UNIT               INTEGER,
+    RCN_TRX_DATE               DATE,
+    RCN_TRX_USER               CHAR(8),
+    RCN_TRX_USR_SN             INTEGER,
+    CREATION_TIMESTAMP         DATE         not null,
+    constraint IXU_IPS_STMT_RCN_01
+        primary key (ID, RCN_FILE_NAME, RCN_TXDTLS_TX_ID)
+);
+
+create unique index RCN_FILE_NAME
+    on IPS_STATEMENT_RCN (RCN_FILE_NAME);
+

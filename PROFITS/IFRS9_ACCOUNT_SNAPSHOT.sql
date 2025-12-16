@@ -1,0 +1,15 @@
+create table IFRS9_ACCOUNT_SNAPSHOT
+(
+    REFERENCE_DTM             DATE     not null,
+    ACCOUNT_ID                CHAR(32) not null,
+    DEFAULT_CNT               INTEGER,
+    DAYS_PAYMENT_PAST_DUE_CNT INTEGER,
+    EXPOSURE_ON_BALANCE_AMT   DECIMAL(15, 2),
+    EXPOSURE_OFF_BALANCE_AMT  DECIMAL(15, 2),
+    CURRENT_LIMIT_AMT         DECIMAL(15, 2),
+    ACCRUED_INTEREST_AMT      DECIMAL(15, 2),
+    LTV_CURRENT               DECIMAL(15, 2),
+    LTV_INITIAL               DECIMAL(15, 2),
+    primary key (REFERENCE_DTM, ACCOUNT_ID)
+);
+

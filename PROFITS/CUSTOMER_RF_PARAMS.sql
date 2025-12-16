@@ -1,0 +1,13 @@
+create table CUSTOMER_RF_PARAMS
+(
+    CUSTOMER_RF_TYPE   CHAR(5)    not null,
+    CUSTOMER_RF_UNIT   DECIMAL(5) not null,
+    CUSTOMER_RF_LENGTH DECIMAL(2),
+    CUSTOMER_RF_TEXT   VARCHAR(15),
+    CUSTOMER_RF_NUMBER DECIMAL(15),
+    TMSTAMP            TIMESTAMP(6),
+    ENTRY_STATUS       CHAR(1),
+    constraint PK_CUSTOMER_RF_PARAMS
+        primary key (CUSTOMER_RF_TYPE, CUSTOMER_RF_UNIT)
+);
+

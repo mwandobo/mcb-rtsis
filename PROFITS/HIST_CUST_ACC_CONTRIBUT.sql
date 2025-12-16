@@ -1,0 +1,18 @@
+create table HIST_CUST_ACC_CONTRIBUT
+(
+    CUST_ID            INTEGER      not null,
+    TIMESTAMP          TIMESTAMP(6) not null,
+    TRX_USER           CHAR(8),
+    TRX_UNIT           INTEGER,
+    TRX_DATE           DATE,
+    TRX_USR_SN         INTEGER,
+    ACCOUNT_NUMBER     CHAR(40),
+    PRFT_SYSTEM        SMALLINT,
+    CONTRIBUTION_FREQ  SMALLINT,
+    P_CONTRIBUTION_AMN DECIMAL(18, 2),
+    O_CONTRIBUTION_AMN DECIMAL(18, 2)
+);
+
+create unique index IXP_HCUST_ACC_CONTR
+    on HIST_CUST_ACC_CONTRIBUT (CUST_ID, TIMESTAMP);
+

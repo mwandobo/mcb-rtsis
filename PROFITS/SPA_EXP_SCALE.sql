@@ -1,0 +1,18 @@
+create table SPA_EXP_SCALE
+(
+    FK_PRODUCTID_PRODU INTEGER  not null,
+    FK_PRFT_TRANSACID  INTEGER  not null,
+    FK_JUSTIFICID_JUST INTEGER  not null,
+    FK_CUSTOMERCUST_ID INTEGER  not null,
+    SCALE_ID           SMALLINT not null,
+    CSM_CODE           VARCHAR(11),
+    FROM_AMOUNT        DECIMAL(15, 2),
+    TO_AMOUNT          DECIMAL(15, 2),
+    EXP_PERCENT        DECIMAL(8, 4),
+    MIN_EXPENSE        DECIMAL(15, 2),
+    MAX_EXPENSE        DECIMAL(15, 2),
+    TMSTAMP            TIMESTAMP(6),
+    constraint PK_SPA_EXP_SCALE
+        primary key (SCALE_ID, FK_CUSTOMERCUST_ID, FK_JUSTIFICID_JUST, FK_PRFT_TRANSACID, FK_PRODUCTID_PRODU)
+);
+

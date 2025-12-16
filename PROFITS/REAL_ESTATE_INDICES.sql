@@ -1,0 +1,29 @@
+create table REAL_ESTATE_INDICES
+(
+    IND_YEAR    INTEGER not null,
+    IND_QUARTER CHAR(4) not null,
+    IND_GENERAL DECIMAL(18, 14),
+    DIAMERISMA  DECIMAL(18, 14),
+    OIKIA       DECIMAL(18, 14),
+    KAT_LEF     DECIMAL(18, 14),
+    KAT_LEM     DECIMAL(18, 14),
+    KAT_LAR     DECIMAL(18, 14),
+    KAT_PAF     DECIMAL(18, 14),
+    KAT_AMM     DECIMAL(18, 14),
+    DIA_LEF     DECIMAL(18, 14),
+    DIA_LEM     DECIMAL(18, 14),
+    DIA_LAR     DECIMAL(18, 14),
+    DIA_PAF     DECIMAL(18, 14),
+    DIA_AMM     DECIMAL(18, 14),
+    OIK_LEF     DECIMAL(18, 14),
+    OIK_LEM     DECIMAL(18, 14),
+    OIK_LAR     DECIMAL(18, 14),
+    OIK_PAF     DECIMAL(18, 14),
+    OIK_AMM     DECIMAL(18, 14),
+    WAREHOUSE   DECIMAL(18, 14),
+    INDUSTRIAL  DECIMAL(18, 14),
+    TMSTAMP     TIMESTAMP(6),
+    constraint I0000594
+        primary key (IND_QUARTER, IND_YEAR)
+);
+

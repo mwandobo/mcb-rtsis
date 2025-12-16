@@ -1,0 +1,24 @@
+create table PRF_BATCH_PARAM
+(
+    PROGRAM_ID      CHAR(5),
+    CURRENCY_TO     SMALLINT,
+    CURRENCY_FROM   SMALLINT,
+    CURRENCY        SMALLINT,
+    ACCOUNTING_RULE INTEGER,
+    UNIT            INTEGER,
+    UNIT_FROM       INTEGER,
+    UNIT_TO         INTEGER,
+    AMOUNT_TO       DECIMAL(15, 2),
+    AMOUNT          DECIMAL(15, 2),
+    AMOUNT_FROM     DECIMAL(15, 2),
+    SELECTED_DATE   DATE,
+    DATE_FROM       DATE,
+    DATE_TO         DATE,
+    ON_REQUEST_FLAG CHAR(1),
+    JOURNAL_TO      CHAR(2),
+    JOURNAL_FROM    CHAR(2)
+);
+
+create unique index IXU_PRF_004
+    on PRF_BATCH_PARAM (PROGRAM_ID);
+

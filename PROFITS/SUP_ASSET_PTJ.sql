@@ -1,0 +1,12 @@
+create table SUP_ASSET_PTJ
+(
+    SUP_PRODUCT_ID    DECIMAL(5) not null,
+    SUP_TRX_CODE      DECIMAL(5) not null,
+    SUP_ID_JUSTIFIC   DECIMAL(5) not null,
+    ASSET_PRODUCT_ID  DECIMAL(5),
+    ASSET_TRX_CODE    DECIMAL(5),
+    ASSET_ID_JUSTIFIC DECIMAL(5),
+    constraint SUP_ASSET_PTJ_KEY
+        primary key (SUP_PRODUCT_ID, SUP_TRX_CODE, SUP_ID_JUSTIFIC)
+);
+

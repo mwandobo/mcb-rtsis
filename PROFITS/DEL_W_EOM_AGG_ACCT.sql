@@ -1,0 +1,7 @@
+create table DEL_W_EOM_AGG_ACCT
+(
+    EOM_DATE     DATE,
+    ACCT_KEY     DECIMAL(11),
+    HOLDERS_LIST VARCHAR(4000)
+);
+

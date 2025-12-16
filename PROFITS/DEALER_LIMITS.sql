@@ -1,0 +1,17 @@
+create table DEALER_LIMITS
+(
+    FK_USRCODE       CHAR(8) not null,
+    FK_DEAL_LIMIT_GH CHAR(5) not null,
+    FK_DEAL_LIMIT_GD INTEGER not null,
+    EXCH_NOTES_FLAG  CHAR(1) not null,
+    CR_RATE_SPREAD   INTEGER,
+    DB_RATE_SPREAD   INTEGER,
+    BUY_RATE_SPREAD  DECIMAL(12, 6),
+    SELL_RATE_SPREAD DECIMAL(12, 6),
+    MAX_AMOUNT       DECIMAL(15, 2),
+    TMSTAMP          TIMESTAMP(6),
+    DEPOSITS_FLG     CHAR(1),
+    constraint IXU_DEA_003
+        primary key (FK_USRCODE, FK_DEAL_LIMIT_GH, FK_DEAL_LIMIT_GD, EXCH_NOTES_FLAG)
+);
+

@@ -1,0 +1,22 @@
+create table TEMP_REP_73515
+(
+    ACCOUNT_NUMBER     DECIMAL(11) not null
+        constraint IXU_REP_023
+            primary key,
+    C_DIGIT            SMALLINT,
+    OPENING_DATE       DATE,
+    CLOSING_DATE       DATE,
+    ID_PRODUCT         INTEGER,
+    INT_CALC_PERIOD    DECIMAL(11),
+    CUST_ID            INTEGER,
+    PER_INIT_VAL_BAL   DECIMAL(15, 2),
+    PER_BOOK_BALANCE   DECIMAL(15, 2),
+    PER_AVER_BAL       DECIMAL(15, 2),
+    CHEQ_AVAIL_CNT     INTEGER,
+    PER_CHEQ_ISSUE_CNT INTEGER,
+    PER_CHEQ_PAID_CNT  INTEGER,
+    CHEQ_REVOK_CNT     INTEGER,
+    CHEQ_STAMP_CNT     INTEGER,
+    UNIT_CODE          INTEGER
+);
+

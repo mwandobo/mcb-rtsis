@@ -1,0 +1,12 @@
+create table TRX_COUNT
+(
+    FK_USRCODE  CHAR(8),
+    TRX_DATE    DATE,
+    ADV_COUNTER INTEGER,
+    TRX_COUNTER INTEGER,
+    USR_STATUS  CHAR(1)
+);
+
+create unique index IXU_TRX_003
+    on TRX_COUNT (FK_USRCODE, TRX_DATE);
+

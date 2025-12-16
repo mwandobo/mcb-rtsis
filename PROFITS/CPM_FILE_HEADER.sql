@@ -1,0 +1,36 @@
+create table CPM_FILE_HEADER
+(
+    HEADER_SN              DECIMAL(15) not null
+        constraint ICPM0056
+            primary key,
+    FILE_CODE              CHAR(5),
+    FILE_NAME              VARCHAR(100),
+    DATE_RECEIVED          DATE,
+    DATE_PROCESSED         DATE,
+    COMPLETE_HEADER_RECORD VARCHAR(4000),
+    RECORDS_TOTAL          DECIMAL(15),
+    RECORDS_PENDING        DECIMAL(15),
+    RECORDS_SUCCESSFUL     DECIMAL(15),
+    AMOUNT_TOTAL           DECIMAL(18, 2),
+    CREDITS_TOTAL          DECIMAL(18, 2),
+    DEBITS_TOTAL           DECIMAL(18, 2),
+    AMOUNT_PROCESSED       DECIMAL(18, 2),
+    AMOUNT_REMAINING       DECIMAL(18, 2),
+    FILE_BLOB              BLOB(3145728),
+    STATUS                 CHAR(2),
+    AUTOMATCH_STATUS       CHAR(1),
+    AUTOMATCH_TMSTAMP      TIMESTAMP(6),
+    TMSTAMP                TIMESTAMP(6),
+    FK_SYSTEMIC_BANK_NUM   INTEGER,
+    FK_SYSTEMIC_BANK_HEAD  CHAR(5),
+    SWIFT_REF_NO           CHAR(16),
+    MIGRATED_FLG           CHAR(1),
+    AUTO_1_MANUAL_2        CHAR(1)
+);
+
+create unique index CPM_HEADER_SEARCH
+    on CPM_FILE_HEADER (HEADER_SN, DATE_PROCESSED, DATE_RECEIVED, FK_SYSTEMIC_BANK_NUM, STATUS, AUTOMATCH_STATUS);
+
+create unique index ICPM0058
+    on CPM_FILE_HEADER (FK_SYSTEMIC_BANK_HEAD, FK_SYSTEMIC_BANK_NUM);
+

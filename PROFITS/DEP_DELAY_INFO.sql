@@ -1,0 +1,15 @@
+create table DEP_DELAY_INFO
+(
+    TRX_DATE          DATE        not null,
+    ACCOUNT_NUMBER    DECIMAL(11) not null,
+    C_DIGIT           SMALLINT,
+    ACCOUNT_CURRENCY  INTEGER,
+    ACCOUNT_PRODUCT   INTEGER,
+    ACCOUNT_UNIT      INTEGER,
+    CUSTOMER_NUMBER   INTEGER,
+    UTILIZED_AMN      DECIMAL(15, 2),
+    INTEREST_N128_AMN DECIMAL(15, 2),
+    constraint IXU_DEP_122
+        primary key (TRX_DATE, ACCOUNT_NUMBER)
+);
+

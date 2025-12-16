@@ -1,0 +1,13 @@
+create table SEC_OPERATION
+(
+    FK_SEC_WINDOWCODE CHAR(8),
+    FK_GUI_ACTIONCODE CHAR(8),
+    CODE              SMALLINT,
+    TMSTAMP           TIMESTAMP(6),
+    ENTRY_STATUS      CHAR(1),
+    ENTRY_COMMENTS    VARCHAR(200)
+);
+
+create unique index IXU_SEC_009
+    on SEC_OPERATION (FK_SEC_WINDOWCODE, FK_GUI_ACTIONCODE);
+

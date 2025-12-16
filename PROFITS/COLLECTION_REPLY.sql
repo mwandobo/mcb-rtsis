@@ -1,0 +1,20 @@
+create table COLLECTION_REPLY
+(
+    ACC_UNIT          INTEGER,
+    ACC_TYPE          SMALLINT,
+    ACC_SN            INTEGER,
+    ACC_CD            SMALLINT,
+    COLLECT_DATE      DATE,
+    ACTION_ID         SMALLINT,
+    PROMISE_AMOUNT    DECIMAL(15, 2),
+    PROCESS_DATE      DATE,
+    PROMISE_DATE      DATE,
+    TMSTAMP           TIMESTAMP(6),
+    COLLECTION_STATUS CHAR(1),
+    ACCOUNT           CHAR(8),
+    COMMENTS          VARCHAR(256)
+);
+
+create unique index IXU_COL_002
+    on COLLECTION_REPLY (ACC_UNIT, ACC_TYPE, ACC_SN, ACC_CD, COLLECT_DATE, ACTION_ID);
+

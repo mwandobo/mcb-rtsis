@@ -1,0 +1,17 @@
+create table USR_TRX_FAVORITES
+(
+    WINDOW_CODE    CHAR(8) not null,
+    UPDATE_TMSTAMP TIMESTAMP(6),
+    UPDATE_USR     CHAR(8),
+    UPDATE_DATE    DATE,
+    UPDATE_UNIT    INTEGER,
+    CREATE_TMSTAMP TIMESTAMP(6),
+    CREATE_USR     CHAR(8),
+    CREATE_DATE    DATE,
+    CREATE_UNIT    INTEGER,
+    ENTRY_STATUS   CHAR(1),
+    FK_USRCODE     CHAR(8) not null,
+    constraint PK_USR_FAV
+        primary key (FK_USRCODE, WINDOW_CODE)
+);
+

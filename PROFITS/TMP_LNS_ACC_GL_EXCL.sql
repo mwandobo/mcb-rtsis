@@ -1,0 +1,6 @@
+create table TMP_LNS_ACC_GL_EXCL
+(
+    DR_CNTR_GL_ACC VARCHAR(21),
+    ID_CURRENCY    INTEGER
+);
+

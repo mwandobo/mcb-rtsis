@@ -1,0 +1,18 @@
+create table TEMP_POS_ENT3EUR
+(
+    ID_CURRENCY       INTEGER,
+    DEAL_NO           DECIMAL(10),
+    PRICE_BUY         DECIMAL(10, 6),
+    PRICE_SELL        DECIMAL(10, 6),
+    AMOUNT_SELL       DECIMAL(15, 2),
+    AMOUNT_BUY        DECIMAL(15, 2),
+    TRX_DATE          DATE,
+    VALEUR_SELL       DATE,
+    VALEUR_BUY        DATE,
+    BANK_CODE         VARCHAR(5),
+    ISO_CURR_CODE     VARCHAR(5),
+    SWAP_FW           VARCHAR(20),
+    NON_CUSTOMER_SELL VARCHAR(100),
+    NON_CUSTOMER_BUY  VARCHAR(100)
+);
+

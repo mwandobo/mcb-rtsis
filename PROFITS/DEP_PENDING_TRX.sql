@@ -1,0 +1,36 @@
+create table DEP_PENDING_TRX
+(
+    ACCOUNT_NUMBER     DECIMAL(11) not null,
+    PENDING_SN         DECIMAL(10) not null,
+    USR_PSB_PRINT_LINE SMALLINT,
+    OFF_LAST_PRINT_LN  SMALLINT,
+    TUN_TRX_UNIT       INTEGER,
+    ID_FIN_JUSTIF_CR   INTEGER,
+    ID_FIN_JUSTIF_DB   INTEGER,
+    ID_PEND_JUSTIF     INTEGER,
+    PSB_LINE_SN        INTEGER,
+    SERIAL_NO          INTEGER,
+    TUN_TRX_USR_SN     INTEGER,
+    OFF_PSB_SN         INTEGER,
+    USER_PSB_SN        INTEGER,
+    NEW_BALANCE        DECIMAL(15, 2),
+    OFF_PSB_LAST_BAL   DECIMAL(15, 2),
+    USER_AMOUNT        DECIMAL(15, 2),
+    TRX_AMOUNT         DECIMAL(15, 2),
+    PREV_LINE_BALANCE  DECIMAL(15, 2),
+    TRX_DATE           DATE,
+    VALEUR_DATE        DATE,
+    OFF_LAST_PSB_DATE  DATE,
+    TUN_TRX_DATE       DATE,
+    TRX_TYPE           CHAR(1),
+    OFFLINE_FLAG       CHAR(1),
+    MATCHED_FLAG       CHAR(1),
+    ORIGIN_FLAG        CHAR(1),
+    ENTRY_STATUS       CHAR(1),
+    USER_JUSTIFIC      CHAR(3),
+    TUN_TRX_USR        CHAR(8),
+    FILE_NAME          CHAR(50),
+    constraint IXU_DEP_170
+        primary key (ACCOUNT_NUMBER, PENDING_SN)
+);
+

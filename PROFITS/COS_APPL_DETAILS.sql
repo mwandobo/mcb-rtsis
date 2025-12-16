@@ -1,0 +1,33 @@
+create table COS_APPL_DETAILS
+(
+    APPLICATION_ID    DECIMAL(11) not null,
+    ACTION_SN         INTEGER     not null,
+    TRX_UNIT          INTEGER,
+    TRX_CODE          INTEGER,
+    SERVICE_PRODUCT   INTEGER,
+    JUSTIFIC_ID       INTEGER,
+    CUSTOMER_ID       INTEGER,
+    TRX_USR_SN        INTEGER,
+    TRX_SHARES        DECIMAL(10),
+    MEMBER_ID         DECIMAL(10),
+    MEMBER_SHARE_BAL  DECIMAL(10),
+    SHARES_BALANCE    DECIMAL(10),
+    TRX_AMOUNT        DECIMAL(15, 2),
+    MEMBER_BOOK_BAL   DECIMAL(15, 2),
+    APPL_BALANCE      DECIMAL(15, 2),
+    ACQ_BLOCKED_BAL   DECIMAL(15, 2),
+    TRX_DATE          DATE,
+    UPDATED_DATE      DATE,
+    CREATED_DATE      DATE,
+    UPDATED_TIMESTAMP TIMESTAMP(6),
+    CREATED_BY        CHAR(8),
+    UPDATED_BY        CHAR(8),
+    TRX_USR           CHAR(8),
+    PROFITS_ACCOUNT   CHAR(40),
+    TRX_TYPE          VARCHAR(20),
+    COMMENTS          VARCHAR(255),
+    EXPENSE_AMOUNT    DECIMAL(15, 2),
+    constraint IXU_COS_015
+        primary key (APPLICATION_ID, ACTION_SN)
+);
+

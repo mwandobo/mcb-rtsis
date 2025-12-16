@@ -1,0 +1,19 @@
+create table IFRS9_ACCOUNT_DIM
+(
+    REFERENCE_DTM         DATE     not null,
+    ACCOUNT_ID            CHAR(32) not null,
+    CURRENCY_CD           CHAR(3),
+    ACCOUNT_TYPE_CD       CHAR(3),
+    ACCOUNT_TYPE_DESC     CHAR(100),
+    ACCOUNT_SUB_TYPE_CD   CHAR(3),
+    ACCOUNT_SUB_TYPE_DESC CHAR(100),
+    OPEN_DT               TIMESTAMP(6),
+    COLLECTIONS_STATUS_CD CHAR(3),
+    FORBEARANCE_FLG       CHAR(1),
+    FORBEARANCE_DT        TIMESTAMP(6),
+    AMORTIZATION_TYPE     CHAR(15),
+    COLLATERAL_AMT        DECIMAL(15, 2),
+    APPROVED_AMT          DECIMAL(15, 2),
+    primary key (REFERENCE_DTM, ACCOUNT_ID)
+);
+

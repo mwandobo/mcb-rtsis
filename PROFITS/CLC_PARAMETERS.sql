@@ -1,0 +1,17 @@
+create table CLC_PARAMETERS
+(
+    BANK_CODE              SMALLINT not null
+        constraint CLC_COLLECT_PK_81
+            primary key,
+    JUST_BLOCK             INTEGER,
+    JUST_UNBLOCK_PART      INTEGER,
+    JUST_UNBLOCK_FULL      INTEGER,
+    COVERAGE_ACCOUNT       CHAR(1),
+    COVERAGE_AGREEMENT     CHAR(1),
+    COVERAGE_MB_PROPERTY   CHAR(1),
+    COVERAGE_MB_SHIP       CHAR(1),
+    COVERAGE_MB_OTHER      CHAR(1),
+    COVERAGE_GUARANTORS    CHAR(1),
+    COVERAGE_BENEFICIARIES CHAR(1)
+);
+

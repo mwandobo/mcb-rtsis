@@ -1,0 +1,13 @@
+create table TF_SETTLEMENT_AMNS
+(
+    FK_TFSET_TFDOCTF CHAR(40) not null,
+    FK_TFSET_TFDOCLS SMALLINT not null,
+    FK_TFSET_SETSN   SMALLINT not null,
+    FK_GDET_GHEAD_AT CHAR(5)  not null,
+    FK_GDET_SNUM_AT  INTEGER  not null,
+    FK_CURR_IDCURR   INTEGER,
+    AMOUNT           DECIMAL(15, 2),
+    constraint IXU_FX_034
+        primary key (FK_TFSET_TFDOCTF, FK_TFSET_TFDOCLS, FK_TFSET_SETSN, FK_GDET_GHEAD_AT, FK_GDET_SNUM_AT)
+);
+

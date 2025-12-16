@@ -1,0 +1,21 @@
+create table COLLATERAL_TBL_DOC
+(
+    INTERNAL_SN      DECIMAL(10) not null,
+    RECORD_TYPE      CHAR(2)     not null,
+    REFERENCE_NUMBER VARCHAR(80) not null,
+    PRFT_SYS         SMALLINT    not null,
+    ENTRY_STATUS     CHAR(1),
+    DOC_DESCR        VARCHAR(40),
+    INSERT_UNIT      INTEGER,
+    INSERT_USER      CHAR(8),
+    INSERT_DATE      DATE,
+    INSERT_TMSTAMP   TIMESTAMP(6),
+    UPDATE_UNIT      INTEGER,
+    UPDATE_USER      CHAR(8),
+    UPDATE_DATE      DATE,
+    UPDATE_TMSTAMP   TIMESTAMP(6),
+    DOC_DETAILS      VARCHAR(500),
+    constraint PK_COLL_DOC
+        primary key (REFERENCE_NUMBER, RECORD_TYPE, INTERNAL_SN)
+);
+

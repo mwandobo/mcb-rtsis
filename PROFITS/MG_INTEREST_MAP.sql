@@ -1,0 +1,9 @@
+create table MG_INTEREST_MAP
+(
+    PRODUCT_ID       INTEGER not null,
+    OLD_SYS_INT_CODE CHAR(4),
+    INTEREST_CODE    INTEGER,
+    INTEREST_RATE    DECIMAL(8, 4),
+    CURRENT_GROUP    CHAR(10)
+);
+

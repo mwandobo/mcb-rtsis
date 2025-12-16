@@ -1,0 +1,16 @@
+create table HIST_SO_CUST_COMMISS
+(
+    ACTIV_DATE         DATE,
+    CUST_ID            INTEGER,
+    JUSTIFIC_ID        INTEGER,
+    ATTEMPTS_COUNT     INTEGER,
+    AMOUNT             DECIMAL(15, 2),
+    PAYMENT_DATE       DATE,
+    ENTRY_STATUS       CHAR(1),
+    DEP_PROFITS_ACC    CHAR(40),
+    ACTION_ENTRY_DESCR VARCHAR(255)
+);
+
+create unique index IXU_HIS_014
+    on HIST_SO_CUST_COMMISS (ACTIV_DATE, CUST_ID);
+

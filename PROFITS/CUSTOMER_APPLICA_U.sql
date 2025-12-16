@@ -1,0 +1,24 @@
+create table CUSTOMER_APPLICA_U
+(
+    CUST_ID          INTEGER     not null,
+    UNIT_CODE        INTEGER     not null,
+    APPLICATION_ID   DECIMAL(11) not null,
+    APPLICATION_TYPE INTEGER,
+    APPLICATION_STS  CHAR(2)     not null,
+    ACCOUNT_NUMBER   CHAR(40),
+    ACCOUNT_CD       SMALLINT,
+    REQUEST_AMN      DECIMAL(15, 2),
+    REQUEST_DT       TIMESTAMP(6),
+    REQUEST_FORECAST VARCHAR(200),
+    INSERT_USR       CHAR(8),
+    INSERT_CMNTS     VARCHAR(250),
+    CONFIRM_USR      CHAR(8),
+    CONFIRM_DT       TIMESTAMP(6),
+    CONFIRM_CMNTS    VARCHAR(250),
+    DRAWDOWN_DT      TIMESTAMP(6),
+    DRAWDOWN_AMN     DECIMAL(15, 2),
+    TMSTAMP          TIMESTAMP(6),
+    constraint IXU_CIU_012
+        primary key (APPLICATION_ID, UNIT_CODE, CUST_ID)
+);
+

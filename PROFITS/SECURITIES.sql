@@ -1,0 +1,12 @@
+create table SECURITIES
+(
+    FK_PRODUCTID_PROD  INTEGER,
+    FK_SECURITIES_TYPE SMALLINT,
+    FK_REPO_TAX        INTEGER,
+    RESIDENT_IND       CHAR(1),
+    ENTRY_STATUS       CHAR(1)
+);
+
+create unique index IXU_SEC_001
+    on SECURITIES (FK_PRODUCTID_PROD);
+

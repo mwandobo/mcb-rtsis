@@ -1,0 +1,31 @@
+create table SUP_COMMUNICATION
+(
+    FK_SUPPLIER_ID    DECIMAL(18) not null,
+    COMMUNICATION_SN  DECIMAL(10) not null,
+    FKGH_HAS_COM_TYPE CHAR(5),
+    FKGD_HAS_COM_TYPE DECIMAL(5),
+    SURNAME           VARCHAR(200),
+    SHORT_NAME        VARCHAR(200),
+    ADDRESS           VARCHAR(200),
+    ADDRESS_NUMBER    VARCHAR(20),
+    REGION            VARCHAR(100),
+    CITY              VARCHAR(100),
+    ZIP_CODE          VARCHAR(10),
+    FKGH_HAS_COUNTRY  CHAR(5),
+    FKGD_HAS_COUNTRY  DECIMAL(5),
+    TELEPHONE_NO_1    VARCHAR(30),
+    TELEPHONE_NO_2    VARCHAR(30),
+    MOBILEPHONE       VARCHAR(30),
+    FAX_NO            VARCHAR(30),
+    EMAIL             VARCHAR(100),
+    EMAIL2            VARCHAR(100),
+    ENTRY_STATUS      VARCHAR(1),
+    TRX_LUSR          CHAR(8),
+    TRX_USR           CHAR(8),
+    TRX_LDATE         DATE,
+    TRX_DATE          DATE,
+    ADDITIONAL_INFO   VARCHAR(2000),
+    constraint IXU_SUPCOMMUNICATION_001
+        primary key (FK_SUPPLIER_ID, COMMUNICATION_SN)
+);
+

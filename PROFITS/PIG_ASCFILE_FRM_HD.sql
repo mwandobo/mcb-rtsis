@@ -1,0 +1,15 @@
+create table PIG_ASCFILE_FRM_HD
+(
+    FORMAT_ID        CHAR(5),
+    HDR_START        SMALLINT,
+    ROW_IND_LENGTH   SMALLINT,
+    ROW_IND_POSITION INTEGER,
+    TMSTAMP          TIMESTAMP(6),
+    DELIMITER0       CHAR(1),
+    ENTRY_STATUS     CHAR(1),
+    DESCRIPTION      VARCHAR(40)
+);
+
+create unique index IXU_PIG_007
+    on PIG_ASCFILE_FRM_HD (FORMAT_ID);
+

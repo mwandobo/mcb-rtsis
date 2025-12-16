@@ -1,0 +1,23 @@
+create table ITF_HIST_HEADER
+(
+    ORGANISATION_CODE  CHAR(10) not null,
+    BANK_ID            INTEGER  not null,
+    RECORD_TYPE        CHAR(2)  not null,
+    EXPIRY_DATE        DATE     not null,
+    CP_AGREEMENT_NO    DECIMAL(10),
+    TOTAL_DTL_RECORDS  DECIMAL(13),
+    TOTAL_SUCC_DTL_REC DECIMAL(13),
+    TOTAL_SUCC_AMOUNT  DECIMAL(15, 2),
+    TOTAL_AMOUNT       DECIMAL(15, 2),
+    RECEIVE_DATE       DATE,
+    REPLY_RECV_DATE    DATE,
+    TIMESTMP           TIMESTAMP(6),
+    HD_STATUS          CHAR(2),
+    ORGANIS_FILENAME   CHAR(20),
+    COMMENTS           CHAR(40),
+    REPLY_RECORD       CHAR(100),
+    INPUT_RECORD       CHAR(100),
+    constraint IXU_CP_067
+        primary key (ORGANISATION_CODE, BANK_ID, RECORD_TYPE, EXPIRY_DATE)
+);
+

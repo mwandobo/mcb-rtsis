@@ -1,0 +1,6 @@
+create table TMP_NEG_BSD10
+(
+    DEP_ACCOUNT_NUMBER DECIMAL(11),
+    PERCENTAGE         DECIMAL(15, 2)
+);
+

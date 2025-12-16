@@ -1,0 +1,16 @@
+create table TMP_GEO
+(
+    CODE              INTEGER,
+    UNIT_NAME         VARCHAR(40),
+    COUNTRY           VARCHAR(40),
+    TOWN              VARCHAR(15),
+    YEAR_OPENED       DATE,
+    DEP_CNT_ACCOUNTS  DECIMAL(15, 2),
+    DEP_TOT_AMOUNT    DECIMAL(15, 2),
+    LNS0_CNT_ACCOUNTS DECIMAL(15, 2),
+    LNS0_TOT_AMOUNT   DECIMAL(15, 2),
+    LNS1_CNT_ACCOUNTS DECIMAL(15, 2),
+    LNS1_TOT_AMOUNT   DECIMAL(15, 2),
+    EOM_DATE          DATE
+);
+

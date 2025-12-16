@@ -1,0 +1,9 @@
+create table ISSU_MIGR_ENTRY_STS
+(
+    ENTRY_STATUS CHAR(2),
+    APPL_STATUS  CHAR(2)
+);
+
+create unique index PK_ISSU_MIGR_ENTRY_STS
+    on ISSU_MIGR_ENTRY_STS (APPL_STATUS);
+

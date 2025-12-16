@@ -1,0 +1,21 @@
+create table DEP_HIST_TD_RATE
+(
+    INTERNAL_SN        INTEGER     not null,
+    RENEWAL_SER_NUM    INTEGER     not null,
+    ACCOUNT_NO         DECIMAL(11) not null,
+    DURATION_VALUE     SMALLINT,
+    CR_INTEREST_RATE   DECIMAL(8, 4),
+    CAPITAL_DISPOS_ACC DECIMAL(11),
+    INTEREST_ACC       DECIMAL(11),
+    RENEWAL_BALANCE    DECIMAL(15, 2),
+    RENEWAL_DATE       DATE,
+    TRX_DATE           DATE,
+    EXPIRY_DATE        DATE,
+    TMSTAMP            TIMESTAMP(6),
+    DURATION_UNIT      CHAR(1),
+    INTER_PAY_OPTIONS  CHAR(1),
+    INTEREST_PAY_IND   CHAR(1),
+    constraint IXU_DEP_124
+        primary key (INTERNAL_SN, RENEWAL_SER_NUM, ACCOUNT_NO)
+);
+

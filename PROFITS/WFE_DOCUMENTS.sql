@@ -1,0 +1,26 @@
+create table WFE_DOCUMENTS
+(
+    REQUEST_CUST_ID      INTEGER     not null,
+    WFE_DOCUMENT_ID      DECIMAL(10) not null,
+    APPLICATION_SYSTEM   SMALLINT    not null,
+    APPLICATION_ID       CHAR(40)    not null,
+    DOCUMENT_FILE_ID     DECIMAL(15),
+    DOCUMENT_COUNT       INTEGER,
+    APPLICATION_PRODUCT  INTEGER,
+    APPLICATION_AMN      DECIMAL(15, 2),
+    APPLICATION_CURRENCY INTEGER,
+    TRX_COMMENTS         VARCHAR(2048),
+    TRX_UNIT             INTEGER,
+    TRX_DATE             DATE,
+    TRX_USR              CHAR(8),
+    TRX_TMSTAMP          TIMESTAMP(6),
+    TRX_USER_SN          INTEGER,
+    DOCUMENT_STATUS      CHAR(1),
+    FK_DOC_CATEGORY      CHAR(4)     not null,
+    FK_WFS_HEADER        DECIMAL(10) not null,
+    FK_WFS_DETAIL        DECIMAL(10) not null,
+    constraint PK_WFE_DOCUMENT
+        primary key (APPLICATION_SYSTEM, APPLICATION_ID, REQUEST_CUST_ID, WFE_DOCUMENT_ID, FK_DOC_CATEGORY,
+                     FK_WFS_HEADER, FK_WFS_DETAIL)
+);
+

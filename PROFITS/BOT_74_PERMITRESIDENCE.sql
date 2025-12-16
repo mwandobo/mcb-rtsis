@@ -1,0 +1,16 @@
+create table BOT_74_PERMITRESIDENCE
+(
+    PERMITRESIDENCE_ID INTEGER generated always as identity
+        constraint BOT_74_PERMITRESIDENCE_ID_PK
+            primary key,
+    FK_IDENTIFICATIONS INTEGER
+        constraint BOT_74_FKIDENTIFICATIONS
+            references BOT_62_IDENTIFICATIONS,
+    NUMBEROFPERMISSION VARCHAR(16) not null,
+    DATEOFEXPIRATION   DATE,
+    DATEOFISSUANCE     DATE,
+    ISSUANCELOCATION   VARCHAR(32),
+    ISSUEDBY           VARCHAR(128),
+    REPORTING_DATE     DATE
+);
+

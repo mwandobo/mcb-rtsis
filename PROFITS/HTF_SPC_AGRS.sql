@@ -1,0 +1,35 @@
+create table HTF_SPC_AGRS
+(
+    TUN_INTERNAL_SN  SMALLINT not null,
+    TUN_SN           INTEGER  not null,
+    TUN_USER         CHAR(8)  not null,
+    TUN_DATE         DATE     not null,
+    TUN_UNIT         INTEGER  not null,
+    O_COMM_CHRG_FRQ  SMALLINT,
+    P_COMM_CHRG_FRQ  SMALLINT,
+    TRX_CODE         INTEGER,
+    ID_PRODUCT       INTEGER,
+    ID_JUSTIFIC      INTEGER,
+    ID_TRANSACT      INTEGER,
+    CUST_ID          INTEGER,
+    O_COMM_DISC      DECIMAL(8, 4),
+    P_COMM_PERC      DECIMAL(8, 4),
+    O_COMM_PERC      DECIMAL(8, 4),
+    P_COMM_DISC      DECIMAL(8, 4),
+    O_MAX_COMM_AMN   DECIMAL(15, 2),
+    O_MIN_COMM_AMN   DECIMAL(15, 2),
+    P_MIN_COMM_AMN   DECIMAL(15, 2),
+    O_COMM_AMN       DECIMAL(15, 2),
+    P_COMM_AMN       DECIMAL(15, 2),
+    P_MAX_COMM_AMN   DECIMAL(15, 2),
+    O_EXPIRY_DATE    DATE,
+    P_EXPIRY_DATE    DATE,
+    TMSTAMP          TIMESTAMP(6),
+    O_COMM_CHRG_FRQT CHAR(1),
+    TF_LC_FLAG       CHAR(1),
+    P_COMM_CHRG_FRQT CHAR(1),
+    TF_LC_ACC        CHAR(40),
+    constraint IXU_FX_013
+        primary key (TUN_INTERNAL_SN, TUN_SN, TUN_USER, TUN_DATE, TUN_UNIT)
+);
+

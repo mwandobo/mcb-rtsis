@@ -1,0 +1,12 @@
+create table SUP_ITEM_PTJ
+(
+    SUP_PRODUCT_ID   DECIMAL(5) not null,
+    SUP_TRX_CODE     DECIMAL(5) not null,
+    SUP_ID_JUSTIFIC  DECIMAL(5) not null,
+    ITEM_PRODUCT_ID  DECIMAL(5),
+    ITEM_TRX_CODE    DECIMAL(5),
+    ITEM_ID_JUSTIFIC DECIMAL(5),
+    constraint SUP_ITEM_PTJ_KEY
+        primary key (SUP_PRODUCT_ID, SUP_TRX_CODE, SUP_ID_JUSTIFIC)
+);
+

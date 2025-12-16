@@ -1,0 +1,17 @@
+create table FB_POSITION
+(
+    FK_UNITCODE        INTEGER,
+    FK_CURRENCYID_CURR INTEGER,
+    FK_USRCODE         CHAR(8),
+    VALID_DATE         DATE,
+    SALES_FC           DECIMAL(15, 2),
+    PURCHASES_DC       DECIMAL(15, 2),
+    PURCHASES_FC       DECIMAL(15, 2),
+    PREV_BALANCE_DC    DECIMAL(15, 2),
+    SALES_DC           DECIMAL(15, 2),
+    PREV_BALANCE_FC    DECIMAL(15, 2)
+);
+
+create unique index IXU_FB__000
+    on FB_POSITION (FK_UNITCODE, FK_CURRENCYID_CURR, FK_USRCODE, VALID_DATE);
+

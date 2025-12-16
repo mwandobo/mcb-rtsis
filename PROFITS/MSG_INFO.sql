@@ -1,0 +1,9 @@
+create table MSG_INFO
+(
+    MSGCODE     INTEGER,
+    MSGTYPE     VARCHAR(30),
+    MSGTEXT     VARCHAR(2000),
+    MSGNAME     VARCHAR(30),
+    DESCRIPTION VARCHAR(2000)
+);
+

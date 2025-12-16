@@ -1,0 +1,16 @@
+create table TPT_TRX_RECORDING
+(
+    TRX_UNIT      INTEGER,
+    TRX_DATE      DATE,
+    TRX_USR       CHAR(8),
+    TRX_USR_SN    INTEGER,
+    CANCEL_STATUS SMALLINT,
+    TP_NUMBER     DECIMAL(15),
+    TMSTAMP       TIMESTAMP(6),
+    TP_TYPE       CHAR(5),
+    TP_TASK       CHAR(8)
+);
+
+create unique index IXU_TPT_003
+    on TPT_TRX_RECORDING (TRX_UNIT, TRX_DATE, TRX_USR, TRX_USR_SN);
+

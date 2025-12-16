@@ -1,0 +1,18 @@
+create table LNS_ACC_TOTAL_MIG
+(
+    OLD_ACCOUNT_NUM CHAR(20) not null,
+    ACCOUNT_YEAR    SMALLINT not null,
+    ACC_CD          SMALLINT,
+    ACC_TYPE        SMALLINT,
+    OLD_ACCOUNT_CD  SMALLINT,
+    ACC_UNIT        INTEGER,
+    ACC_SN          INTEGER,
+    NRL_INT_MG_BAL  DECIMAL(15, 2),
+    SUBSIDY_MG_BAL  DECIMAL(15, 2),
+    PNL_INT_MG_BAL  DECIMAL(15, 2),
+    INSTALL_MG_BAL  DECIMAL(15, 2),
+    CAPITAL_MG_BAL  DECIMAL(15, 2),
+    constraint IXU_DEF_026
+        primary key (OLD_ACCOUNT_NUM, ACCOUNT_YEAR)
+);
+

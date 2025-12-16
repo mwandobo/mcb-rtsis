@@ -1,0 +1,8 @@
+create table PRFT_ORA_COUNT
+(
+    TABLE_NAME   CHAR(30),
+    TABLE_TYPE   CHAR(30),
+    RECORD_COUNT DECIMAL(15),
+    EXECUTED     TIMESTAMP(6)
+);
+

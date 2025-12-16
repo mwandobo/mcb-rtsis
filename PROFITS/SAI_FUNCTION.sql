@@ -1,0 +1,24 @@
+create table SAI_FUNCTION
+(
+    FUNCTION_ID          SMALLINT not null
+        constraint PK_SAI_FUNCTION
+            primary key,
+    FUNCTION_NAME        VARCHAR(30),
+    FUNCTION_DESCRIPTION VARCHAR(250),
+    SOURCE_NAME          VARCHAR(50),
+    PARAM_LABEL_1        VARCHAR(50),
+    PARAM_LABEL_2        VARCHAR(50),
+    PARAM_LABEL_3        VARCHAR(50),
+    PARAM_LABEL_4        VARCHAR(50),
+    PARAM_TYPE_1         VARCHAR(10),
+    PARAM_TYPE_2         VARCHAR(10),
+    PARAM_TYPE_3         VARCHAR(10),
+    PARAM_TYPE_4         VARCHAR(10),
+    FUNCTION_TYPE        VARCHAR(10),
+    SUPPORTED_OPERATORS  VARCHAR(18),
+    PARAM_LABEL_5        VARCHAR(50),
+    PARAM_LABEL_6        VARCHAR(50),
+    PARAM_TYPE_5         VARCHAR(10),
+    PARAM_TYPE_6         VARCHAR(10)
+);
+

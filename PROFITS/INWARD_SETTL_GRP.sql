@@ -1,0 +1,11 @@
+create table INWARD_SETTL_GRP
+(
+    SETTL_GROUP_ID   DECIMAL(10) not null,
+    CREATE_TIMESTAMP TIMESTAMP(6),
+    SESSION_NO       CHAR(1),
+    TRX_DATE         DATE
+);
+
+create unique index PK_INWARD_SETTL_GRP
+    on INWARD_SETTL_GRP (SETTL_GROUP_ID);
+

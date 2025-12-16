@@ -1,0 +1,10 @@
+create table PORTFOLIO_COUNTERS
+(
+    BRANCH  INTEGER,
+    CNTR    DECIMAL(10),
+    TMSTAMP TIMESTAMP(6)
+);
+
+create unique index IXU_POR_002
+    on PORTFOLIO_COUNTERS (BRANCH);
+

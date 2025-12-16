@@ -1,0 +1,19 @@
+create table PROFITS_PERSON
+(
+    KEY_USER_ID        VARCHAR(50) not null
+        constraint PK_PRFT_SEND_1
+            primary key,
+    KEY_SN             DECIMAL(10),
+    USER_EMAIL         VARCHAR(256),
+    USER_MOBILE        VARCHAR(15),
+    PROFITS_CUST_ID    INTEGER,
+    PROFITS_C_DIGIT    SMALLINT,
+    PROFITS_USER_ID    CHAR(8),
+    EXTSYS_PERSON_TYPE CHAR(2),
+    CREATE_TMSTAMP     TIMESTAMP(6),
+    UPDATE_TMSTAMP     TIMESTAMP(6),
+    EXTSYS_FIRST_NAME  CHAR(20),
+    EXTSYS_SURNAME     CHAR(70),
+    EXTSYS_COMMENTS    VARCHAR(240)
+);
+

@@ -1,0 +1,35 @@
+create table ATM_TRANSACTION
+(
+    ID                 DECIMAL(10)  not null,
+    IN_TMSTAMP         TIMESTAMP(6) not null,
+    TRANSACTION_DATE   CHAR(4),
+    TRANSACTION_TIME   CHAR(6),
+    REFERENCE_NUMBER   CHAR(12),
+    IDENT_RESPONSE     CHAR(6),
+    CUST_ACCOUNT_SRC   CHAR(28),
+    CUST_ACC_TYPE_SRC  CHAR(1),
+    CUST_ACCOUNT_DST   CHAR(28),
+    CUST_ACC_TYPE_DST  CHAR(1),
+    PROCESSING_CODE    CHAR(6),
+    CARD_NUMBER        CHAR(37),
+    TRANS_AMOUNT       DECIMAL(15, 2),
+    REVERSAL           CHAR(1),
+    STAND_IN_FLAG      CHAR(1),
+    TRANS_TYPE         CHAR(4),
+    EXIT_STATE         VARCHAR(80),
+    PROCESSED_FLAG     CHAR(1),
+    PROCESS_EXIT_STATE VARCHAR(80),
+    SRC_DEP_ACC_SN     DECIMAL(10),
+    DST_DEP_ACC_SN     DECIMAL(10),
+    SRC_LNS_UNIT       SMALLINT,
+    SRC_LNS_TYPE       SMALLINT,
+    SRC_LNS_ACC_SN     INTEGER,
+    DST_LNS_UNIT       SMALLINT,
+    DST_LNS_TYPE       SMALLINT,
+    DST_LNS_ACC_SN     INTEGER,
+    IN_MESSAGE         VARCHAR(1000),
+    OUT_MESSAGE        VARCHAR(1000),
+    constraint IXU_ATM_029
+        primary key (ID, IN_TMSTAMP)
+);
+

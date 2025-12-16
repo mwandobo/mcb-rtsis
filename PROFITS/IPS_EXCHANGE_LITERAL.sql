@@ -1,0 +1,9 @@
+create table IPS_EXCHANGE_LITERAL
+(
+    EXCHANGE_TYPE    VARCHAR(20)  not null,
+    ORIGINAL_LITERAL VARCHAR(100) not null,
+    EXCHANGE_LITERAL VARCHAR(100),
+    constraint PK_IPS_EXCHANGE_LITERAL
+        primary key (ORIGINAL_LITERAL, EXCHANGE_TYPE)
+);
+

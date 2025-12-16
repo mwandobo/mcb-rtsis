@@ -1,0 +1,17 @@
+create table CUST_FINANCIAL_HEADER
+(
+    FINANCIAL_YEAR     SMALLINT not null,
+    ASSETS_FLG         CHAR(1),
+    LIABILITIES_FLG    CHAR(1),
+    FUNDS_SOURCE_FLG   CHAR(1),
+    PERMITTED_TRX_FLG  CHAR(1),
+    INCOME_FLG         CHAR(1),
+    EXPENSE_FLG        CHAR(1),
+    PROPERTY_FLG       CHAR(1),
+    VEHICLE_FLG        CHAR(1),
+    FK_CUSTOMERCUST_ID INTEGER  not null,
+    CORP_DATA_FLG      CHAR(1),
+    constraint PK_CUST_FINANCIAL_HEADER
+        primary key (FK_CUSTOMERCUST_ID, FINANCIAL_YEAR)
+);
+

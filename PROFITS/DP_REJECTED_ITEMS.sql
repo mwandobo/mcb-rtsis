@@ -1,0 +1,23 @@
+create table DP_REJECTED_ITEMS
+(
+    IDENTIFIER        DECIMAL(10),
+    ACCOUNT_C_DIGIT   SMALLINT,
+    ACC_UNIT_CODE     INTEGER,
+    ID_PRODUCT        INTEGER,
+    ACC_ID_CURRENCY   INTEGER,
+    TRX_UNIT          INTEGER,
+    TRX_USR_SN        INTEGER,
+    ACCOUNT_NUMBER    DECIMAL(10),
+    CHEQUE_AMOUNT     DECIMAL(15, 2),
+    TRX_DATE          DATE,
+    ACC_CURRENCY_DESC CHAR(5),
+    TRX_USR           CHAR(8),
+    CHEQUE_NO         CHAR(10),
+    PRODUCT_DESCR     CHAR(40),
+    COMMENT0          CHAR(80),
+    ACC_UNIT_NAME     VARCHAR(40)
+);
+
+create unique index IXU_DP__001
+    on DP_REJECTED_ITEMS (IDENTIFIER);
+

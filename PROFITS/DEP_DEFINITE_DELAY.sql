@@ -1,0 +1,36 @@
+create table DEP_DEFINITE_DELAY
+(
+    FK_DEPOSIT_ACCOACC DECIMAL(11) not null
+        constraint PKDEPDFDL
+            primary key,
+    TRX_DATE           DATE,
+    TRX_UNIT           INTEGER,
+    TRX_USR            CHAR(8),
+    TRX_USR_SN         INTEGER,
+    TUN_INTERNAL_SN    SMALLINT,
+    MONITORING_UNIT    INTEGER,
+    DEP_ACCOUNT_NO     CHAR(40),
+    LNS_ACCOUNT_NO     CHAR(40),
+    ENTRY_AMOUNT       DECIMAL(15, 2),
+    I_PRODUCT_ID       INTEGER,
+    O_PRODUCT_ID       INTEGER,
+    I_ACCOUNT_LIMIT    DECIMAL(15, 2),
+    O_ACCOUNT_LIMIT    DECIMAL(15, 2),
+    I_AGR_UNIT         INTEGER,
+    I_AGR_YEAR         SMALLINT,
+    I_AGR_SN           INTEGER,
+    I_AGR_MEMBR_SN     INTEGER,
+    O_AGR_UNIT         INTEGER,
+    O_AGR_YEAR         SMALLINT,
+    O_AGR_SN           INTEGER,
+    O_AGR_MEMBR_SN     INTEGER,
+    I_DB_INTEREST      INTEGER,
+    O_DB_INTEREST      INTEGER,
+    I_CR_INTEREST      INTEGER,
+    O_CR_INTEREST      INTEGER,
+    I_XS_INTEREST      INTEGER,
+    O_XS_INTEREST      INTEGER,
+    I_N128_INTEREST    INTEGER,
+    O_N128_INTEREST    INTEGER
+);
+

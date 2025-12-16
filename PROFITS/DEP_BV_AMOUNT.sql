@@ -1,0 +1,21 @@
+create table DEP_BV_AMOUNT
+(
+    ACCOUNT_NUMBER     DECIMAL(11) not null,
+    INT_CALC_PERIOD    DECIMAL(11) not null,
+    VALUE_DATE         DATE        not null,
+    TOTAL_INTEREST_AMN DECIMAL(18, 5),
+    PROGRESSIVE_AMN    DECIMAL(18, 5),
+    CHG_INTEREST_AMN   DECIMAL(18, 5),
+    CHG_PROGRESS_AMN   DECIMAL(18, 5),
+    BACK_VALUE_DT      DATE,
+    START_VALEUR       DECIMAL(15, 2),
+    INITIAL_BALANCE    DECIMAL(18, 5),
+    DB_INT_AMN         DECIMAL(18, 5),
+    DB_SPRD_AMN        DECIMAL(18, 5),
+    CR_INT_AMN         DECIMAL(18, 5),
+    CR_SPRD_AMN        DECIMAL(18, 5),
+    BV_TOT_INT_AMN     DECIMAL(18, 5),
+    constraint PDEP_BV
+        primary key (ACCOUNT_NUMBER, INT_CALC_PERIOD, VALUE_DATE)
+);
+

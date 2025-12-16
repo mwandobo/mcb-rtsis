@@ -1,0 +1,12 @@
+create table RPROFX
+(
+    PDATA    LONG VARCHAR(32700),
+    SEQNUM   INTEGER,
+    IETPSNUM INTEGER,
+    IETAPPID VARCHAR(4),
+    IETUID   VARCHAR(8)
+);
+
+create unique index RPROFXI1
+    on RPROFX (IETUID, IETAPPID, IETPSNUM, SEQNUM);
+

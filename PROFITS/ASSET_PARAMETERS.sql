@@ -1,0 +1,40 @@
+create table ASSET_PARAMETERS
+(
+    ASSET_ID                 VARCHAR(10) not null
+        constraint IXU_GL_015
+            primary key,
+    ID_JUSTIFIC3             INTEGER,
+    ID_JUSTIFIC_DEPREV       INTEGER,
+    ID_TRANSACT_DEPREV       INTEGER,
+    ID_JUSTIFIC_VALREV       INTEGER,
+    ID_TRANSACT_VALREV       INTEGER,
+    TRX_LUNIT                INTEGER,
+    TRX_UNIT                 INTEGER,
+    ID_JUSTIFIC2             INTEGER,
+    ID_JUSTIFIC1             INTEGER,
+    ID_TRANSACT              INTEGER,
+    ID_PRODUCT               INTEGER,
+    ASSET_VALUE_AMOUNT       DECIMAL(15, 2),
+    UNDEPRECIATE_ASSET_VALUE DECIMAL(15, 2),
+    LAST_UNSCHEDLED_DT       DATE,
+    TRX_DATE                 DATE,
+    LAST_SCHEDULED_DT        DATE,
+    LAST_DVLP_LAW_DATE       DATE,
+    TRX_LDATE                DATE,
+    DOC_SER_REV              CHAR(2),
+    DOC_SER                  CHAR(2),
+    ID_JUSTIFIC_REV          CHAR(4),
+    DOC_ID_REV               CHAR(4),
+    JUSTIFY_ID               CHAR(4),
+    DOC_ID                   CHAR(4),
+    TRX_USR                  CHAR(8),
+    TRX_LUSR                 CHAR(8),
+    STATUS_CODE              VARCHAR(4),
+    DOC_SER_BUY              VARCHAR(2) default '  ',
+    DOC_ID_BUY               VARCHAR(4) default '    ',
+    ID_TRANSACT_BUY          DECIMAL(5),
+    ID_JUSTIFIC_BUY          DECIMAL(5),
+    DEFAULT_STATUS_CODE      VARCHAR(4),
+    DEF_TAXCODE              DECIMAL(5)
+);
+

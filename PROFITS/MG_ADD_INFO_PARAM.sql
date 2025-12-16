@@ -1,0 +1,13 @@
+create table MG_ADD_INFO_PARAM
+(
+    UPDATE_TYPE    CHAR(1),
+    PRFT_DATA_TYPE CHAR(1),
+    PRFT_TABLE     CHAR(20),
+    PRFT_FIELD     CHAR(20),
+    PRFT_KEY_FIELD CHAR(20),
+    FIELD_NAME     CHAR(50)
+);
+
+create unique index I0000430
+    on MG_ADD_INFO_PARAM (FIELD_NAME);
+

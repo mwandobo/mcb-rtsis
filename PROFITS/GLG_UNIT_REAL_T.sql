@@ -1,0 +1,16 @@
+create table GLG_UNIT_REAL_T
+(
+    FK_UNITCODE        INTEGER,
+    FK_CURRENCYID_CURR INTEGER,
+    FK_GLG_ACCOUNTACCO CHAR(21),
+    NYCR_AMOUNT        DECIMAL(15, 2),
+    NYDB_AMOUNT        DECIMAL(15, 2),
+    CYCR_AMOUNT        DECIMAL(15, 2),
+    CYDB_AMOUNT        DECIMAL(15, 2),
+    FILLER2            CHAR(250),
+    FILLER             CHAR(250)
+);
+
+create unique index IXU_GLG_101
+    on GLG_UNIT_REAL_T (FK_UNITCODE, FK_CURRENCYID_CURR, FK_GLG_ACCOUNTACCO);
+

@@ -1,0 +1,16 @@
+create table TMP_INSIDER2
+(
+    BORROWER_NAME         CHAR(200),
+    INSIDER_NAME          CHAR(90),
+    INSIDER_DESC          CHAR(40),
+    ACC_LIMIT_AMN         DECIMAL(15, 2),
+    ACC_EXP_DT            DATE,
+    FINAL_INTEREST        DECIMAL(8, 4),
+    LC_GROSS_TOTAL        DECIMAL(15, 2),
+    AGREEMENT_NUMBER      CHAR(40),
+    ACCOUNT_NUMBER        CHAR(40),
+    LOAN_CLASS            CHAR(15),
+    PRODUCT_DYNAMIC_DESCR CHAR(200),
+    COL_EST_VALUE_AMN     DECIMAL(15, 2)
+);
+

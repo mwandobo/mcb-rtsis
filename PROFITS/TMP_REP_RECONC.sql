@@ -1,0 +1,15 @@
+create table TMP_REP_RECONC
+(
+    GL_ACCOUNT        CHAR(21),
+    ACC_UNIT          INTEGER,
+    ACC_MOVE_CURR     INTEGER,
+    PRFT_SYSTEM       SMALLINT,
+    END_SYS_BALANCE   DECIMAL(18, 2),
+    END_GL_BALANCE    DECIMAL(18, 2),
+    END_DIF           DECIMAL(18, 2),
+    START_SYS_BALANCE DECIMAL(18, 2),
+    START_GL_BALANCE  DECIMAL(18, 2),
+    START_DIF         DECIMAL(18, 2),
+    DIF               DECIMAL(18, 2)
+);
+

@@ -1,0 +1,14 @@
+create table DEP_ACC_STATMT_REQ
+(
+    TRX_DATE       DATE,
+    ACCOUNT_NUMBER DECIMAL(11),
+    FROM_DATE      DATE,
+    PRINT_FLAG     CHAR(1),
+    PRINTED_FLAG   CHAR(1),
+    COUNTER        INTEGER,
+    TO_DATE        DATE
+);
+
+create unique index IXU_DEP_027
+    on DEP_ACC_STATMT_REQ (COUNTER, TRX_DATE, ACCOUNT_NUMBER);
+

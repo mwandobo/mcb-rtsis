@@ -1,0 +1,10 @@
+create table PACKAGE_PER_REL
+(
+    FK_CUSTOMERCUST_ID  INTEGER  not null,
+    FK_RELATIONSHIPTYPE CHAR(12) not null,
+    FK_PACKAGEID_PACKAG INTEGER,
+    TIMESTMP            TIMESTAMP(6),
+    constraint IXU_CIS_178
+        primary key (FK_CUSTOMERCUST_ID, FK_RELATIONSHIPTYPE)
+);
+

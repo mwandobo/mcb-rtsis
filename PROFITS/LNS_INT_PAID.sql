@@ -1,0 +1,17 @@
+create table LNS_INT_PAID
+(
+    YEAR0     SMALLINT,
+    ACC_SN    INTEGER,
+    ACC_TYPE  SMALLINT,
+    ACC_UNIT  INTEGER,
+    ACC_CD    SMALLINT,
+    TRX_UNIT  INTEGER,
+    CUST_ID   INTEGER,
+    TRX_DATE  DATE,
+    TRX_USER  CHAR(8),
+    COMMENTS0 VARCHAR(1024)
+);
+
+create unique index IXU_LNS_005
+    on LNS_INT_PAID (YEAR0, ACC_SN, ACC_TYPE, ACC_UNIT);
+

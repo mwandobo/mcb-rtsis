@@ -1,0 +1,35 @@
+create table IPS_STATEMENT_RCN_BAL
+(
+    ID                            DECIMAL(15)  not null,
+    STATUS_RECONCILED             VARCHAR(1),
+    RCN_RESULT                    VARCHAR(70),
+    RCN_FILE_NAME                 VARCHAR(100) not null,
+    RCN_HDR_DOC_ID                VARCHAR(40)  not null,
+    RCN_HDR_DATES_TYPE            VARCHAR(20),
+    RCN_HDR_DATES_TMSTAMP         DATE,
+    RCN_HDR_DATES_DATE            DATE,
+    RCN_HDR_DOC_TYPE              VARCHAR(10),
+    RCN_HDR_DOC_PRIORITY          VARCHAR(2),
+    RCN_HDR_DOC_BUSINESS_AREA     VARCHAR(20),
+    RCN_BIC                       VARCHAR(11),
+    RCN_ACCOUNT_TYPE              VARCHAR(6),
+    RCN_ACCOUNT                   VARCHAR(40),
+    RCN_CURRENCY                  VARCHAR(3),
+    RCN_OPENING_BALANCE           DECIMAL(15, 2),
+    RCN_OPENING_AVAIL_BALANCE     DECIMAL(15, 2),
+    RCN_CLOSING_BALANCE           DECIMAL(15, 2),
+    RCN_CLOSING_AVAIL_BALANCE     DECIMAL(15, 2),
+    RCN_TURNOVER_PRIORITY         VARCHAR(2),
+    RCN_TURNOVER_BIC              VARCHAR(11),
+    RCN_TURNOVER_ACCOUNT_TYPE     VARCHAR(10),
+    RCN_TURNOVER_ACCOUNT          VARCHAR(40),
+    RCN_TURNOVER_DIRECTION_TYPE   VARCHAR(1),
+    RCN_TURNOVER_DIRECTION_AMOUNT DECIMAL(15, 2),
+    RCN_TURNOVER_DIRECTION_COUNT  DECIMAL(15),
+    PROFITS_TOTAL_AMNT_CREDIT     DECIMAL(15, 2),
+    PROFITS_TOTAL_AMNT_DEBIT      DECIMAL(15, 2),
+    CREATION_TIMESTAMP            DATE,
+    constraint IXU_IPS_STMT_RCN_BAL_01
+        primary key (ID, RCN_FILE_NAME)
+);
+

@@ -1,0 +1,20 @@
+create table OUT_SYS_BRIDGE_CUST
+(
+    AVAIL_DAYS        SMALLINT,
+    VALUE_DAYS        SMALLINT,
+    CR_TRX_CODE       INTEGER,
+    DR_TRX_CODE       INTEGER,
+    TRX_CODE          INTEGER,
+    PROD_CODE         INTEGER,
+    JUSTIF_CODE       INTEGER,
+    GL_DR_JUSTIF_CODE INTEGER,
+    CR_JUSTIF_CODE    INTEGER,
+    DR_JUSTIF_CODE    INTEGER,
+    GL_CR_JUSTIF_CODE INTEGER,
+    CUST_ID           INTEGER,
+    TC_CODE           DECIMAL(10)
+);
+
+create unique index PK_DOC_BRIDGE_CUST
+    on OUT_SYS_BRIDGE_CUST (CUST_ID, TC_CODE);
+

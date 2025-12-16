@@ -1,0 +1,12 @@
+create table AGE_ISSU_PRD_REP
+(
+    VALIDITY_DATE DATE,
+    ID_PRODUCT    INTEGER,
+    PATH          CHAR(40),
+    FILENAME      CHAR(70),
+    DESCRIPTION   CHAR(70)
+);
+
+create unique index IXP_AGE_000
+    on AGE_ISSU_PRD_REP (VALIDITY_DATE, ID_PRODUCT, PATH, FILENAME);
+

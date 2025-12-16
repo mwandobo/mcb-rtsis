@@ -1,0 +1,22 @@
+create table RSKCO_COLLATERAL
+(
+    REFERENCE_ID       CHAR(50) not null,
+    TRANSACTION_DATE   DATE     not null,
+    AMOUNT_DECIMALS    SMALLINT,
+    IS_GROUP           SMALLINT,
+    AMOUNT             DECIMAL(15),
+    PRFT_EXTRACTION_DT DATE,
+    DEP_WITHDR         CHAR(1),
+    CURRENCY           CHAR(3),
+    PRODUCT_TYPE       CHAR(10),
+    FACILITYPRODUCT    CHAR(10),
+    GUARANTOR          CHAR(15),
+    PRFT_ROUTINE       CHAR(20),
+    SECURITY_ID        CHAR(30),
+    TRANSACTIONREF     CHAR(50),
+    FACILITY_REFERENCE CHAR(50),
+    PRODUCT_TYPE_DTL   CHAR(150),
+    constraint IXU_LNS_041
+        primary key (REFERENCE_ID, TRANSACTION_DATE)
+);
+

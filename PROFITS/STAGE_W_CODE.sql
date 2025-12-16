@@ -1,0 +1,7 @@
+create table STAGE_W_CODE
+(
+    CODE_SET_ID DECIMAL(10),
+    CODE_VALUE  VARCHAR(6),
+    CODE_DESC   VARCHAR(50)
+);
+

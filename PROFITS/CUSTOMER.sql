@@ -1,0 +1,180 @@
+create table CUSTOMER
+(
+    CUST_ID              INTEGER,
+    C_DIGIT              SMALLINT,
+    CLEANESS             SMALLINT,
+    CHILDREN_ABOVE18     SMALLINT,
+    NUM_OF_CHILDREN      SMALLINT,
+    FAMILY_MEMBERS       SMALLINT,
+    FK_BRANCH_PORTFPOR   INTEGER,
+    FK_BRANCH_PORTFBRA   INTEGER,
+    FKUNIT_BELONGS       INTEGER,
+    FKUNIT_IS_MONITORE   INTEGER,
+    FKCURR_HAS_AS_LIMI   INTEGER,
+    FKCURR_THINKS_IN     INTEGER,
+    FKUNIT_IS_SERVICED   INTEGER,
+    FK_DISTR_CHANNEID    INTEGER,
+    FK_BISS_CODE         INTEGER,
+    SELF_NUM             INTEGER,
+    OLD_CUST_ID          DECIMAL(10),
+    LIMIT                DECIMAL(15, 2),
+    CORRESPONDENT_LIMI   DECIMAL(15, 2),
+    FIN_RANGE            DECIMAL(15, 2),
+    CERTIFIC_DATE        DATE,
+    SEPA_AGR_DT          DATE,
+    STATUS_DATE          DATE,
+    FIN_RANGE_DT         DATE,
+    TMSTAMP              TIMESTAMP(6),
+    DATE_OF_BIRTH        DATE,
+    EXPIRE_DATE          DATE,
+    DOC_EXPIRE_DATE      DATE,
+    CUSTOMER_BEGIN_DAT   DATE,
+    LEGAL_EXPIRE_DATE    DATE,
+    EMPLOYEMENT_START    DATE,
+    LAST_UPDATE          TIMESTAMP(6),
+    CERTIFIC_CUST        CHAR(1),
+    SEPA_AGR_FLG         CHAR(1),
+    NON_RESIDENT_FOR_R   CHAR(1),
+    FAX_INDICATOR        CHAR(1),
+    MAJOR_BENEFICIARY    CHAR(1),
+    BUSINESS_IND         CHAR(1),
+    MAIL_IND             CHAR(1),
+    SUN_NONWORK          CHAR(1),
+    SAT_NONWORK          CHAR(1),
+    ENTRY_STATUS         CHAR(1),
+    CUST_TYPE            CHAR(1),
+    VIP_IND              CHAR(1),
+    BLACKLISTED_IND      CHAR(1),
+    NON_REGISTERED       CHAR(1),
+    CUST_STATUS          CHAR(1),
+    SEX                  CHAR(1),
+    NON_RESIDENT         CHAR(1),
+    NO_AFM               CHAR(1),
+    TELEX_CONNECTION     CHAR(1),
+    SWIFT_CONNECTION_I   CHAR(1),
+    NOSTRO_ACCOUNT_IND   CHAR(1),
+    VOSTRO_ACCOUNT_IND   CHAR(1),
+    PROHIBIT_WITHDRAW    CHAR(1),
+    NON_PROFIT           CHAR(1),
+    CONSOLID_STATM_FLG   CHAR(1),
+    PENSIONER_IND        CHAR(1),
+    INSTITUTE_INV_IND    CHAR(1),
+    SELF_INDICATOR       CHAR(1),
+    SEGM_FLAGS           CHAR(5),
+    TITLE                CHAR(6),
+    SPM_NUMBER           CHAR(7),
+    FK_CUST_BANKEMPID    CHAR(8),
+    FK_BANKEMPLOYEEID    CHAR(8),
+    FK0BANKEMPLOYEEID    CHAR(8),
+    FK_USRCODE           CHAR(8),
+    CHAMBER_ID           CHAR(10),
+    DAI_NUMBER           CHAR(12),
+    TELEX                CHAR(15),
+    SHORT_NAME           CHAR(15),
+    LATIN_FIRSTNAME      CHAR(20),
+    BIRTHPLACE           CHAR(20),
+    FIRST_NAME           CHAR(20),
+    FK_GLG_ACCOUNTACCO   CHAR(21),
+    INCOMPLETE_U_COMNT   CHAR(30),
+    ALERT_MSG            CHAR(30),
+    FATHER_SURNAME       CHAR(40),
+    SELF_NAME            CHAR(40),
+    SECOND_SURNAME       CHAR(40),
+    EMPLOYER             CHAR(40),
+    EMPLOYER_ADDRESS     CHAR(40),
+    ATTRACTION_PERSON    CHAR(50),
+    E_MAIL               CHAR(64),
+    SURNAME              CHAR(70),
+    LATIN_SURNAME        CHAR(70),
+    CLEANESS_COMMENTS    CHAR(80),
+    PROMOCODE            VARCHAR(6),
+    SWIFT_ADDRESS        VARCHAR(12),
+    MOBILE_TEL           VARCHAR(15),
+    TELEPHONE_1          VARCHAR(15),
+    MIDDLE_NAME          VARCHAR(15),
+    FATHER_NAME          VARCHAR(20),
+    MOTHER_NAME          VARCHAR(20),
+    SPOUSE_NAME          VARCHAR(20),
+    CHAMBER_COMMENTS     VARCHAR(30),
+    MOTHER_SURNAME       VARCHAR(40),
+    ATTRACTION_DETAILS   VARCHAR(40),
+    MARKETING_REMINDER   VARCHAR(80),
+    INTERNET_ADDRESS     VARCHAR(100),
+    ENTRY_COMMENTS       VARCHAR(254),
+    FICLI_DESC           CHAR(42),
+    FICLI_CODE           INTEGER,
+    NOT_RES_BOP          CHAR(1),
+    REF_B_TRX_USR_SN     INTEGER,
+    REF_D_TRX_USR_SN     INTEGER,
+    REF_TRX_USR          CHAR(8),
+    REF_TRX_DATE         DATE,
+    REF_TRX_UNIT         INTEGER,
+    REF_DEP_ACC          DECIMAL(11),
+    REF_CUSTID           INTEGER,
+    CITY_OF_BIRTH        CHAR(20),
+    REPR_PHONE           CHAR(15),
+    REPR_SURNAME         CHAR(70),
+    REPR_FIRSTNAME       CHAR(20),
+    IBAN_ACCOUNT         CHAR(27),
+    BASEL_STATUS         CHAR(25),
+    BASEL_DESCRIPTION    CHAR(90),
+    AML_STATUS           CHAR(1),
+    TURNOVER_AMN         DECIMAL(15, 2),
+    LOANS_AMN            DECIMAL(15, 2),
+    PROFIT_AMN           DECIMAL(15, 2),
+    PROFITABILITY_AMN    DECIMAL(15, 2),
+    SALARY_AMN           DECIMAL(15, 2),
+    ENABLE_FOR_24C       CHAR(1),
+    CUST_OPEN_DATE       DATE,
+    NO_OF_BUSINESSES     INTEGER,
+    OWNERSHIP_INDICATION CHAR(1),
+    CONTRACT_EXPIRY_DATE DATE,
+    CONTRACT             CHAR(1),
+    MOBILE_TEL2          VARCHAR(15),
+    E_MAIL2              VARCHAR(64),
+    CBS_ID               VARCHAR(25),
+    IAPPLY_ID            VARCHAR(25),
+    CRM_ID               VARCHAR(25),
+    COMMUN_METHOD        CHAR(1) default '0',
+    NO_OF_EMPLOYEES      INTEGER,
+    PERM_EMPLOYEES       INTEGER,
+    EMPLOYEE_ID          CHAR(10),
+    DAILY_ORDER_AMNT     DECIMAL(15, 2)
+);
+
+create unique index FK0BANKEMEEID_IX
+    on CUSTOMER (FK0BANKEMPLOYEEID);
+
+create unique index IDX_000190099
+    on CUSTOMER (SURNAME, CUST_TYPE, ENTRY_STATUS, FIRST_NAME, FATHER_NAME, DATE_OF_BIRTH);
+
+create unique index IX2_CUS_XXX
+    on CUSTOMER (FK_BISS_CODE);
+
+create unique index IXN_CUS_004
+    on CUSTOMER (SURNAME, FIRST_NAME, FATHER_NAME);
+
+create unique index IXN_CUS_006
+    on CUSTOMER (FK_BRANCH_PORTFBRA, FK_BRANCH_PORTFPOR, CUSTOMER_BEGIN_DAT);
+
+create unique index IXN_CUS_011
+    on CUSTOMER (EMPLOYEE_ID);
+
+create unique index IXN_CUS_012
+    on CUSTOMER (EMPLOYER);
+
+create unique index IXN_CUS_014
+    on CUSTOMER (CHAMBER_ID);
+
+create unique index IXN_CUS_E_MAIL
+    on CUSTOMER (E_MAIL);
+
+create unique index IXN_CUS_MOBILE
+    on CUSTOMER (MOBILE_TEL);
+
+create unique index IXU_CUS_021
+    on CUSTOMER (CUST_ID);
+
+create unique index SKEY_SWIFT_BIC
+    on CUSTOMER (SWIFT_ADDRESS, CUST_TYPE);
+

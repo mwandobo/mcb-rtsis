@@ -1,0 +1,23 @@
+create table TR_BLOCK_HD
+(
+    BLOCK_CODE         INTEGER not null
+        constraint IXU_DEP_145
+            primary key,
+    FK_TRACCOUNT_TYPE  SMALLINT,
+    STORE_CODE         INTEGER,
+    TRX_UNIT           INTEGER,
+    FKGD_BLOCK_CATEGOR INTEGER,
+    FK_TRACCOUNT_UNITC INTEGER,
+    FK_TRACCOUNTACC_SN INTEGER,
+    TRX_USR_SN         INTEGER,
+    BLOCKED_FACE_VALUE DECIMAL(18, 3),
+    TMSTAMP            TIMESTAMP(6),
+    BLOCK_END_DATE     DATE,
+    TRX_DATE           DATE,
+    ENTRY_STATUS       CHAR(1),
+    FKGH_BLOCK_CATEGOR CHAR(5),
+    TRX_USR            CHAR(8),
+    FK_TRBONDBOND_CODE CHAR(15),
+    BLOCK_COMMENTS     VARCHAR(250)
+);
+

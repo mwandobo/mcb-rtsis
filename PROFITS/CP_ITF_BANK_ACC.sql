@@ -1,0 +1,11 @@
+create table CP_ITF_BANK_ACC
+(
+    CP_AGREEMENT_NO   DECIMAL(10),
+    BANK_ID           INTEGER,
+    ACCOUNT_NUMBER    DECIMAL(11),
+    ORGANISATION_CODE CHAR(10)
+);
+
+create unique index IXU_CP__026
+    on CP_ITF_BANK_ACC (CP_AGREEMENT_NO, BANK_ID);
+

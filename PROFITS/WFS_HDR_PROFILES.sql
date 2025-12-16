@@ -1,0 +1,10 @@
+create table WFS_HDR_PROFILES
+(
+    PROFILE_ID     CHAR(8),
+    FK_WF_HEADER   DECIMAL(10),
+    PROFILE_STATUS CHAR(1)
+);
+
+create unique index PK_WFH_PROF
+    on WFS_HDR_PROFILES (PROFILE_ID, FK_WF_HEADER);
+

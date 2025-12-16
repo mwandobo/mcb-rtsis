@@ -1,0 +1,23 @@
+create table GARNISH_M5
+(
+    TD_CREATION_TMSTAMP        TIMESTAMP(6) not null,
+    TD_BATCH_REFERENCE         INTEGER      not null,
+    TD_SERIAL_NUMBER           INTEGER      not null,
+    TAX_IDENTIFICATION         VARCHAR(9),
+    VAT_NUMBER                 VARCHAR(9),
+    ROC_INDENTITY_CARD         VARCHAR(9),
+    PASSPORT_NUMBER            VARCHAR(20),
+    PASSPORT_ISO_COUNTRY       VARCHAR(2),
+    COMPANY_REGISTRATION       VARCHAR(20),
+    COMPANY_REG_AUTHORITY      VARCHAR(20),
+    TAX_PAYER_NAME             VARCHAR(255),
+    ADJUSTED_AMOUNT_TO_GARNISH DECIMAL(15, 2),
+    BANK_BLOCKING_REFERENCE    VARCHAR(50),
+    CUST_ID                    INTEGER,
+    ENTRY_STATUS               CHAR(1),
+    TRX_DATE                   DATE,
+    ERR_DESCR                  VARCHAR(255),
+    constraint PK_GARNISH_M5
+        primary key (TD_SERIAL_NUMBER, TD_BATCH_REFERENCE, TD_CREATION_TMSTAMP)
+);
+

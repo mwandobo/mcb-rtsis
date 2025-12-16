@@ -1,0 +1,21 @@
+create table COS_RATES_DELETION
+(
+    ACTIVATION_DATE  DATE                  not null,
+    BASE_DATE_IND    SMALLINT,
+    SURPLUS_PERCENT  SMALLINT,
+    SHARE_AGE_UPPER  SMALLINT,
+    SPREAD_MIN_VALUE DECIMAL(15, 2),
+    DECISION_DATE    DATE,
+    CREATED_DATE     DATE,
+    UPDATED_DATE     DATE,
+    CREATED_BY       CHAR(8),
+    UPDATED_BY       CHAR(8),
+    COMMENTS         VARCHAR(255),
+    SERVICE_PRODUCT  INTEGER default 38001 not null,
+    constraint IXU_CP_119
+        primary key (SERVICE_PRODUCT, ACTIVATION_DATE)
+);
+
+create unique index IXU_CP_119
+    on COS_RATES_DELETION (ACTIVATION_DATE);
+

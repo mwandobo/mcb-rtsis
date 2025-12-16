@@ -1,0 +1,21 @@
+create table REP_74220
+(
+    ACC_UNIT           INTEGER,
+    ACC_MOVE_CURR      INTEGER,
+    GL_ACCOUNT         CHAR(21),
+    PRFT_SYSTEM        SMALLINT not null,
+    ID_PRODUCT         INTEGER,
+    LEGER_BALANCE      DECIMAL(18, 2),
+    GL_BALANCE         DECIMAL(18, 2),
+    CURR_ISO_CODE      CHAR(5),
+    TP_GL_BALANCE      DECIMAL(18, 2),
+    EXTERNAL_GLACCOUNT CHAR(21),
+    MUTUAL             VARCHAR(1)
+);
+
+create unique index IDXR2AFA0001
+    on REP_74220 (GL_ACCOUNT, ACC_UNIT, ACC_MOVE_CURR, GL_BALANCE, PRFT_SYSTEM);
+
+create unique index IXU_REP_009
+    on REP_74220 (PRFT_SYSTEM, GL_ACCOUNT, ACC_MOVE_CURR, ACC_UNIT);
+

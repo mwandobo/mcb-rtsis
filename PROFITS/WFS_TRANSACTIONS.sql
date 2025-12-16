@@ -1,0 +1,20 @@
+create table WFS_TRANSACTIONS
+(
+    WFS_TRANSACT_ID DECIMAL(10) not null,
+    WSI_WS_ID       VARCHAR(20) not null,
+    WSI_WS_COMMAND  CHAR(80)    not null,
+    ID_TRANSACT     INTEGER     not null,
+    DESCRIPTION     VARCHAR(80),
+    CREATE_UNIT     INTEGER,
+    CREATE_DATE     DATE,
+    CREATE_USR      CHAR(8),
+    CREATE_TMSTAMP  TIMESTAMP(6),
+    UPDATE_UNIT     INTEGER,
+    UPDATE_DATE     DATE,
+    UPDATE_USR      CHAR(8),
+    UPDATE_TMSTAMP  TIMESTAMP(6),
+    TRX_STATUS      CHAR(1),
+    constraint PK_WFS_TRX
+        primary key (WSI_WS_COMMAND, WSI_WS_ID, WFS_TRANSACT_ID)
+);
+

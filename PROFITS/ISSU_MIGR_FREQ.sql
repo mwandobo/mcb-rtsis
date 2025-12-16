@@ -1,0 +1,10 @@
+create table ISSU_MIGR_FREQ
+(
+    PRFT_FREQUENCY      SMALLINT,
+    PRFT_FREQUENCY_UNIT CHAR(1),
+    MIGR_FREQUENCY      CHAR(4)
+);
+
+create unique index ISSU_MIGR_FREQ
+    on ISSU_MIGR_FREQ (MIGR_FREQUENCY);
+
