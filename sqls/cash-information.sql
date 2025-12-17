@@ -6,10 +6,18 @@ SELECT
       WHEN gl.EXTERNAL_GLACCOUNT='101000001' THEN 'Cash in vault'
       WHEN gl.EXTERNAL_GLACCOUNT='101000002' THEN 'Petty cash'
       WHEN gl.EXTERNAL_GLACCOUNT='101000010' OR gl.EXTERNAL_GLACCOUNT='101000015' THEN 'Cash in ATMs'
-      WHEN gl.EXTERNAL_GLACCOUNT='101000004' OR gl.EXTERNAL_GLACCOUNT='101000011' THEN 'Cash in Teller'
+      WHEN gl.EXTERNAL_GLACCOUNT='101000004' OR gl.EXTERNAL_GLACCOUNT='101000011' THEN 'Cash with Tellers'
       ELSE 'unknown'
     END as cashCategory,
-    null as cashSubCategory,
+
+    CASE
+        WHEN gl.EXTERNAL_GLACCOUNT='101000001' OR
+             gl.EXTERNAL_GLACCOUNT='101000002'  OR
+             gl.EXTERNAL_GLACCOUNT='101000010'  OR
+             gl.EXTERNAL_GLACCOUNT='101000004'  OR
+             gl.EXTERNAL_GLACCOUNT='101000015'  OR gl.EXTERNAL_GLACCOUNT='101000011' THEN 'Notes'
+        ELSE null
+    END as cashSubCategory,
     'Business Hours' as cashSubmissionTime,
     gte.CURRENCY_SHORT_DES as currency,
     null as cashDenomination,
