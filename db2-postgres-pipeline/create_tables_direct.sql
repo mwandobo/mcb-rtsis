@@ -1,6 +1,27 @@
--- PostgreSQL Target Schema for Bank Data Sync
--- Run this before starting the sink connector if auto.create=false
--- Note: Using quoted identifiers to preserve camelCase naming
+-- Direct SQL script to create all tables
+-- Run this directly in PostgreSQL client (psql, pgAdmin, etc.)
+-- Note: This uses the same camelCase schema with quoted identifiers
+
+\echo 'Creating PostgreSQL tables for RTSIS...'
+
+-- Drop existing tables if they exist (optional - uncomment if needed)
+-- DROP TABLE IF EXISTS "investmentDebtSecurities" CASCADE;
+-- DROP TABLE IF EXISTS "incomeStatement" CASCADE;
+-- DROP TABLE IF EXISTS "insuranceCommission" CASCADE;
+-- DROP TABLE IF EXISTS "sharedCapital" CASCADE;
+-- DROP TABLE IF EXISTS "icbmTransaction" CASCADE;
+-- DROP TABLE IF EXISTS "cheques" CASCADE;
+-- DROP TABLE IF EXISTS "assetOwned" CASCADE;
+-- DROP TABLE IF EXISTS "balanceMno" CASCADE;
+-- DROP TABLE IF EXISTS "balanceBot" CASCADE;
+-- DROP TABLE IF EXISTS "otherAsset" CASCADE;
+-- DROP TABLE IF EXISTS "overdraft" CASCADE;
+-- DROP TABLE IF EXISTS "balanceOtherBanks" CASCADE;
+-- DROP TABLE IF EXISTS "loanTransaction" CASCADE;
+-- DROP TABLE IF EXISTS "loan" CASCADE;
+-- DROP TABLE IF EXISTS "cashInformation" CASCADE;
+
+\echo 'Creating tables...'
 
 -- Cash Information
 CREATE TABLE IF NOT EXISTS "cashInformation" (
@@ -21,6 +42,8 @@ CREATE TABLE IF NOT EXISTS "cashInformation" (
     "botProvision" DECIMAL(15,2)
 );
 
+\echo 'Created cashInformation table'
+
 -- Loan Information
 CREATE TABLE IF NOT EXISTS "loan" (
     "customerIdentificationNumber" VARCHAR(50),
@@ -34,6 +57,8 @@ CREATE TABLE IF NOT EXISTS "loan" (
     "transactionDate" TIMESTAMP
 );
 
+\echo 'Created loan table'
+
 -- Loan Transaction
 CREATE TABLE IF NOT EXISTS "loanTransaction" (
     "reportingDate" TIMESTAMP,
@@ -46,6 +71,8 @@ CREATE TABLE IF NOT EXISTS "loanTransaction" (
     "usdTransactionAmount" DECIMAL(15,2),
     "tzsTransactionAmount" DECIMAL(15,2)
 );
+
+\echo 'Created loanTransaction table'
 
 -- Balance with Other Banks
 CREATE TABLE IF NOT EXISTS "balanceOtherBanks" (
@@ -71,6 +98,8 @@ CREATE TABLE IF NOT EXISTS "balanceOtherBanks" (
     "externalRatingCorrespondentBank" VARCHAR(100),
     "gradesUnratedBanks" VARCHAR(50)
 );
+
+\echo 'Created balanceOtherBanks table'
 
 -- Overdraft
 CREATE TABLE IF NOT EXISTS "overdraft" (
@@ -149,6 +178,8 @@ CREATE TABLE IF NOT EXISTS "overdraft" (
     "botProvision" DECIMAL(15,2)
 );
 
+\echo 'Created overdraft table'
+
 -- Other Assets
 CREATE TABLE IF NOT EXISTS "otherAsset" (
     "reportingDate" TIMESTAMP,
@@ -168,6 +199,8 @@ CREATE TABLE IF NOT EXISTS "otherAsset" (
     "botProvision" DECIMAL(15,2)
 );
 
+\echo 'Created otherAsset table'
+
 -- Balances BOT
 CREATE TABLE IF NOT EXISTS "balanceBot" (
     "reportingDate" TIMESTAMP,
@@ -185,6 +218,8 @@ CREATE TABLE IF NOT EXISTS "balanceBot" (
     "botProvision" DECIMAL(15,2)
 );
 
+\echo 'Created balanceBot table'
+
 -- Balances with MNOs
 CREATE TABLE IF NOT EXISTS "balanceMno" (
     "reportingDate" TIMESTAMP,
@@ -199,6 +234,8 @@ CREATE TABLE IF NOT EXISTS "balanceMno" (
     "tzsFloatAmount" DECIMAL(15,2)
 );
 
+\echo 'Created balanceMno table'
+
 -- Asset Owned
 CREATE TABLE IF NOT EXISTS "assetOwned" (
     "reportingDate" TIMESTAMP,
@@ -212,6 +249,8 @@ CREATE TABLE IF NOT EXISTS "assetOwned" (
     "allowanceProbableLoss" DECIMAL(15,2),
     "botProvision" DECIMAL(15,2)
 );
+
+\echo 'Created assetOwned table'
 
 -- Cheque Clearing
 CREATE TABLE IF NOT EXISTS "cheques" (
@@ -238,6 +277,8 @@ CREATE TABLE IF NOT EXISTS "cheques" (
     "tzsAmountBalance" DECIMAL(15,2)
 );
 
+\echo 'Created cheques table'
+
 -- ICBM Transactions
 CREATE TABLE IF NOT EXISTS "icbmTransaction" (
     "reportingDate" TIMESTAMP,
@@ -249,6 +290,8 @@ CREATE TABLE IF NOT EXISTS "icbmTransaction" (
     "tenure" VARCHAR(50),
     "interestRate" VARCHAR(20)
 );
+
+\echo 'Created icbmTransaction table'
 
 -- Shared Capital
 CREATE TABLE IF NOT EXISTS "sharedCapital" (
@@ -269,6 +312,8 @@ CREATE TABLE IF NOT EXISTS "sharedCapital" (
     "sectorSnaClassification" VARCHAR(100)
 );
 
+\echo 'Created sharedCapital table'
+
 -- Insurance Commission
 CREATE TABLE IF NOT EXISTS "insuranceCommission" (
     "reportingDate" TIMESTAMP,
@@ -278,6 +323,8 @@ CREATE TABLE IF NOT EXISTS "insuranceCommission" (
     "tzsCommissionReceivedAmount" DECIMAL(15,2),
     "commissionReceivedDate" DATE
 );
+
+\echo 'Created insuranceCommission table'
 
 -- Income Statement (Daily Snapshot)
 CREATE TABLE IF NOT EXISTS "incomeStatement" (
@@ -293,6 +340,8 @@ CREATE TABLE IF NOT EXISTS "incomeStatement" (
     "extraordinaryCreditsCharge" DECIMAL(31,2),
     "nonCoreCreditsCharges" DECIMAL(31,2)
 );
+
+\echo 'Created incomeStatement table'
 
 -- Investment Debt Securities
 CREATE TABLE IF NOT EXISTS "investmentDebtSecurities" (
@@ -325,7 +374,11 @@ CREATE TABLE IF NOT EXISTS "investmentDebtSecurities" (
     "assetClassificationCategory" INTEGER
 );
 
--- Indexes for common queries
+\echo 'Created investmentDebtSecurities table'
+
+-- Create Indexes
+\echo 'Creating indexes...'
+
 CREATE INDEX IF NOT EXISTS idx_cash_info_date ON "cashInformation"("transactionDate");
 CREATE INDEX IF NOT EXISTS idx_loan_info_status ON "loan"("loanStatus");
 CREATE INDEX IF NOT EXISTS idx_loan_trx_date ON "loanTransaction"("transactionDate");
@@ -336,3 +389,6 @@ CREATE INDEX IF NOT EXISTS idx_overdraft_account ON "overdraft"("accountNumber")
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_type ON "investmentDebtSecurities"("securityType");
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_issuer ON "investmentDebtSecurities"("securityIssuerName");
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_maturity ON "investmentDebtSecurities"("maturityDate");
+
+\echo 'All tables and indexes created successfully!'
+\echo 'You can now verify the tables with: \\dt'

@@ -9,12 +9,15 @@ from .base import BaseProcessor, BaseRecord
 
 @dataclass
 class CashRecord(BaseRecord):
-    """Cash information record structure"""
-    trn_date: str
+    """Cash information record structure - updated for 15-field format"""
     reporting_date: str
     branch_code: str
     cash_category: str
+    cash_sub_category: Optional[str]
+    cash_submission_time: str
     currency: str
+    cash_denomination: Optional[str]
+    quantity_of_coins_notes: Optional[int]
     amount_local: float
     usd_amount: Optional[float]
     tzs_amount: float
@@ -28,34 +31,44 @@ class CashProcessor(BaseProcessor):
     """Processor for cash information data"""
     
     def process_record(self, raw_data: Tuple, table_name: str) -> CashRecord:
-        """Convert raw DB2 data to CashRecord"""
+        """Convert raw DB2 data to CashRecord - updated for 15-field format"""
+        # raw_data structure: reportingDate, branchCode, cashCategory, cashSubCategory, cashSubmissionTime, 
+        # currency, cashDenomination, quantityOfCoinsNotes, orgAmount, usdAmount, tzsAmount, 
+        # transactionDate, maturityDate, allowanceProbableLoss, botProvision
         return CashRecord(
             source_table=table_name,
-            timestamp_column_value=str(raw_data[0]),
-            trn_date=str(raw_data[0]),
-            reporting_date=str(raw_data[1]),
-            branch_code=str(raw_data[2]),
-            cash_category=str(raw_data[3]),
-            currency=str(raw_data[4]),
-            amount_local=float(raw_data[5]),
-            usd_amount=float(raw_data[6]) if raw_data[6] else None,
-            tzs_amount=float(raw_data[7]),
-            transaction_date=str(raw_data[8]),
-            maturity_date=str(raw_data[9]),
-            allowance_probable_loss=float(raw_data[10]),
-            bot_provision=float(raw_data[11]),
+            timestamp_column_value=str(raw_data[11]),  # transactionDate for tracking
+            reporting_date=str(raw_data[0]),
+            branch_code=str(raw_data[1]),
+            cash_category=str(raw_data[2]),
+            cash_sub_category=str(raw_data[3]) if raw_data[3] else None,
+            cash_submission_time=str(raw_data[4]),
+            currency=str(raw_data[5]),
+            cash_denomination=str(raw_data[6]) if raw_data[6] else None,
+            quantity_of_coins_notes=int(raw_data[7]) if raw_data[7] else None,
+            amount_local=float(raw_data[8]),
+            usd_amount=float(raw_data[9]) if raw_data[9] else None,
+            tzs_amount=float(raw_data[10]),
+            transaction_date=str(raw_data[11]),
+            maturity_date=str(raw_data[12]),
+            allowance_probable_loss=float(raw_data[13]),
+            bot_provision=float(raw_data[14]),
             original_timestamp=datetime.now().isoformat()
         )
     
     def insert_to_postgres(self, record: CashRecord, pg_cursor) -> None:
-        """Insert cash record to PostgreSQL"""
+        """Insert cash record to PostgreSQL - updated for 15-field format"""
         query = self.get_upsert_query()
         
         pg_cursor.execute(query, (
             record.reporting_date,
             record.branch_code,
             record.cash_category,
+            record.cash_sub_category,
+            record.cash_submission_time,
             record.currency,
+            record.cash_denomination,
+            record.quantity_of_coins_notes,
             record.amount_local,  # This maps to orgAmount in PostgreSQL
             record.usd_amount,
             record.tzs_amount,
@@ -66,14 +79,14 @@ class CashProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get insert query for cash information - incremental processing uses timestamp filtering"""
+        """Get insert query for cash information - updated for 15-field format with camelCase"""
         return """
-        INSERT INTO cash_information (
-            "reportingDate", "branchCode", "cashCategory", currency,
-            "orgAmount", "usdAmount", "tzsAmount", "transactionDate", "maturityDate",
-            "allowanceProbableLoss", "botProvision"
+        INSERT INTO "cashInformation" (
+            "reportingDate", "branchCode", "cashCategory", "cashSubCategory", "cashSubmissionTime",
+            "currency", "cashDenomination", "quantityOfCoinsNotes", "orgAmount", "usdAmount", "tzsAmount", 
+            "transactionDate", "maturityDate", "allowanceProbableLoss", "botProvision"
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
         """
     
@@ -93,9 +106,9 @@ class CashProcessor(BaseProcessor):
         return True
     
     def transform_data(self, raw_data: Tuple) -> dict:
-        """Transform cash data"""
+        """Transform cash data - updated for 15-field format"""
         # Add any cash-specific transformations here
         return {
-            'currency_normalized': str(raw_data[4]).strip().upper(),
-            'amount_validated': max(0, float(raw_data[5])) if raw_data[5] else 0
+            'currency_normalized': str(raw_data[5]).strip().upper(),  # currency is now at index 5
+            'amount_validated': max(0, float(raw_data[8])) if raw_data[8] else 0  # orgAmount is now at index 8
         }

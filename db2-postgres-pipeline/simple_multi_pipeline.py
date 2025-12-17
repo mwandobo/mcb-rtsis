@@ -22,11 +22,14 @@ from processors.bot_balances_processor import BotBalancesProcessor, BotBalancesR
 from processors.mnos_processor import MnosProcessor, MnosRecord
 from processors.other_banks_processor import OtherBanksProcessor, OtherBanksRecord
 from processors.other_assets_processor import OtherAssetsProcessor, OtherAssetsRecord
+from processors.overdraft_processor import OverdraftProcessor, OverdraftRecord
+from pipeline_tracker import PipelineTracker
 
 class SimpleMultiPipeline:
     def __init__(self):
         self.config = Config()
         self.db2_conn = DB2Connection()
+        self.tracker = PipelineTracker()
         self.running = True
         
         # Setup logging
@@ -40,8 +43,9 @@ class SimpleMultiPipeline:
         self.mnos_processor = MnosProcessor()
         self.other_banks_processor = OtherBanksProcessor()
         self.other_assets_processor = OtherAssetsProcessor()
+        self.overdraft_processor = OverdraftProcessor()
         
-        self.logger.info("Multi-table pipeline initialized")
+        self.logger.info("Multi-table pipeline initialized with tracking")
         
     @contextmanager
     def get_db2_connection(self):
@@ -91,42 +95,98 @@ class SimpleMultiPipeline:
             channel.queue_declare(queue='balances_with_mnos_queue', durable=True)
             channel.queue_declare(queue='balance_with_other_banks_queue', durable=True)
             channel.queue_declare(queue='other_assets_queue', durable=True)
+            channel.queue_declare(queue='overdraft_queue', durable=True)
             
             connection.close()
-            self.logger.info("✅ RabbitMQ queues created: cash_information_queue, asset_owned_queue, balances_bot_queue, balances_with_mnos_queue, balance_with_other_banks_queue, other_assets_queue")
+            self.logger.info("✅ RabbitMQ queues created: cash_information_queue, asset_owned_queue, balances_bot_queue, balances_with_mnos_queue, balance_with_other_banks_queue, other_assets_queue, overdraft_queue")
             
         except Exception as e:
             self.logger.error(f"❌ Failed to setup RabbitMQ queues: {e}")
             raise
     
     def fetch_and_publish_cash(self):
-        """Fetch cash data and publish to queue"""
+        """Fetch cash data with tracking and publish to queue"""
         cash_config = self.config.tables['cash_information']
         
         try:
             with self.get_db2_connection() as conn:
                 cursor = conn.cursor()
-                # Use config query with limited rows for testing
-                cash_query = cash_config.query.replace("FETCH FIRST 1000 ROWS ONLY", "FETCH FIRST 10 ROWS ONLY")
                 
+                # Get incremental query with tracking
+                timestamp_filter = self.tracker.get_incremental_query_filter(
+                    'cash_information', 
+                    'gte.TMSTAMP', 
+                    default_lookback_days=7
+                )
+                
+                # Build query with tracking using TMSTAMP
+                cash_query = f"""
+                SELECT 
+                    gte.TMSTAMP,
+                    gte.TRN_DATE,
+                    CURRENT_TIMESTAMP AS REPORTINGDATE,
+                    gte.FK_UNITCODETRXUNIT AS BRANCHCODE,
+                    CASE 
+                        WHEN gl.EXTERNAL_GLACCOUNT='101000001' THEN 'Cash in vault'
+                        WHEN gl.EXTERNAL_GLACCOUNT='101000002' THEN 'Petty cash'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('101000010','101000015') THEN 'Cash in ATMs'
+                        WHEN gl.EXTERNAL_GLACCOUNT IN ('101000004','101000011') THEN 'Cash in Teller'
+                        ELSE 'Other cash'
+                    END AS CASHCATEGORY,
+                    gte.CURRENCY_SHORT_DES AS CURRENCY,
+                    gte.DC_AMOUNT AS ORGAMOUNT,
+                    CASE WHEN gte.CURRENCY_SHORT_DES='USD' THEN gte.DC_AMOUNT ELSE NULL END AS USDAMOUNT,
+                    CASE WHEN gte.CURRENCY_SHORT_DES='USD' THEN gte.DC_AMOUNT*2500 ELSE gte.DC_AMOUNT END AS TZSAMOUNT,
+                    gte.TRN_DATE AS TRANSACTIONDATE,
+                    gte.AVAILABILITY_DATE AS MATURITYDATE,
+                    CAST(0 AS DECIMAL(18,2)) AS ALLOWANCEPROBABLELOSS,
+                    CAST(0 AS DECIMAL(18,2)) AS BOTPROVISSION
+                FROM GLI_TRX_EXTRACT gte 
+                JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO=gl.ACCOUNT_ID 
+                WHERE gl.EXTERNAL_GLACCOUNT IN ('101000001','101000002','101000004','101000007','101000010','101000015','101000011')
+                {timestamp_filter}
+                ORDER BY gte.TMSTAMP ASC
+                FETCH FIRST 1000 ROWS ONLY
+                """
+                
+                self.logger.info(f"📊 Executing cash query with tracking filter: {timestamp_filter}")
                 cursor.execute(cash_query)
                 rows = cursor.fetchall()
                 
-                self.logger.info(f"📊 Fetched {len(rows)} cash records")
+                self.logger.info(f"💰 Fetched {len(rows)} new cash records")
                 
-                # Process and publish
+                if not rows:
+                    self.logger.info("ℹ️ No new cash records found")
+                    return 0
+                
+                # Show timestamp range (TMSTAMP is now first column)
+                first_timestamp = rows[0][0]
+                last_timestamp = rows[-1][0]
+                self.logger.info(f"📅 Timestamp range: {first_timestamp} to {last_timestamp}")
+                
+                # Process and publish (adjust for new column order)
                 records = []
                 for row in rows:
-                    record = self.cash_processor.process_record(row, 'cash_information')
+                    # Skip TMSTAMP column for processor (it expects old format)
+                    adjusted_row = row[1:]  # Remove TMSTAMP, keep TRN_DATE and rest
+                    record = self.cash_processor.process_record(adjusted_row, 'cash_information')
                     if self.cash_processor.validate_record(record):
                         records.append(record)
                 
                 if records:
                     self.publish_records(records, 'cash_information_queue')
                     self.logger.info(f"✅ Published {len(records)} cash records")
+                    
+                    # Update tracking with the latest TMSTAMP
+                    self.tracker.set_last_processed_timestamp('cash_information', str(last_timestamp))
+                    self.tracker.update_processing_stats('cash_information', len(records))
+                
+                return len(records)
                 
         except Exception as e:
             self.logger.error(f"❌ Cash fetch error: {e}")
+            self.tracker.update_processing_stats('cash_information', 0, has_error=True)
+            return 0
     
     def fetch_and_publish_assets(self):
         """Fetch assets data and publish to queue"""
@@ -270,6 +330,35 @@ class SimpleMultiPipeline:
                 
         except Exception as e:
             self.logger.error(f"❌ Other Assets fetch error: {e}")
+    
+    def fetch_and_publish_overdraft(self):
+        """Fetch Overdraft data and publish to queue"""
+        overdraft_config = self.config.tables['overdraft']
+        
+        try:
+            with self.get_db2_connection() as conn:
+                cursor = conn.cursor()
+                # Use config query with limited rows for testing
+                overdraft_query = overdraft_config.query.replace("FETCH FIRST 1000 ROWS ONLY", "FETCH FIRST 10 ROWS ONLY")
+                
+                cursor.execute(overdraft_query)
+                rows = cursor.fetchall()
+                
+                self.logger.info(f"💳 Fetched {len(rows)} Overdraft records")
+                
+                # Process and publish
+                records = []
+                for row in rows:
+                    record = self.overdraft_processor.process_record(row, 'overdraft')
+                    if self.overdraft_processor.validate_record(record):
+                        records.append(record)
+                
+                if records:
+                    self.publish_records(records, 'overdraft_queue')
+                    self.logger.info(f"✅ Published {len(records)} Overdraft records")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Overdraft fetch error: {e}")
     
     def publish_records(self, records, queue_name):
         """Publish records to RabbitMQ"""
@@ -607,6 +696,57 @@ class SimpleMultiPipeline:
         except Exception as e:
             self.logger.error(f"❌ Other Assets consumer error: {e}")
     
+    def consume_overdraft_queue(self):
+        """Consume Overdraft records from queue"""
+        self.logger.info("💳 Starting Overdraft consumer...")
+        
+        try:
+            credentials = pika.PlainCredentials(
+                self.config.message_queue.rabbitmq_user,
+                self.config.message_queue.rabbitmq_password
+            )
+            parameters = pika.ConnectionParameters(
+                host=self.config.message_queue.rabbitmq_host,
+                port=self.config.message_queue.rabbitmq_port,
+                credentials=credentials
+            )
+            connection = pika.BlockingConnection(parameters)
+            channel = connection.channel()
+            
+            def process_overdraft_message(ch, method, properties, body):
+                try:
+                    record_data = json.loads(body)
+                    record = OverdraftRecord(**record_data)
+                    
+                    self.logger.info(f"💳 Processing Overdraft: Account {record.account_number}, Client: {record.client_name}, {record.org_sanctioned_amount:,.2f} {record.currency}")
+                    
+                    with self.get_postgres_connection() as conn:
+                        cursor = conn.cursor()
+                        self.overdraft_processor.insert_to_postgres(record, cursor)
+                        conn.commit()
+                    
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    self.logger.info(f"✅ Overdraft record inserted")
+                    
+                except Exception as e:
+                    self.logger.error(f"❌ Overdraft processing error: {e}")
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+            
+            channel.basic_consume(
+                queue='overdraft_queue',
+                on_message_callback=process_overdraft_message
+            )
+            
+            # Process messages for a short time
+            start_time = time.time()
+            while time.time() - start_time < 30 and self.running:  # Run for 30 seconds
+                connection.process_data_events(time_limit=1)
+            
+            connection.close()
+            
+        except Exception as e:
+            self.logger.error(f"❌ Overdraft consumer error: {e}")
+    
     def run_test(self):
         """Run a test of the multi-table pipeline"""
         self.logger.info("🚀 Starting Multi-table Pipeline Test")
@@ -624,6 +764,7 @@ class SimpleMultiPipeline:
             self.fetch_and_publish_mnos()
             self.fetch_and_publish_other_banks()
             self.fetch_and_publish_other_assets()
+            self.fetch_and_publish_overdraft()
             
             # Step 3: Start consumers in threads
             self.logger.info("🔄 Starting consumers...")
@@ -634,6 +775,7 @@ class SimpleMultiPipeline:
             mnos_thread = threading.Thread(target=self.consume_mnos_queue, daemon=True)
             other_banks_thread = threading.Thread(target=self.consume_other_banks_queue, daemon=True)
             other_assets_thread = threading.Thread(target=self.consume_other_assets_queue, daemon=True)
+            overdraft_thread = threading.Thread(target=self.consume_overdraft_queue, daemon=True)
             
             cash_thread.start()
             assets_thread.start()
@@ -641,6 +783,7 @@ class SimpleMultiPipeline:
             mnos_thread.start()
             other_banks_thread.start()
             other_assets_thread.start()
+            overdraft_thread.start()
             
             # Wait for consumers to process
             self.logger.info("⏳ Processing for 35 seconds...")
@@ -655,6 +798,7 @@ class SimpleMultiPipeline:
             mnos_thread.join(timeout=5)
             other_banks_thread.join(timeout=5)
             other_assets_thread.join(timeout=5)
+            overdraft_thread.join(timeout=5)
             
             self.logger.info("✅ Multi-table pipeline test completed!")
             
