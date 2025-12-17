@@ -50,6 +50,11 @@ def check_data():
     other_assets_count = cursor.fetchone()[0]
     print(f"💎 Other Assets records: {other_assets_count:,}")
     
+    # Check overdraft
+    cursor.execute('SELECT COUNT(*) FROM overdraft')
+    overdraft_count = cursor.fetchone()[0]
+    print(f"💳 Overdraft records: {overdraft_count:,}")
+    
     if assets_count > 0:
         print("\n📋 Sample asset data:")
         cursor.execute('SELECT "assetType", "assetCategory", "orgCostValue", currency FROM asset_owned LIMIT 5')
@@ -91,6 +96,13 @@ def check_data():
         rows = cursor.fetchall()
         for i, row in enumerate(rows, 1):
             print(f"  {i}. {row[0]} - {row[1]} - {row[2]:,.2f} {row[3]}")
+    
+    if overdraft_count > 0:
+        print("\n💳 Sample Overdraft data:")
+        cursor.execute('SELECT "accountNumber", "clientName", "orgSanctionedAmount", currency FROM overdraft LIMIT 5')
+        rows = cursor.fetchall()
+        for i, row in enumerate(rows, 1):
+            print(f"  {i}. Account {row[0]} - {row[1]} - {row[2]:,.2f} {row[3]}")
     
     cursor.close()
     conn.close()

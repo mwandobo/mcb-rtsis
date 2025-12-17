@@ -39,7 +39,8 @@ def reset_rabbitmq_queues():
             'balances_bot_queue',
             'balances_with_mnos_queue',
             'balance_with_other_banks_queue',
-            'other_assets_queue'
+            'other_assets_queue',
+            'overdraft_queue'
         ]
         
         # Delete existing queues
@@ -99,7 +100,8 @@ def delete_postgresql_data():
             'balances_bot',
             'balances_with_mnos',
             'balance_with_other_bank',
-            'other_assets'
+            'other_assets',
+            'overdraft'
         ]
         
         # Delete data from all tables

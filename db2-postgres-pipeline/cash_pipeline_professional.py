@@ -1,0 +1,394 @@
+#!/usr/bin/env python3
+"""
+Professional Cash Pipeline with Tracking - BOT Project
+"""
+
+import pika
+import psycopg2
+from db2_connection import DB2Connection
+import json
+import time
+import logging
+import threading
+from datetime import datetime
+from contextlib import contextmanager
+from dataclasses import asdict
+
+from config import Config
+from processors.cash_processor import CashProcessor, CashRecord
+from pipeline_tracker import PipelineTracker
+
+class ProfessionalCashPipeline:
+    def __init__(self, manual_start_timestamp=None, limit=1000):
+        """
+        Professional Cash Pipeline with Tracking
+        
+        Args:
+            manual_start_timestamp (str): Manual start timestamp in 'YYYY-MM-DD HH:MM:SS' format
+            limit (int): Number of records to fetch per run
+        """
+        self.config = Config()
+        self.db2_conn = DB2Connection()
+        self.tracker = PipelineTracker()
+        self.running = True
+        self.manual_start_timestamp = manual_start_timestamp
+        self.limit = limit
+        
+        # Setup logging
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize processor
+        self.cash_processor = CashProcessor()
+        
+        self.logger.info("💰 Professional Cash Pipeline initialized")
+        if manual_start_timestamp:
+            self.logger.info(f"🔧 Manual start timestamp: {manual_start_timestamp}")
+        self.logger.info(f"📊 Record limit: {limit}")
+        
+    def get_tracked_cash_query(self):
+        """Get cash query with professional tracking"""
+        
+        # Check if manual start timestamp is provided
+        if self.manual_start_timestamp:
+            # Set manual timestamp and use it
+            self.tracker.set_last_processed_timestamp('cash_information', self.manual_start_timestamp)
+            timestamp_filter = f"AND gte.TMSTAMP > TIMESTAMP('{self.manual_start_timestamp}')"
+            self.logger.info(f"🔧 Using manual start: {self.manual_start_timestamp}")
+        else:
+            # Use tracking system
+            timestamp_filter = self.tracker.get_incremental_query_filter(
+                'cash_information', 
+                'gte.TMSTAMP', 
+                default_lookback_days=7
+            )
+            self.logger.info(f"📅 Using tracking filter: {timestamp_filter}")
+        
+        query = f"""
+        SELECT 
+            gte.TMSTAMP,
+            CURRENT_TIMESTAMP as reportingDate,
+            gte.FK_UNITCODETRXUNIT AS branchCode,
+            CASE
+              WHEN gl.EXTERNAL_GLACCOUNT='101000001' THEN 'Cash in vault'
+              WHEN gl.EXTERNAL_GLACCOUNT='101000002' THEN 'Petty cash'
+              WHEN gl.EXTERNAL_GLACCOUNT='101000010' OR gl.EXTERNAL_GLACCOUNT='101000015' THEN 'Cash in ATMs'
+              WHEN gl.EXTERNAL_GLACCOUNT='101000004' OR gl.EXTERNAL_GLACCOUNT='101000011' THEN 'Cash in Teller'
+              ELSE 'unknown'
+            END as cashCategory,
+            null as cashSubCategory,
+            'Business Hours' as cashSubmissionTime,
+            gte.CURRENCY_SHORT_DES as currency,
+            null as cashDenomination,
+            null as quantityOfCoinsNotes,
+            gte.DC_AMOUNT AS orgAmount,
+            CASE
+                WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                    THEN gte.DC_AMOUNT
+                ELSE NULL
+            END AS usdAmount,
+            CASE
+                WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                    THEN gte.DC_AMOUNT * 2500
+                ELSE
+                    gte.DC_AMOUNT
+            END AS tzsAmount,
+            gte.TRN_DATE as transactionDate,
+            gte.AVAILABILITY_DATE as maturityDate,
+            0 as allowanceProbableLoss,
+            0 as botProvision
+        FROM GLI_TRX_EXTRACT AS gte
+        JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+        WHERE gl.EXTERNAL_GLACCOUNT IN ('101000001','101000002','101000004','101000007','101000010','101000015')
+        {timestamp_filter}
+        ORDER BY gte.TMSTAMP ASC
+        FETCH FIRST {self.limit} ROWS ONLY
+        """
+        
+        return query
+        
+    @contextmanager
+    def get_db2_connection(self):
+        """Get DB2 connection"""
+        with self.db2_conn.get_connection() as conn:
+            yield conn
+            
+    @contextmanager
+    def get_postgres_connection(self):
+        """Get PostgreSQL connection"""
+        conn = None
+        try:
+            conn = psycopg2.connect(
+                host=self.config.database.pg_host,
+                port=self.config.database.pg_port,
+                database=self.config.database.pg_database,
+                user=self.config.database.pg_user,
+                password=self.config.database.pg_password
+            )
+            yield conn
+        except Exception as e:
+            self.logger.error(f"PostgreSQL connection error: {e}")
+            raise
+        finally:
+            if conn:
+                conn.close()
+    
+    def setup_rabbitmq_queue(self):
+        """Setup RabbitMQ queue for cash"""
+        try:
+            credentials = pika.PlainCredentials(
+                self.config.message_queue.rabbitmq_user,
+                self.config.message_queue.rabbitmq_password
+            )
+            parameters = pika.ConnectionParameters(
+                host=self.config.message_queue.rabbitmq_host,
+                port=self.config.message_queue.rabbitmq_port,
+                credentials=credentials
+            )
+            connection = pika.BlockingConnection(parameters)
+            channel = connection.channel()
+            
+            # Declare cash queue
+            channel.queue_declare(queue='cash_information_queue', durable=True)
+            
+            connection.close()
+            self.logger.info("✅ RabbitMQ cash queue ready")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to setup RabbitMQ queue: {e}")
+            raise
+    
+    def fetch_and_publish_cash(self):
+        """Fetch cash data with professional tracking"""
+        try:
+            with self.get_db2_connection() as conn:
+                cursor = conn.cursor()
+                
+                cash_query = self.get_tracked_cash_query()
+                self.logger.info("📊 Executing tracked cash query...")
+                
+                cursor.execute(cash_query)
+                rows = cursor.fetchall()
+                
+                self.logger.info(f"💰 Fetched {len(rows)} cash records")
+                
+                if not rows:
+                    self.logger.info("ℹ️ No new cash records found (tracking prevents duplicates)")
+                    return 0, None
+                
+                # Show timestamp range of fetched data
+                first_timestamp = rows[0][0]  # TMSTAMP is first column
+                last_timestamp = rows[-1][0]
+                self.logger.info(f"📅 Processing timestamp range: {first_timestamp} to {last_timestamp}")
+                
+                # Show sample data (updated for 15-field structure)
+                self.logger.info("📋 Sample cash records:")
+                for i, row in enumerate(rows[:3], 1):
+                    # row structure: TMSTAMP, reportingDate, branchCode, cashCategory, cashSubCategory, cashSubmissionTime, currency, cashDenomination, quantityOfCoinsNotes, orgAmount, usdAmount, tzsAmount, transactionDate, maturityDate, allowanceProbableLoss, botProvision
+                    self.logger.info(f"  {i}. {row[0]} | Branch: {row[2]} | Category: {row[3]} | {row[9]:,.2f} {row[6]} | TxnDate: {row[12]}")
+                
+                # Process and publish (adjust for new 15-field structure)
+                records = []
+                for row in rows:
+                    # Skip TMSTAMP column for processor - it expects the 15 fields from config
+                    adjusted_row = row[1:]  # Remove TMSTAMP, keep the 15 fields: reportingDate through botProvision
+                    record = self.cash_processor.process_record(adjusted_row, 'cash_information')
+                    if self.cash_processor.validate_record(record):
+                        records.append(record)
+                
+                if records:
+                    self.publish_records(records, 'cash_information_queue')
+                    self.logger.info(f"✅ Published {len(records)} cash records to queue")
+                
+                return len(records), str(last_timestamp)
+                
+        except Exception as e:
+            self.logger.error(f"❌ Cash fetch error: {e}")
+            self.tracker.update_processing_stats('cash_information', 0, has_error=True)
+            return 0, None
+    
+    def publish_records(self, records, queue_name):
+        """Publish records to RabbitMQ"""
+        try:
+            credentials = pika.PlainCredentials(
+                self.config.message_queue.rabbitmq_user,
+                self.config.message_queue.rabbitmq_password
+            )
+            parameters = pika.ConnectionParameters(
+                host=self.config.message_queue.rabbitmq_host,
+                port=self.config.message_queue.rabbitmq_port,
+                credentials=credentials
+            )
+            connection = pika.BlockingConnection(parameters)
+            channel = connection.channel()
+            
+            for record in records:
+                message = json.dumps(asdict(record), default=str)
+                channel.basic_publish(
+                    exchange='',
+                    routing_key=queue_name,
+                    body=message,
+                    properties=pika.BasicProperties(delivery_mode=2)
+                )
+            
+            connection.close()
+            
+        except Exception as e:
+            self.logger.error(f"❌ Publish error to {queue_name}: {e}")
+            raise
+    
+    def consume_and_process_cash(self):
+        """Consume and process cash records with tracking"""
+        self.logger.info("🔄 Starting professional cash consumer...")
+        
+        try:
+            credentials = pika.PlainCredentials(
+                self.config.message_queue.rabbitmq_user,
+                self.config.message_queue.rabbitmq_password
+            )
+            parameters = pika.ConnectionParameters(
+                host=self.config.message_queue.rabbitmq_host,
+                port=self.config.message_queue.rabbitmq_port,
+                credentials=credentials
+            )
+            connection = pika.BlockingConnection(parameters)
+            channel = connection.channel()
+            
+            processed_count = 0
+            
+            def process_cash_message(ch, method, properties, body):
+                nonlocal processed_count
+                try:
+                    record_data = json.loads(body)
+                    record = CashRecord(**record_data)
+                    
+                    self.logger.info(f"💰 Processing: {record.transaction_date} | Branch {record.branch_code} | {record.cash_category} | {record.amount_local:,.2f} {record.currency}")
+                    
+                    with self.get_postgres_connection() as conn:
+                        cursor = conn.cursor()
+                        self.cash_processor.insert_to_postgres(record, cursor)
+                        conn.commit()
+                    
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    processed_count += 1
+                    self.logger.info(f"✅ Record {processed_count} inserted successfully")
+                    
+                except Exception as e:
+                    self.logger.error(f"❌ Processing error: {e}")
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+            
+            channel.basic_consume(
+                queue='cash_information_queue',
+                on_message_callback=process_cash_message
+            )
+            
+            # Process messages for a reasonable time
+            start_time = time.time()
+            while time.time() - start_time < 30 and self.running:
+                connection.process_data_events(time_limit=1)
+            
+            connection.close()
+            return processed_count
+            
+        except Exception as e:
+            self.logger.error(f"❌ Consumer error: {e}")
+            return 0
+    
+    def run_professional_pipeline(self):
+        """Run the complete professional cash pipeline"""
+        self.logger.info("🚀 Starting Professional Cash Pipeline")
+        self.logger.info("=" * 60)
+        
+        try:
+            # If manual start timestamp is provided, reset tracking first
+            if self.manual_start_timestamp:
+                self.logger.info(f"🔧 Manual start detected: {self.manual_start_timestamp}")
+                self.logger.info("🔄 Resetting tracking to manual start timestamp...")
+                self.tracker.set_last_processed_timestamp('cash_information', self.manual_start_timestamp)
+            
+            # Show current tracking status
+            self.tracker.show_all_tracking_info()
+            
+            # Step 1: Setup infrastructure
+            self.setup_rabbitmq_queue()
+            
+            # Step 2: Process all data in batches
+            total_processed = 0
+            batch_number = 1
+            
+            while True:
+                self.logger.info(f"\n📊 Batch {batch_number}: Fetching cash data with tracking...")
+                record_count, last_timestamp = self.fetch_and_publish_cash()
+                
+                if record_count == 0:
+                    self.logger.info("✅ No more records to process - all data processed!")
+                    break
+                
+                # Step 3: Process records
+                self.logger.info(f"🔄 Processing {record_count} records from batch {batch_number}...")
+                consumer_thread = threading.Thread(target=self.consume_and_process_cash, daemon=True)
+                consumer_thread.start()
+                
+                # Wait for processing (adjust time based on batch size)
+                processing_time = max(35, record_count // 10)  # At least 35 seconds, more for larger batches
+                time.sleep(processing_time)
+                self.running = False
+                consumer_thread.join(timeout=10)
+                
+                # Step 4: Update tracking
+                if last_timestamp:
+                    self.tracker.set_last_processed_timestamp('cash_information', last_timestamp)
+                    self.tracker.update_processing_stats('cash_information', record_count)
+                    self.logger.info(f"✅ Batch {batch_number} completed: {record_count} records, last timestamp = {last_timestamp}")
+                
+                total_processed += record_count
+                batch_number += 1
+                
+                # Reset running flag for next batch
+                self.running = True
+                
+                # Small delay between batches
+                time.sleep(2)
+            
+            # Step 5: Show final status
+            self.logger.info(f"\n🎉 ALL DATA PROCESSED SUCCESSFULLY!")
+            self.logger.info(f"📊 Total records processed: {total_processed}")
+            self.logger.info(f"📊 Total batches: {batch_number - 1}")
+            self.logger.info("\n📊 Final Tracking Status:")
+            self.tracker.show_all_tracking_info()
+            
+        except Exception as e:
+            self.logger.error(f"❌ Pipeline failed: {e}")
+            import traceback
+            traceback.print_exc()
+
+def main():
+    """Main function - Configure your parameters here"""
+    
+    # ============================================
+    # 🔧 PROFESSIONAL CONFIGURATION
+    # ============================================
+    
+    # Set manual start timestamp (or None for automatic tracking)
+    MANUAL_START = '2024-12-15 00:00:00'  # Starting from December 15, 2024 (recent test)
+    
+    # Record limit per run (set to high number for all data, or None for unlimited)
+    RECORD_LIMIT = 10000  # Process up to 10,000 records per run
+    
+    # ============================================
+    
+    print("💰 Professional Cash Pipeline - BOT Project")
+    print("=" * 50)
+    print(f"🔧 Manual Start: {MANUAL_START or 'Automatic tracking'}")
+    print(f"📊 Record Limit: {RECORD_LIMIT}")
+    print("=" * 50)
+    
+    pipeline = ProfessionalCashPipeline(
+        manual_start_timestamp=MANUAL_START,
+        limit=RECORD_LIMIT
+    )
+    
+    pipeline.run_professional_pipeline()
+
+if __name__ == "__main__":
+    main()

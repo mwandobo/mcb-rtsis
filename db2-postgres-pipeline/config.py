@@ -81,29 +81,41 @@ class Config:
             'cash_information': TableConfig(
                 name='cash_information',
                 query="""
-                SELECT 
-                    gte.TRN_DATE,
-                    CURRENT_TIMESTAMP AS REPORTINGDATE,
-                    gte.FK_UNITCODETRXUNIT AS BRANCHCODE,
-                    CASE 
-                        WHEN gl.EXTERNAL_GLACCOUNT='101000001' THEN 'Cash in vault'
-                        WHEN gl.EXTERNAL_GLACCOUNT='101000002' THEN 'Petty cash'
-                        WHEN gl.EXTERNAL_GLACCOUNT IN ('101000010','101000015') THEN 'Cash in ATMs'
-                        WHEN gl.EXTERNAL_GLACCOUNT IN ('101000004','101000011') THEN 'Cash in Teller'
-                        ELSE 'Other cash'
-                    END AS CASHCATEGORY,
-                    gte.CURRENCY_SHORT_DES AS CURRENCY,
-                    gte.DC_AMOUNT AS ORGAMOUNT,
-                    CASE WHEN gte.CURRENCY_SHORT_DES='USD' THEN gte.DC_AMOUNT ELSE NULL END AS USDAMOUNT,
-                    CASE WHEN gte.CURRENCY_SHORT_DES='USD' THEN gte.DC_AMOUNT*2500 ELSE gte.DC_AMOUNT END AS TZSAMOUNT,
-                    gte.TRN_DATE AS TRANSACTIONDATE,
-                    gte.AVAILABILITY_DATE AS MATURITYDATE,
-                    CAST(0 AS DECIMAL(18,2)) AS ALLOWANCEPROBABLELOSS,
-                    CAST(0 AS DECIMAL(18,2)) AS BOTPROVISSION
-                FROM GLI_TRX_EXTRACT gte 
-                JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO=gl.ACCOUNT_ID 
-                WHERE gl.EXTERNAL_GLACCOUNT IN ('101000001','101000002','101000004','101000007','101000010','101000015','101000011')
-                ORDER BY gte.TRN_DATE 
+                SELECT
+                    CURRENT_TIMESTAMP as reportingDate,
+                    gte.FK_UNITCODETRXUNIT AS branchCode,
+                    CASE
+                      WHEN gl.EXTERNAL_GLACCOUNT='101000001' THEN 'Cash in vault'
+                      WHEN gl.EXTERNAL_GLACCOUNT='101000002' THEN 'Petty cash'
+                      WHEN gl.EXTERNAL_GLACCOUNT='101000010' OR gl.EXTERNAL_GLACCOUNT='101000015' THEN 'Cash in ATMs'
+                      WHEN gl.EXTERNAL_GLACCOUNT='101000004' OR gl.EXTERNAL_GLACCOUNT='101000011' THEN 'Cash in Teller'
+                      ELSE 'unknown'
+                    END as cashCategory,
+                    null as cashSubCategory,
+                    'Business Hours' as cashSubmissionTime,
+                    gte.CURRENCY_SHORT_DES as currency,
+                    null as cashDenomination,
+                    null as quantityOfCoinsNotes,
+                    gte.DC_AMOUNT AS orgAmount,
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                            THEN gte.DC_AMOUNT
+                        ELSE NULL
+                    END AS usdAmount,
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                            THEN gte.DC_AMOUNT * 2500
+                        ELSE
+                            gte.DC_AMOUNT
+                    END AS tzsAmount,
+                    gte.TRN_DATE as transactionDate,
+                    gte.AVAILABILITY_DATE as maturityDate,
+                    0 as allowanceProbableLoss,
+                    0 as botProvision
+                FROM GLI_TRX_EXTRACT AS gte
+                JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                WHERE gl.EXTERNAL_GLACCOUNT IN ('101000001','101000002','101000004','101000007','101000010','101000015')
+                ORDER BY gte.TRN_DATE
                 FETCH FIRST 1000 ROWS ONLY
                 """,
                 timestamp_column='TRN_DATE',
@@ -396,6 +408,168 @@ class Config:
                 target_table='other_assets',
                 queue_name='other_assets_queue',
                 processor_class='OtherAssetsProcessor',
+                batch_size=1000,
+                poll_interval=10
+            ),
+            'overdraft': TableConfig(
+                name='overdraft',
+                query="""
+                SELECT 
+                    VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') AS reportingDate,
+                    'OD001' AS accountNumber,
+                    'CID001' AS customerIdentificationNumber,
+                    'Sample Overdraft Client' AS clientName,
+                    'Individual' AS clientType,
+                    'Tanzania' as borrowerCountry,
+                    CAST(NULL AS VARCHAR(50)) as ratingStatus,
+                    CAST(NULL AS VARCHAR(50)) as crRatingBorrower,
+                    CAST(NULL AS VARCHAR(50)) as gradesUnratedBanks,
+                    CAST(NULL AS VARCHAR(50)) as groupCode,
+                    CAST(NULL AS VARCHAR(200)) as relatedEntityName,
+                    CAST(NULL AS VARCHAR(50)) as relatedParty,
+                    CAST(NULL AS VARCHAR(50)) as relationshipCategory,
+                    'Business Overdraft' as loanProductType,
+                    'OtherServices' as overdraftEconomicActivity,
+                    'Existing' as loanPhase,
+                    'NotSpecified' as transferStatus,
+                    'Business Overdraft' AS purposeOtherLoans,
+                    CURRENT_DATE - 30 DAYS as contractDate,
+                    '001' as branchCode,
+                    'Sample Officer' as loanOfficer,
+                    CAST(NULL AS VARCHAR(200)) as loanSupervisor,
+                    'TZS' as currency,
+                    1000000.00 as orgSanctionedAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdSanctionedAmount,
+                    1000000.00 AS tzsSanctionedAmount,
+                    500000.00 as orgUtilisedAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdUtilisedAmount,
+                    500000.00 AS tzsUtilisedAmount,
+                    50000.00 as orgCrUsageLast30DaysAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdCrUsageLast30DaysAmount,
+                    50000.00 AS tzsCrUsageLast30DaysAmount,
+                    CURRENT_DATE - 30 DAYS AS disbursementDate,
+                    CURRENT_DATE + 365 DAYS AS expiryDate,
+                    CURRENT_DATE + 365 DAYS AS realEndDate,
+                    450000.00 AS orgOutstandingAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdOutstandingAmount,
+                    450000.00 AS tzsOutstandingAmount,
+                    CURRENT_DATE - 30 DAYS AS latestCustomerCreditDate,
+                    100000.00 AS latestCreditAmount,
+                    15.50 AS primeLendingRate,
+                    18.00 AS annualInterestRate,
+                    800000.00 AS collateralPledged,
+                    800000.00 AS orgCollateralValue,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdCollateralValue,
+                    800000.00 AS tzsCollateralValue,
+                    0 AS restructuredLoans,
+                    0 AS pastDueDays,
+                    0.00 AS pastDueAmount,
+                    5000.00 AS orgAccruedInterestAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdAccruedInterestAmount,
+                    5000.00 AS tzsAccruedInterestAmount,
+                    0.00 AS orgPenaltyChargedAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdPenaltyChargedAmount,
+                    0.00 AS tzsPenaltyChargedAmount,
+                    2500.00 AS orgLoanFeesChargedAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdLoanFeesChargedAmount,
+                    2500.00 AS tzsLoanFeesChargedAmount,
+                    2500.00 AS orgLoanFeesPaidAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdLoanFeesPaidAmount,
+                    2500.00 AS tzsLoanFeesPaidAmount,
+                    25000.00 AS orgTotMonthlyPaymentAmount,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdTotMonthlyPaymentAmount,
+                    25000.00 AS tzsTotMonthlyPaymentAmount,
+                    15000.00 AS orgInterestPaidTotal,
+                    CAST(NULL AS DECIMAL(15,2)) AS usdInterestPaidTotal,
+                    15000.00 AS tzsInterestPaidTotal,
+                    'Current' AS assetClassificationCategory,
+                    'Other Financial Intermediary' AS sectorSnaClassification,
+                    'Active' AS negStatusContract,
+                    'Individual' AS customerRole,
+                    0.00 AS allowanceProbableLoss,
+                    0.00 AS botProvision
+                FROM SYSIBM.SYSDUMMY1
+                UNION ALL
+                SELECT 
+                    VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') AS reportingDate,
+                    'OD002' AS accountNumber,
+                    'CID002' AS customerIdentificationNumber,
+                    'Sample Business Client' AS clientName,
+                    'Corporate' AS clientType,
+                    'Tanzania' as borrowerCountry,
+                    CAST(NULL AS VARCHAR(50)) as ratingStatus,
+                    CAST(NULL AS VARCHAR(50)) as crRatingBorrower,
+                    CAST(NULL AS VARCHAR(50)) as gradesUnratedBanks,
+                    CAST(NULL AS VARCHAR(50)) as groupCode,
+                    CAST(NULL AS VARCHAR(200)) as relatedEntityName,
+                    CAST(NULL AS VARCHAR(50)) as relatedParty,
+                    CAST(NULL AS VARCHAR(50)) as relationshipCategory,
+                    'Business Overdraft' as loanProductType,
+                    'OtherServices' as overdraftEconomicActivity,
+                    'Existing' as loanPhase,
+                    'NotSpecified' as transferStatus,
+                    'Business Overdraft' AS purposeOtherLoans,
+                    CURRENT_DATE - 60 DAYS as contractDate,
+                    '002' as branchCode,
+                    'Business Officer' as loanOfficer,
+                    CAST(NULL AS VARCHAR(200)) as loanSupervisor,
+                    'USD' as currency,
+                    2000.00 as orgSanctionedAmount,
+                    2000.00 AS usdSanctionedAmount,
+                    5000000.00 AS tzsSanctionedAmount,
+                    1200.00 as orgUtilisedAmount,
+                    1200.00 AS usdUtilisedAmount,
+                    3000000.00 AS tzsUtilisedAmount,
+                    200.00 as orgCrUsageLast30DaysAmount,
+                    200.00 AS usdCrUsageLast30DaysAmount,
+                    500000.00 AS tzsCrUsageLast30DaysAmount,
+                    CURRENT_DATE - 60 DAYS AS disbursementDate,
+                    CURRENT_DATE + 300 DAYS AS expiryDate,
+                    CURRENT_DATE + 300 DAYS AS realEndDate,
+                    1100.00 AS orgOutstandingAmount,
+                    1100.00 AS usdOutstandingAmount,
+                    2750000.00 AS tzsOutstandingAmount,
+                    CURRENT_DATE - 60 DAYS AS latestCustomerCreditDate,
+                    500.00 AS latestCreditAmount,
+                    15.50 AS primeLendingRate,
+                    20.00 AS annualInterestRate,
+                    3000.00 AS collateralPledged,
+                    3000.00 AS orgCollateralValue,
+                    3000.00 AS usdCollateralValue,
+                    7500000.00 AS tzsCollateralValue,
+                    0 AS restructuredLoans,
+                    15 AS pastDueDays,
+                    100.00 AS pastDueAmount,
+                    50.00 AS orgAccruedInterestAmount,
+                    50.00 AS usdAccruedInterestAmount,
+                    125000.00 AS tzsAccruedInterestAmount,
+                    25.00 AS orgPenaltyChargedAmount,
+                    25.00 AS usdPenaltyChargedAmount,
+                    62500.00 AS tzsPenaltyChargedAmount,
+                    100.00 AS orgLoanFeesChargedAmount,
+                    100.00 AS usdLoanFeesChargedAmount,
+                    250000.00 AS tzsLoanFeesChargedAmount,
+                    100.00 AS orgLoanFeesPaidAmount,
+                    100.00 AS usdLoanFeesPaidAmount,
+                    250000.00 AS tzsLoanFeesPaidAmount,
+                    150.00 AS orgTotMonthlyPaymentAmount,
+                    150.00 AS usdTotMonthlyPaymentAmount,
+                    375000.00 AS tzsTotMonthlyPaymentAmount,
+                    300.00 AS orgInterestPaidTotal,
+                    300.00 AS usdInterestPaidTotal,
+                    750000.00 AS tzsInterestPaidTotal,
+                    'Watch' AS assetClassificationCategory,
+                    'Other Non-Financial Corporations' AS sectorSnaClassification,
+                    'Active' AS negStatusContract,
+                    'Corporate' AS customerRole,
+                    50.00 AS allowanceProbableLoss,
+                    25.00 AS botProvision
+                FROM SYSIBM.SYSDUMMY1
+                """,
+                timestamp_column='contractDate',
+                target_table='overdraft',
+                queue_name='overdraft_queue',
+                processor_class='OverdraftProcessor',
                 batch_size=1000,
                 poll_interval=10
             )
