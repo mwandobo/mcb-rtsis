@@ -5,8 +5,6 @@ SELECT
             oid.ID_NO,
             CAST(c.CUST_ID AS VARCHAR(20))
     )                                                        AS customerIdentificationNumber,
-
-    -- Account number (loan account)
     CAST(la.FK_UNITCODE AS VARCHAR(10)) ||
     CAST(la.ACC_TYPE AS VARCHAR(5)) ||
     CAST(la.ACC_SN AS VARCHAR(15))                          AS accountNumber,
@@ -19,8 +17,6 @@ SELECT
     )                                                        AS clientName,
 
     ctl.CUSTOMER_TYPE                                        as clientType,
-
-    -- Gender
     CASE
         WHEN ctl.CUSTOMER_TYPE = 'Corporations' THEN 'Not Applicable'
         ELSE
@@ -30,8 +26,6 @@ SELECT
                 ELSE 'Not Applicable'
                 END
         END                                                      AS gender,
-
-    -- Age (calculated from date of birth)
     CASE
         WHEN ctl.CUSTOMER_TYPE = 'Corporations' THEN 0
         ELSE
@@ -40,101 +34,41 @@ SELECT
                  ELSE NULL
                 END
         END                                                      AS age,
-
-    -- Disability status (placeholder - would need specific table)
     NULL                                                     AS disabilityStatus,
-
-    /* =========================
-       LOAN IDENTIFICATION
-       ========================= */
-
-    -- Loan number (agreement number)
     COALESCE(
             agr.OLD_AGREEMEMT_NUM,
             CAST(agr.FK_UNITCODE AS VARCHAR(10)) || '-' ||
             CAST(agr.AGR_YEAR AS VARCHAR(4)) || '-' ||
             CAST(agr.AGR_SN AS VARCHAR(10))
     )                                                        AS loanNumber,
-
-    -- Gender
     CASE
         WHEN ctl.CUSTOMER_TYPE = 'Corporations' THEN 'Services'
         ELSE 'Personal Loans'
         END  AS loanIndustryClassification,
 
-    -- Gender
     'Others'  AS loanSubIndustry,
-
     CASE
         WHEN ctl.CUSTOMER_TYPE = 'Corporations' THEN 'Business Group Loans'
         ELSE 'Business Individual Loans'
         END  AS microfinanceLoansType,
-
     'Reducing Method'                                         as amortizationType,
-
-
-    /* =========================
-       BRANCH AND OFFICER INFO
-       ========================= */
-
-    -- Branch code
     CAST(la.FK_UNITCODE AS VARCHAR(10))                     AS branchCode,
-
-    -- Loan officer
     COALESCE(
             emp.FIRST_NAME || ' ' || emp.LAST_NAME,
             agr.FK_BANKEMPLOYEEID,
             'Not Assigned'
     )                                                        AS loanOfficer,
-
-    -- Loan supervisor
     COALESCE(
             sup.FIRST_NAME || ' ' || sup.LAST_NAME,
             agr.PRV_OFFICER,
             'Not Assigned'
     )                                                        AS loanSupervisor,
-
-
-
-
-    -- Group/Village number (from village or cooperative)
     COALESCE(
             la.VILLAGE_SN,
             la.FKCUS_COOPERATIVE
     )                                                        AS groupVillageNumber,
-
-    -- Cycle number (loan recycling count)
     COALESCE(la.RECYCLING_FRQ, 1)                          AS cycleNumber,
-
-    -- Currency
     COALESCE(curr.SHORT_DESCR, 'TZS')                      AS currency,
-
-    -- Original sanction amount (approved limit)
---     la.ACC_LIMIT_AMN                                        AS orgSanctionAmount,
---
---     -- USD equivalent sanction amount
---     CASE
---         WHEN curr.SHORT_DESCR = 'USD'
---             THEN la.ACC_LIMIT_AMN
---         WHEN curr.SHORT_DESCR = 'TZS'
---             THEN la.ACC_LIMIT_AMN / 2730.50
---         WHEN curr.SHORT_DESCR = 'EUR'
---             THEN la.ACC_LIMIT_AMN * 1.08
---         ELSE la.ACC_LIMIT_AMN / 2730.50
---         END                                                      AS usdSanctionAmount,
---
---     -- TZS sanction amount
---     CASE
---         WHEN curr.SHORT_DESCR = 'USD'
---             THEN la.ACC_LIMIT_AMN * 2730.50
---         WHEN curr.SHORT_DESCR = 'EUR'
---             THEN la.ACC_LIMIT_AMN * 2950.00
---         ELSE la.ACC_LIMIT_AMN
---         END                                                      AS tzsSanctionAmount,
-
-
-
-
     la.ACC_LIMIT_AMN                                                       as orgSanctionedAmount,
     CASE
         WHEN curr.SHORT_DESCR = 'USD'
@@ -147,7 +81,6 @@ SELECT
         ELSE
             la.ACC_LIMIT_AMN
         END                                                                  AS tzsSanctionedAmount,
-
     la.TOT_DRAWDOWN_AMN                                                    as orgDisbursedAmount,
     CASE
         WHEN curr.SHORT_DESCR = 'USD'
@@ -160,32 +93,19 @@ SELECT
         ELSE
             la.TOT_DRAWDOWN_AMN
         END                                                                  AS tzsDisbursedAmount,
-
-    -- Disbursement date (first drawdown)
     VARCHAR_FORMAT(la.DRAWDOWN_FST_DT, 'DDMMYYYYHH24MI')   AS disbursementDate,
-
-    -- Maturity date
     VARCHAR_FORMAT(la.ACC_EXP_DT, 'DDMMYYYYHH24MI')        AS maturityDate,
-
-    -- Restructuring date (if applicable)
     CASE
         WHEN la.LOAN_STATUS IN ('R', 'S')
             THEN VARCHAR_FORMAT(la.LST_TRX_DT, 'DDMMYYYYHH24MI')
         ELSE NULL
         END                                                      AS restructuringDate,
-
-    -- Amount written off
     CASE
         WHEN la.LOAN_STATUS = '4'
             THEN la.NRM_CAP_BAL + la.OV_CAP_BAL
         ELSE 0
         END                                                      AS writtenOffAmount,
-
-
-    -- Agreed loan installments
     la.INSTALL_COUNT                                        AS agreedLoanInstallments,
-
-
     CASE
         WHEN la.INSTALL_FREQ = 1 THEN 'Daily'
         WHEN la.INSTALL_FREQ = 7 THEN 'Weekly'
@@ -196,36 +116,6 @@ SELECT
         WHEN la.INSTALL_FREQ = 365 THEN 'Annually'
         ELSE 'Monthly'
         END                                                      AS repaymentFrequency,
---     'Irregular'                                                              as repaymentFrequency,
-
-
-    /* =========================
-       OUTSTANDING AMOUNTS
-       ========================= */
-
-    -- Original outstanding principal amount
---     (la.NRM_CAP_BAL + la.OV_CAP_BAL)                       AS orgOutstandingPrincipalAmount,
---
---     -- USD equivalent outstanding principal
---     CASE
---         WHEN curr.SHORT_DESCR = 'USD'
---             THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
---         WHEN curr.SHORT_DESCR = 'TZS'
---             THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL) / 2730.50
---         WHEN curr.SHORT_DESCR = 'EUR'
---             THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL) * 1.08
---         ELSE (la.NRM_CAP_BAL + la.OV_CAP_BAL) / 2730.50
---         END                                                      AS usdOutstandingPrincipalAmount,
---
---     -- TZS outstanding principal
---     CASE
---         WHEN curr.SHORT_DESCR = 'USD'
---             THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL) * 2730.50
---         WHEN curr.SHORT_DESCR = 'EUR'
---             THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL) * 2950.00
---         ELSE (la.NRM_CAP_BAL + la.OV_CAP_BAL)
---         END                                                      AS tzsOutstandingPrincipalAmount,
-
     (la.NRM_CAP_BAL + la.OV_CAP_BAL)                                     AS orgOutstandingPrincipalAmount,
     CASE
         WHEN curr.SHORT_DESCR = 'USD' THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
@@ -235,100 +125,36 @@ SELECT
         WHEN curr.SHORT_DESCR = 'USD' THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL) * 2500
         ELSE (la.NRM_CAP_BAL + la.OV_CAP_BAL)
         END                                                                  AS tzsOutstandingPrincipalAmount,
-
-    -- Loan installments paid (calculated)
     CASE
         WHEN la.INSTALL_COUNT > 0
             THEN la.INSTALL_COUNT - (la.NRM_INST_CNT + la.OV_INST_CNT)
         ELSE 0
         END                                                      AS loanInstallmentPaid,
-
-    -- Grace period payment principal (placeholder)
     0                                                        AS gracePeriodPaymentPrincipal,
-
-    /* =========================
-       INTEREST RATES
-       ========================= */
-
-    -- Prime lending rate (base rate)
     COALESCE(br.BASE_RATE_PERC, 15.00)                     AS primeLendingRate,
-
-    -- Annual nominal interest rate
     COALESCE(
             la.INTER_RATE_SPRD + COALESCE(br.BASE_RATE_PERC, 15.00),
             20.00
     )                                                        AS annualInterestRate,
-
-    -- Annual effective interest rate (with fees)
     COALESCE(
             la.INTER_RATE_SPRD + COALESCE(br.BASE_RATE_PERC, 15.00) + 2.00,
             22.00
     )                                                        AS effectiveAnnualInterestRate,
-
-    -- Agreed first installment payment date
     la.INSTALL_FIRST_DT                                     AS firstInstallmentPaymentDate,
-
-    /* =========================
-       COLLATERAL INFORMATION
-       ========================= */
-
-    -- Collateral (Y/N)
---     CASE
---         WHEN ct.INTERNAL_SN IS NOT NULL THEN 'Y'
---         ELSE 'N'
---         END                                                      AS collateral,
---
---     -- Collateral category
---     COALESCE(
---             gd_coll.LATIN_DESC,
---             CASE
---                 WHEN ct.RECORD_TYPE = '01' THEN 'Real Estate'
---                 WHEN ct.RECORD_TYPE = '02' THEN 'Vehicle'
---                 WHEN ct.RECORD_TYPE = '03' THEN 'Cash Deposit'
---                 WHEN ct.RECORD_TYPE = '04' THEN 'Guarantee'
---                 ELSE 'Other'
---                 END
---     )                                                        AS collateralCategory,
---
---     -- TZS collateral value
---     CASE
---         WHEN ct.CURRENCY_ID IS NOT NULL AND curr_coll.SHORT_DESCR = 'USD'
---             THEN COALESCE(ct.AMOUNT_1, 0) * 2730.50
---         WHEN ct.CURRENCY_ID IS NOT NULL AND curr_coll.SHORT_DESCR = 'EUR'
---             THEN COALESCE(ct.AMOUNT_1, 0) * 2950.00
---         ELSE COALESCE(ct.AMOUNT_1, 0)
---         END                                                      AS tzsCollateralValue,
-
-    /* =========================
-       LOAN STATUS AND CLASSIFICATION
-       ========================= */
-
-    -- Loan flag type
     CASE
         WHEN la.LOAN_STATUS IN ('R', 'S') THEN 'Restructured'
         ELSE 'Non-restructured'
         END                                                      AS loanFlagType,
 
-    -- Past due days
     CASE
         WHEN la.OV_EXP_DT IS NOT NULL AND la.OV_EXP_DT < CURRENT_DATE
             THEN DAYS(CURRENT_DATE) - DAYS(la.OV_EXP_DT)
         ELSE 0
         END                                                      AS pastDueDays,
-
-    -- Past due amount
     (la.OV_CAP_BAL + la.OV_RL_NRM_INT_BAL + la.OV_RL_PNL_INT_BAL +
      la.OV_COM_BAL + la.OV_EXP_BAL)                        AS pastDueAmount,
-
-    /* =========================
-       ACCRUED INTEREST
-       ========================= */
-
-    -- Original accrued interest amount
     (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL +
      la.OV_ACR_PNL_INT_BAL)                                AS orgAccruedInterestAmount,
-
-    -- USD equivalent accrued interest
     CASE
         WHEN curr.SHORT_DESCR = 'USD'
             THEN (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
@@ -336,15 +162,12 @@ SELECT
             THEN (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) / 2500.50
         ELSE (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) / 2500.50
         END                                                      AS usdAccruedInterestAmount,
-
-    -- TZS accrued interest amount
     CASE
         WHEN curr.SHORT_DESCR = 'USD'
             THEN (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) * 2730.50
         ELSE (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
         END                                                      AS tzsAccruedInterestAmount,
     'Current'                                                                AS assetClassificationCategory,
-    -- Allowance for probable loss (provision)
     CASE
         WHEN la.LOAN_STATUS = 'W' THEN la.NRM_CAP_BAL + la.OV_CAP_BAL  -- 100% for written off
         WHEN la.OV_EXP_DT IS NULL OR DAYS(CURRENT_DATE) - DAYS(la.OV_EXP_DT) <= 30
