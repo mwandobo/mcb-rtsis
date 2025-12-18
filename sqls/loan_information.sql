@@ -52,7 +52,16 @@ select CURRENT_TIMESTAMP                                                        
        null                                                                     as groupVillageNumber,
        null                                                                     as cycleNumber,
        wela.INSTALL_COUNT                                                       as loanInstallment,
-       'Irregular'                                                              as repaymentFrequency,
+       CASE
+           WHEN wela.INSTALL_FREQ = 1 THEN 'Daily'
+           WHEN wela.INSTALL_FREQ = 7 THEN 'Weekly'
+           WHEN wela.INSTALL_FREQ = 14 THEN 'Bi-weekly'
+           WHEN wela.INSTALL_FREQ = 30 THEN 'Monthly'
+           WHEN wela.INSTALL_FREQ = 90 THEN 'Quarterly'
+           WHEN wela.INSTALL_FREQ = 180 THEN 'Semi-annually'
+           WHEN wela.INSTALL_FREQ = 365 THEN 'Annually'
+           ELSE 'Monthly'
+           END                                                                  AS repaymentFrequency,
        wela.CURRENCY                                                            as currency,
        wela.ACC_OPEN_DT                                                         as contractDate,
        wela.ACC_LIMIT_AMN                                                       as orgSanctionedAmount,
