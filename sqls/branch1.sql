@@ -1,9 +1,4 @@
-SELECT
-    CURRENT_TIMESTAMP AS reportingDate,
-    CURRENT_TIMESTAMP AS branchName
-
-
-FROM UNIT AS U;-- Branch Information RTSIS Report
+-- Branch Information RTSIS Report
 -- Based on RTSIS requirements for branch information reporting
 -- Created for MCB Bank Tanzania
 -- Date: December 18, 2025
@@ -14,7 +9,7 @@ SELECT
        ========================= */
 
     -- Reporting Date and Time (DDMMYYYYHHMM format)
-    VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')       AS reportingDate,
+    VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
 
     /* =========================
        BRANCH IDENTIFICATION
@@ -25,28 +20,22 @@ SELECT
             u.UNIT_NAME,
             u.UNIT_NAME_LATIN,
             'Unknown Branch'
-    )                                                        AS branchName,
+    )                                                 AS branchName,
+    117039447                                         AS taxIdentificationNumber,
+    CASE
+        WHEN u.CODE = 201 THEN 'BL20000102884'
+        WHEN u.CODE = 200 THEN 'BL20000102884'
+        END                                           AS businessLicense,
 
-    -- Tax Identification Number (Head Office TIN)
-    COALESCE(
-            bp.BANK_COMPANY_RECOR,
-            '123456789'  -- Default TIN - should be updated with actual
-    )                                                        AS taxIdentificationNumber,
-
-    -- Business License (Trade License)
-    COALESCE(
-            gd_license.LATIN_DESC,
-            'TL-' || CAST(u.CODE AS VARCHAR(10))
-    )                                                        AS businessLicense,
 
     -- Branch Code (Sort Code)
-    CAST(u.CODE AS VARCHAR(10))                             AS branchCode,
+    CAST(u.CODE AS VARCHAR(10))                       AS branchCode,
 
     -- QR FSR Code (Financial Services Reporting Code)
     COALESCE(
             gd_fsr.LATIN_DESC,
             'FSR-' || CAST(u.CODE AS VARCHAR(10))
-    )                                                        AS qrFsrCode,
+    )                                                 AS qrFsrCode,
 
     /* =========================
        LOCATION INFORMATION
@@ -57,20 +46,20 @@ SELECT
             gd_region.LATIN_DESC,
             gd_region.DESCRIPTION,
             'Unknown Region'
-    )                                                        AS region,
+    )                                                 AS region,
 
     -- District
     COALESCE(
             bd.DESCRIPTION,
             gd_district.LATIN_DESC,
             'Unknown District'
-    )                                                        AS district,
+    )                                                 AS district,
 
     -- Ward
     COALESCE(
             gd_ward.LATIN_DESC,
             'Unknown Ward'
-    )                                                        AS ward,
+    )                                                 AS ward,
 
     -- Street (Optional)
     COALESCE(
@@ -78,19 +67,19 @@ SELECT
             u.ADDRESS,
             u.ADDRESS_LATIN,
             u.ADDRESS_2
-    )                                                        AS street,
+    )                                                 AS street,
 
     -- House Number (Optional)
     COALESCE(
             u.PLOT_STREET,
             u.BUILDING_UNIT
-    )                                                        AS houseNumber,
+    )                                                 AS houseNumber,
 
     -- Postal Code (Optional)
     COALESCE(
             u.ZIP_CODE,
             u.PO_BOX
-    )                                                        AS postalCode,
+    )                                                 AS postalCode,
 
     -- GPS Coordinates
     CASE
@@ -98,8 +87,8 @@ SELECT
             THEN TRIM(u.LATITUDE_LOCATION) || ',' || TRIM(u.LONGITUDE_LOCATION)
         WHEN u.GEO_AREA IS NOT NULL
             THEN u.GEO_AREA
-        ELSE '0.0000,0.0000'  -- Default coordinates - should be updated
-        END                                                      AS gpsCoordinates,
+        ELSE '0.0000,0.0000' -- Default coordinates - should be updated
+        END                                           AS gpsCoordinates,
 
     /* =========================
        SERVICES INFORMATION
@@ -112,13 +101,13 @@ SELECT
                 WHEN u.CS_UNIT = '1' THEN 'Full Banking Services'
                 ELSE 'Limited Banking Services'
                 END
-    )                                                        AS bankingServices,
+    )                                                 AS bankingServices,
 
     -- Mobile Money Services (D70 lookup - Optional)
     COALESCE(
             gd_mobile.LATIN_DESC,
             'Not Available'
-    )                                                        AS mobileMoneyServices,
+    )                                                 AS mobileMoneyServices,
 
     /* =========================
        OPERATIONAL INFORMATION
@@ -128,7 +117,7 @@ SELECT
     VARCHAR_FORMAT(
             COALESCE(u.OPEN_DATE, DATE(u.TMSTAMP), CURRENT_DATE),
             'DDMMYYYYHHMM'
-    )                                                        AS registrationDate,
+    )                                                 AS registrationDate,
 
     -- Branch Status (D64 lookup)
     CASE
@@ -136,14 +125,14 @@ SELECT
         WHEN u.ENTRY_STATUS = '1' AND u.INACTIVE_UNIT = '1' THEN 'Inactive'
         WHEN u.ENTRY_STATUS = '0' THEN 'Closed'
         ELSE 'Unknown'
-        END                                                      AS branchStatus,
+        END                                           AS branchStatus,
 
     -- Closure Date (Optional - for closed branches)
     CASE
         WHEN u.ENTRY_STATUS = '0' OR u.INACTIVE_UNIT = '1'
-            THEN VARCHAR_FORMAT(CURRENT_DATE, 'DDMMYYYYHHMM')  -- Placeholder
+            THEN VARCHAR_FORMAT(CURRENT_DATE, 'DDMMYYYYHHMM') -- Placeholder
         ELSE NULL
-        END                                                      AS closureDate,
+        END                                           AS closureDate,
 
     /* =========================
        CONTACT INFORMATION
@@ -153,14 +142,14 @@ SELECT
     COALESCE(
             emp.FIRST_NAME || ' ' || emp.LAST_NAME,
             'Branch Manager'
-    )                                                        AS contactPerson,
+    )                                                 AS contactPerson,
 
     -- Telephone Number
     COALESCE(
             u.TELEPHONE_1,
             u.TELEPHONE_2,
-            '255000000000'  -- Default - should be updated
-    )                                                        AS telephoneNumber,
+            '255000000000' -- Default - should be updated
+    )                                                 AS telephoneNumber,
 
     -- Alternate Telephone Number (Optional)
     CASE
@@ -168,7 +157,7 @@ SELECT
             AND u.TELEPHONE_1 != u.TELEPHONE_2
             THEN u.TELEPHONE_2
         ELSE u.FAX
-        END                                                      AS altTelephoneNumber,
+        END                                           AS altTelephoneNumber,
 
     /* =========================
        BRANCH CLASSIFICATION
@@ -182,32 +171,32 @@ SELECT
                 WHEN u.CS_UNIT = '1' THEN 'Full Service Branch'
                 ELSE 'Sub Branch'
                 END
-    )                                                        AS branchCategory,
+    )                                                 AS branchCategory,
 
     /* =========================
        ADDITIONAL INFORMATION FOR TRACKING
        ========================= */
 
     -- Unit Code (for reference)
-    u.CODE                                                   AS unitCode,
+    u.CODE                                            AS unitCode,
 
     -- Head Unit (Parent Branch)
-    u.CS_HEAD_UNIT                                           AS headUnit,
+    u.CS_HEAD_UNIT                                    AS headUnit,
 
     -- City
-    COALESCE(u.CITY, u.CITY_LATIN)                          AS city,
+    COALESCE(u.CITY, u.CITY_LATIN)                    AS city,
 
     -- Email
-    u.EMAIL                                                  AS email,
+    u.EMAIL                                           AS email,
 
     -- Country Flag
-    u.COUNTRY_FLAG                                           AS countryFlag
+    u.COUNTRY_FLAG                                    AS countryFlag
 
 FROM UNIT u
 
          /* ===== BANK PARAMETERS (FOR HEAD OFFICE INFO) ===== */
          LEFT JOIN BANK_PARAMETERS bp
-                   ON 1=1  -- Single row table
+                   ON 1 = 1 -- Single row table
 
     /* ===== DISTRICT INFORMATION ===== */
          LEFT JOIN BDG_DISTRICT bd
@@ -215,10 +204,9 @@ FROM UNIT u
 
     /* ===== BRANCH MANAGER INFORMATION ===== */
          LEFT JOIN BANKEMPLOYEE emp
-                   ON emp.ID = (
-                       SELECT MIN(be.ID)
-                       FROM BANKEMPLOYEE be
-                       WHERE be.EMPL_STATUS = '1'
+                   ON emp.ID = (SELECT MIN(be.ID)
+                                FROM BANKEMPLOYEE be
+                                WHERE be.EMPL_STATUS = '1'
                        -- Add logic to find branch manager if available
                    )
 
@@ -249,34 +237,30 @@ FROM UNIT u
     /* ===== BANKING SERVICES LOOKUP (D104) ===== */
          LEFT JOIN GENERIC_DETAIL gd_services
                    ON gd_services.FK_GENERIC_HEADPAR = 'D104'
-                       AND gd_services.SERIAL_NUM = 1  -- Default service type
+                       AND gd_services.SERIAL_NUM = 1 -- Default service type
                        AND gd_services.ENTRY_STATUS = '1'
 
     /* ===== MOBILE MONEY SERVICES LOOKUP (D70) ===== */
          LEFT JOIN GENERIC_DETAIL gd_mobile
                    ON gd_mobile.FK_GENERIC_HEADPAR = 'D70'
-                       AND gd_mobile.SERIAL_NUM = 1  -- Default mobile service
+                       AND gd_mobile.SERIAL_NUM = 1 -- Default mobile service
                        AND gd_mobile.ENTRY_STATUS = '1'
 
     /* ===== BUSINESS LICENSE LOOKUP ===== */
          LEFT JOIN GENERIC_DETAIL gd_license
-                   ON gd_license.FK_GENERIC_HEADPAR = 'LICNS'  -- Business license type
+                   ON gd_license.FK_GENERIC_HEADPAR = 'LICNS' -- Business license type
                        AND gd_license.SERIAL_NUM = 1
                        AND gd_license.ENTRY_STATUS = '1'
 
     /* ===== FSR CODE LOOKUP ===== */
          LEFT JOIN GENERIC_DETAIL gd_fsr
-                   ON gd_fsr.FK_GENERIC_HEADPAR = 'FSRCD'  -- FSR code type
+                   ON gd_fsr.FK_GENERIC_HEADPAR = 'FSRCD' -- FSR code type
                        AND gd_fsr.SERIAL_NUM = u.CODE
                        AND gd_fsr.ENTRY_STATUS = '1'
 
 WHERE
-  -- Only active units (branches)
-    u.ENTRY_STATUS = '1'
-  -- Exclude non-branch units if any
-  AND u.CODE IS NOT NULL
-  -- Only operational branches
-  AND u.INACTIVE_UNIT = '0'
-
-ORDER BY
-    u.CODE;
+   -- Only active units (branches)
+    u.UNIT_NAME = 'MLIMANI BRANCH'
+   OR u.UNIT_NAME = 'SAMORA BRANCH'
+-- Exclude non-branch units if any
+ORDER BY u.CODE;
