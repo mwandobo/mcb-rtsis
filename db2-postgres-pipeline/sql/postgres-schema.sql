@@ -2,8 +2,28 @@
 -- Run this before starting the sink connector if auto.create=false
 -- Note: Using quoted identifiers to preserve camelCase naming
 
+-- Drop existing tables to recreate with serial IDs
+DROP TABLE IF EXISTS "cashInformation" CASCADE;
+DROP TABLE IF EXISTS "loan" CASCADE;
+DROP TABLE IF EXISTS "loanTransaction" CASCADE;
+DROP TABLE IF EXISTS "balanceOtherBanks" CASCADE;
+DROP TABLE IF EXISTS "overdraft" CASCADE;
+DROP TABLE IF EXISTS "otherAsset" CASCADE;
+DROP TABLE IF EXISTS "balanceBot" CASCADE;
+DROP TABLE IF EXISTS "balanceMno" CASCADE;
+DROP TABLE IF EXISTS "assetOwned" CASCADE;
+DROP TABLE IF EXISTS "cheques" CASCADE;
+DROP TABLE IF EXISTS "icbmTransaction" CASCADE;
+DROP TABLE IF EXISTS "sharedCapital" CASCADE;
+DROP TABLE IF EXISTS "insuranceCommission" CASCADE;
+DROP TABLE IF EXISTS "incomeStatement" CASCADE;
+DROP TABLE IF EXISTS "investmentDebtSecurities" CASCADE;
+DROP TABLE IF EXISTS "claimTreasury" CASCADE;
+DROP TABLE IF EXISTS "branch" CASCADE;
+
 -- Cash Information
-CREATE TABLE IF NOT EXISTS "cashInformation" (
+CREATE TABLE "cashInformation" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "branchCode" INTEGER,
     "cashCategory" VARCHAR(50),
@@ -22,7 +42,8 @@ CREATE TABLE IF NOT EXISTS "cashInformation" (
 );
 
 -- Loan Information
-CREATE TABLE IF NOT EXISTS "loan" (
+CREATE TABLE "loan" (
+    "id" SERIAL PRIMARY KEY,
     "customerIdentificationNumber" VARCHAR(50),
     "accountNumber" VARCHAR(50),
     "clientName" VARCHAR(200),
@@ -35,7 +56,8 @@ CREATE TABLE IF NOT EXISTS "loan" (
 );
 
 -- Loan Transaction
-CREATE TABLE IF NOT EXISTS "loanTransaction" (
+CREATE TABLE "loanTransaction" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "loanNumber" VARCHAR(50),
     "transactionDate" DATE,
@@ -48,7 +70,8 @@ CREATE TABLE IF NOT EXISTS "loanTransaction" (
 );
 
 -- Balance with Other Banks
-CREATE TABLE IF NOT EXISTS "balanceOtherBanks" (
+CREATE TABLE "balanceOtherBanks" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "accountNumber" VARCHAR(50),
     "accountName" VARCHAR(200),
@@ -73,7 +96,8 @@ CREATE TABLE IF NOT EXISTS "balanceOtherBanks" (
 );
 
 -- Overdraft
-CREATE TABLE IF NOT EXISTS "overdraft" (
+CREATE TABLE "overdraft" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" VARCHAR(20),
     "accountNumber" VARCHAR(50),
     "customerIdentificationNumber" VARCHAR(50),
@@ -150,7 +174,8 @@ CREATE TABLE IF NOT EXISTS "overdraft" (
 );
 
 -- Other Assets
-CREATE TABLE IF NOT EXISTS "otherAsset" (
+CREATE TABLE "otherAsset" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "assetType" VARCHAR(50),
     "transactionDate" DATE,
@@ -169,7 +194,8 @@ CREATE TABLE IF NOT EXISTS "otherAsset" (
 );
 
 -- Balances BOT
-CREATE TABLE IF NOT EXISTS "balanceBot" (
+CREATE TABLE "balanceBot" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "accountNumber" VARCHAR(50),
     "accountName" VARCHAR(100),
@@ -186,7 +212,8 @@ CREATE TABLE IF NOT EXISTS "balanceBot" (
 );
 
 -- Balances with MNOs
-CREATE TABLE IF NOT EXISTS "balanceMno" (
+CREATE TABLE "balanceMno" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "floatBalanceDate" TIMESTAMP,
     "mnoCode" VARCHAR(100),
@@ -200,7 +227,8 @@ CREATE TABLE IF NOT EXISTS "balanceMno" (
 );
 
 -- Asset Owned
-CREATE TABLE IF NOT EXISTS "assetOwned" (
+CREATE TABLE "assetOwned" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "acquisitionDate" DATE,
     "currency" VARCHAR(10),
@@ -214,7 +242,8 @@ CREATE TABLE IF NOT EXISTS "assetOwned" (
 );
 
 -- Cheque Clearing
-CREATE TABLE IF NOT EXISTS "cheques" (
+CREATE TABLE "cheques" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "chequeNumber" VARCHAR(50),
     "issuerName" VARCHAR(200),
@@ -239,7 +268,8 @@ CREATE TABLE IF NOT EXISTS "cheques" (
 );
 
 -- ICBM Transactions
-CREATE TABLE IF NOT EXISTS "icbmTransaction" (
+CREATE TABLE "icbmTransaction" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "transactionDate" DATE,
     "lenderName" VARCHAR(200),
@@ -251,7 +281,8 @@ CREATE TABLE IF NOT EXISTS "icbmTransaction" (
 );
 
 -- Shared Capital
-CREATE TABLE IF NOT EXISTS "sharedCapital" (
+CREATE TABLE "sharedCapital" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "capitalCategory" VARCHAR(100),
     "capitalSubCategory" VARCHAR(100),
@@ -270,7 +301,8 @@ CREATE TABLE IF NOT EXISTS "sharedCapital" (
 );
 
 -- Insurance Commission
-CREATE TABLE IF NOT EXISTS "insuranceCommission" (
+CREATE TABLE "insuranceCommission" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "policyNumber" VARCHAR(50),
     "currency" VARCHAR(10),
@@ -280,7 +312,8 @@ CREATE TABLE IF NOT EXISTS "insuranceCommission" (
 );
 
 -- Income Statement (Daily Snapshot)
-CREATE TABLE IF NOT EXISTS "incomeStatement" (
+CREATE TABLE "incomeStatement" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "interestIncome" DECIMAL(31,2),
     "interestExpense" DECIMAL(31,2),
@@ -295,7 +328,8 @@ CREATE TABLE IF NOT EXISTS "incomeStatement" (
 );
 
 -- Investment Debt Securities
-CREATE TABLE IF NOT EXISTS "investmentDebtSecurities" (
+CREATE TABLE "investmentDebtSecurities" (
+    "id" SERIAL PRIMARY KEY,
     "reportingDate" TIMESTAMP,
     "securityNumber" VARCHAR(50),
     "securityType" VARCHAR(50),
@@ -325,6 +359,52 @@ CREATE TABLE IF NOT EXISTS "investmentDebtSecurities" (
     "assetClassificationCategory" INTEGER
 );
 
+-- Claim Treasury
+CREATE TABLE "claimTreasury" (
+    "id" SERIAL PRIMARY KEY,
+    "reportingDate" VARCHAR(20),
+    "transactionDate" VARCHAR(20),
+    "govInstitutionName" VARCHAR(200),
+    "currency" VARCHAR(10),
+    "orgAmountClaimed" DECIMAL(15,2),
+    "usdAmountClaimed" DECIMAL(15,2),
+    "tzsAmountClaimed" DECIMAL(15,2),
+    "valueDate" VARCHAR(20),
+    "maturityDate" VARCHAR(20),
+    "pastDueDays" INTEGER,
+    "allowanceProbableLoss" DECIMAL(15,2),
+    "botProvision" DECIMAL(15,2),
+    "assetClassificationCategory" VARCHAR(50),
+    "sectorSnaClassification" VARCHAR(100)
+);
+
+-- Branch Information
+CREATE TABLE "branch" (
+    "id" SERIAL PRIMARY KEY,
+    "reportingDate" TIMESTAMP,
+    "branchName" VARCHAR(200),
+    "taxIdentificationNumber" VARCHAR(50),
+    "businessLicense" VARCHAR(100),
+    "branchCode" VARCHAR(20),
+    "qrFsrCode" VARCHAR(50),
+    "region" VARCHAR(100),
+    "district" VARCHAR(100),
+    "ward" VARCHAR(100),
+    "street" VARCHAR(200),
+    "houseNumber" VARCHAR(50),
+    "postalCode" VARCHAR(20),
+    "gpsCoordinates" VARCHAR(100),
+    "bankingServices" TEXT,
+    "mobileMoneyServices" TEXT,
+    "registrationDate" DATE,
+    "branchStatus" VARCHAR(50),
+    "closureDate" DATE,
+    "contactPerson" VARCHAR(200),
+    "telephoneNumber" VARCHAR(50),
+    "altTelephoneNumber" VARCHAR(50),
+    "branchCategory" VARCHAR(100)
+);
+
 -- Indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_cash_info_date ON "cashInformation"("transactionDate");
 CREATE INDEX IF NOT EXISTS idx_loan_info_status ON "loan"("loanStatus");
@@ -336,3 +416,11 @@ CREATE INDEX IF NOT EXISTS idx_overdraft_account ON "overdraft"("accountNumber")
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_type ON "investmentDebtSecurities"("securityType");
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_issuer ON "investmentDebtSecurities"("securityIssuerName");
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_maturity ON "investmentDebtSecurities"("maturityDate");
+CREATE INDEX IF NOT EXISTS idx_claim_treasury_reporting ON "claimTreasury"("reportingDate");
+CREATE INDEX IF NOT EXISTS idx_claim_treasury_institution ON "claimTreasury"("govInstitutionName");
+CREATE INDEX IF NOT EXISTS idx_claim_treasury_classification ON "claimTreasury"("assetClassificationCategory");
+CREATE INDEX IF NOT EXISTS idx_branch_code ON "branch"("branchCode");
+CREATE INDEX IF NOT EXISTS idx_branch_name ON "branch"("branchName");
+CREATE INDEX IF NOT EXISTS idx_branch_status ON "branch"("branchStatus");
+CREATE INDEX IF NOT EXISTS idx_branch_region ON "branch"("region");
+CREATE INDEX IF NOT EXISTS idx_branch_district ON "branch"("district");
