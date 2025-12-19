@@ -20,6 +20,7 @@ DROP TABLE IF EXISTS "incomeStatement" CASCADE;
 DROP TABLE IF EXISTS "investmentDebtSecurities" CASCADE;
 DROP TABLE IF EXISTS "claimTreasury" CASCADE;
 DROP TABLE IF EXISTS "branch" CASCADE;
+DROP TABLE IF EXISTS "agents" CASCADE;
 
 -- Cash Information
 CREATE TABLE "cashInformation" (
@@ -426,3 +427,43 @@ CREATE INDEX IF NOT EXISTS idx_branch_status ON "branch"("branchStatus");
 CREATE INDEX IF NOT EXISTS idx_branch_region ON "branch"("region");
 CREATE INDEX IF NOT EXISTS idx_branch_district ON "branch"("district");
 CREATE INDEX IF NOT EXISTS idx_branch_last_modified ON "branch"("lastModified");
+
+-- Agents Information
+CREATE TABLE "agents" (
+    "id" SERIAL PRIMARY KEY,
+    "reportingDate" VARCHAR(20),
+    "agentName" VARCHAR(200),
+    "agentId" VARCHAR(50),
+    "tillNumber" VARCHAR(50),
+    "businessForm" VARCHAR(50),
+    "agentPrincipal" VARCHAR(50),
+    "agentPrincipalName" VARCHAR(200),
+    "gender" VARCHAR(20),
+    "registrationDate" VARCHAR(20),
+    "closedDate" VARCHAR(20),
+    "certIncorporation" VARCHAR(50),
+    "nationality" VARCHAR(50),
+    "agentStatus" VARCHAR(50),
+    "agentType" VARCHAR(50),
+    "accountNumber" VARCHAR(50),
+    "region" VARCHAR(100),
+    "district" VARCHAR(100),
+    "ward" VARCHAR(100),
+    "street" VARCHAR(200),
+    "houseNumber" VARCHAR(50),
+    "postalCode" VARCHAR(20),
+    "country" VARCHAR(50),
+    "gpsCoordinates" VARCHAR(100),
+    "agentTaxIdentificationNumber" VARCHAR(50),
+    "businessLicense" VARCHAR(100),
+    "lastModified" TIMESTAMP
+);
+
+-- Indexes for agents
+CREATE UNIQUE INDEX IF NOT EXISTS idx_agents_id_unique ON "agents"("agentId");
+CREATE INDEX IF NOT EXISTS idx_agents_name ON "agents"("agentName");
+CREATE INDEX IF NOT EXISTS idx_agents_status ON "agents"("agentStatus");
+CREATE INDEX IF NOT EXISTS idx_agents_type ON "agents"("agentType");
+CREATE INDEX IF NOT EXISTS idx_agents_region ON "agents"("region");
+CREATE INDEX IF NOT EXISTS idx_agents_district ON "agents"("district");
+CREATE INDEX IF NOT EXISTS idx_agents_last_modified ON "agents"("lastModified");

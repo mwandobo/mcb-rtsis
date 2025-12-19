@@ -652,7 +652,7 @@ class Config:
                 WHERE u.ENTRY_STATUS = '1' 
                     AND u.CODE IS NOT NULL 
                     AND u.INACTIVE_UNIT = '0'
-                    AND u.TMSTAMP >= TIMESTAMP('2024-01-01 00:00:00')
+                    AND u.TMSTAMP >= TIMESTAMP('2016-01-01 00:00:00')
                 ORDER BY u.TMSTAMP, u.CODE
                 FETCH FIRST 1000 ROWS ONLY
                 """,
@@ -660,6 +660,75 @@ class Config:
                 target_table='branch',
                 queue_name='branch_queue',
                 processor_class='BranchProcessor',
+                batch_size=500,
+                poll_interval=30
+            ),
+            'agents': TableConfig(
+                name='agents',
+                query="""
+                SELECT
+                    VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
+                    TRIM(COALESCE(c.FIRST_NAME, '') || ' ' || COALESCE(c.MIDDLE_NAME, '') || ' ' || COALESCE(c.SURNAME, '')) AS agentName,
+                    CAST(c.CUST_ID AS VARCHAR(50)) AS agentId,
+                    COALESCE(RIGHT(c.MOBILE_TEL, 6), CAST(c.CUST_ID AS VARCHAR(8))) AS tillNumber,
+                    CASE 
+                        WHEN c.CUST_TYPE = '1' THEN 'Individual'
+                        WHEN c.CUST_TYPE = '2' THEN 'Corporate'
+                        WHEN c.CUST_TYPE = 'B' THEN 'Business'
+                        ELSE 'Other'
+                    END AS businessForm,
+                    'ThirdPartyAgent' AS agentPrincipal,
+                    TRIM(COALESCE(c.FIRST_NAME, '') || ' ' || COALESCE(c.MIDDLE_NAME, '') || ' ' || COALESCE(c.SURNAME, '')) AS agentPrincipalName,
+                    CASE 
+                        WHEN c.SEX = 'M' THEN 'Male'
+                        WHEN c.SEX = 'F' THEN 'Female'
+                        ELSE 'NotSpecified'
+                    END AS gender,
+                    VARCHAR_FORMAT(COALESCE(c.CUSTOMER_BEGIN_DAT, CURRENT_DATE), 'DDMMYYYYHHMM') AS registrationDate,
+                    CASE 
+                        WHEN c.ENTRY_STATUS = '0' 
+                            THEN VARCHAR_FORMAT(COALESCE(c.LAST_UPDATE, CURRENT_DATE), 'DDMMYYYYHHMM')
+                        ELSE NULL
+                    END AS closedDate,
+                    COALESCE(c.CHAMBER_ID, 'CERT' || CAST(c.CUST_ID AS VARCHAR(10))) AS certIncorporation,
+                    'Tanzania' AS nationality,
+                    CASE 
+                        WHEN c.ENTRY_STATUS = '1' THEN 'Active'
+                        WHEN c.ENTRY_STATUS = '0' THEN 'Inactive'
+                        ELSE 'Suspended'
+                    END AS agentStatus,
+                    CASE 
+                        WHEN c.CUST_TYPE = '1' THEN 'Individual'
+                        WHEN c.CUST_TYPE = '2' THEN 'Corporate'
+                        WHEN c.CUST_TYPE = 'B' THEN 'Business'
+                        ELSE 'Other'
+                    END AS agentType,
+                    'ACC' || CAST(c.CUST_ID AS VARCHAR(10)) AS accountNumber,
+                    'Dar es Salaam' AS region,
+                    'Kinondoni' AS district,
+                    'Msasani' AS ward,
+                    COALESCE(c.EMPLOYER_ADDRESS, 'Unknown Street') AS street,
+                    'Plot 123' AS houseNumber,
+                    COALESCE(c.DAI_NUMBER, '12345') AS postalCode,
+                    'Tanzania' AS country,
+                    '0.0000,0.0000' AS gpsCoordinates,
+                    COALESCE(c.CHAMBER_ID, 'TIN' || CAST(c.CUST_ID AS VARCHAR(10))) AS agentTaxIdentificationNumber,
+                    COALESCE(c.CHAMBER_ID, 'BL' || CAST(c.CUST_ID AS VARCHAR(10))) AS businessLicense,
+                    COALESCE(c.LAST_UPDATE, CURRENT_TIMESTAMP) AS lastModified
+                FROM CUSTOMER c
+                WHERE c.ENTRY_STATUS = '1'
+                    AND c.CUST_TYPE = '2'
+                    AND c.MOBILE_TEL IS NOT NULL 
+                    AND c.MOBILE_TEL != ''
+                    AND LENGTH(TRIM(c.MOBILE_TEL)) > 5
+                    AND COALESCE(c.LAST_UPDATE, c.CUSTOMER_BEGIN_DAT) >= TIMESTAMP('2016-01-01 00:00:00')
+                ORDER BY COALESCE(c.LAST_UPDATE, c.CUSTOMER_BEGIN_DAT), c.CUST_ID
+                FETCH FIRST 1000 ROWS ONLY
+                """,
+                timestamp_column='lastModified',
+                target_table='agents',
+                queue_name='agents_queue',
+                processor_class='AgentProcessor',
                 batch_size=500,
                 poll_interval=30
             )
