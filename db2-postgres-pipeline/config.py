@@ -572,6 +572,96 @@ class Config:
                 processor_class='OverdraftProcessor',
                 batch_size=1000,
                 poll_interval=10
+            ),
+            'branch': TableConfig(
+                name='branch',
+                query="""
+                SELECT
+                    VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
+                    COALESCE(u.UNIT_NAME, u.UNIT_NAME_LATIN, 'Unknown Branch') AS branchName,
+                    COALESCE(bp.BANK_COMPANY_RECOR, '123456789') AS taxIdentificationNumber,
+                    COALESCE(gd_license.LATIN_DESC, 'TL-' || CAST(u.CODE AS VARCHAR(10))) AS businessLicense,
+                    CAST(u.CODE AS VARCHAR(10)) AS branchCode,
+                    COALESCE(gd_fsr.LATIN_DESC, 'FSR-' || CAST(u.CODE AS VARCHAR(10))) AS qrFsrCode,
+                    COALESCE(gd_region.LATIN_DESC, gd_region.DESCRIPTION, 'Unknown Region') AS region,
+                    COALESCE(bd.DESCRIPTION, gd_district.LATIN_DESC, 'Unknown District') AS district,
+                    COALESCE(gd_ward.LATIN_DESC, 'Unknown Ward') AS ward,
+                    COALESCE(u.LC_STREET_NAME, u.ADDRESS, u.ADDRESS_LATIN, u.ADDRESS_2) AS street,
+                    COALESCE(u.PLOT_STREET, u.BUILDING_UNIT) AS houseNumber,
+                    COALESCE(u.ZIP_CODE, u.PO_BOX) AS postalCode,
+                    CASE
+                        WHEN u.LATITUDE_LOCATION IS NOT NULL AND u.LONGITUDE_LOCATION IS NOT NULL
+                            THEN TRIM(u.LATITUDE_LOCATION) || ',' || TRIM(u.LONGITUDE_LOCATION)
+                        WHEN u.GEO_AREA IS NOT NULL
+                            THEN u.GEO_AREA
+                        ELSE '0.0000,0.0000'
+                    END AS gpsCoordinates,
+                    COALESCE(gd_services.LATIN_DESC,
+                        CASE WHEN u.CS_UNIT = '1' THEN 'Full Banking Services'
+                        ELSE 'Limited Banking Services' END) AS bankingServices,
+                    COALESCE(gd_mobile.LATIN_DESC, 'Not Available') AS mobileMoneyServices,
+                    VARCHAR_FORMAT(COALESCE(u.OPEN_DATE, DATE(u.TMSTAMP), CURRENT_DATE), 'DDMMYYYYHHMM') AS registrationDate,
+                    CASE
+                        WHEN u.ENTRY_STATUS = '1' AND u.INACTIVE_UNIT = '0' THEN 'Active'
+                        WHEN u.ENTRY_STATUS = '1' AND u.INACTIVE_UNIT = '1' THEN 'Inactive'
+                        WHEN u.ENTRY_STATUS = '0' THEN 'Closed'
+                        ELSE 'Unknown'
+                    END AS branchStatus,
+                    CASE
+                        WHEN u.ENTRY_STATUS = '0' OR u.INACTIVE_UNIT = '1'
+                            THEN VARCHAR_FORMAT(CURRENT_DATE, 'DDMMYYYYHHMM')
+                        ELSE NULL
+                    END AS closureDate,
+                    COALESCE(emp.FIRST_NAME || ' ' || emp.LAST_NAME, 'Branch Manager') AS contactPerson,
+                    COALESCE(u.TELEPHONE_1, u.TELEPHONE_2, '255000000000') AS telephoneNumber,
+                    CASE
+                        WHEN u.TELEPHONE_1 IS NOT NULL AND u.TELEPHONE_2 IS NOT NULL
+                            AND u.TELEPHONE_1 != u.TELEPHONE_2
+                            THEN u.TELEPHONE_2
+                        ELSE u.FAX
+                    END AS altTelephoneNumber,
+                    COALESCE(gd_category.LATIN_DESC,
+                        CASE
+                            WHEN u.CS_HEAD_UNIT IS NULL THEN 'Head Office'
+                            WHEN u.CS_UNIT = '1' THEN 'Full Service Branch'
+                            ELSE 'Sub Branch'
+                        END) AS branchCategory,
+                    u.TMSTAMP AS lastModified
+                FROM UNIT u
+                LEFT JOIN BANK_PARAMETERS bp ON 1=1
+                LEFT JOIN BDG_DISTRICT bd ON bd.ID = u.FK_BDG_DISTRICTID
+                LEFT JOIN BANKEMPLOYEE emp ON emp.ID = (
+                    SELECT MIN(be.ID) FROM BANKEMPLOYEE be WHERE be.EMPL_STATUS = '1'
+                )
+                LEFT JOIN GENERIC_DETAIL gd_region ON gd_region.FK_GENERIC_HEADPAR = u.FKGH_RESIDES_IN_RE
+                    AND gd_region.SERIAL_NUM = u.FKGD_RESIDES_IN_RE AND gd_region.ENTRY_STATUS = '1'
+                LEFT JOIN GENERIC_DETAIL gd_district ON gd_district.FK_GENERIC_HEADPAR = u.FKGH_RESIDES_IN_R1
+                    AND gd_district.SERIAL_NUM = u.FKGD_RESIDES_IN_R1 AND gd_district.ENTRY_STATUS = '1'
+                LEFT JOIN GENERIC_DETAIL gd_ward ON gd_ward.FK_GENERIC_HEADPAR = u.FKGH_RESID_REGION3
+                    AND gd_ward.SERIAL_NUM = u.FKGD_RESID_REGION3 AND gd_ward.ENTRY_STATUS = '1'
+                LEFT JOIN GENERIC_DETAIL gd_category ON gd_category.FK_GENERIC_HEADPAR = u.FKGH_HAS_UNIT_CATE
+                    AND gd_category.SERIAL_NUM = u.FKGD_HAS_UNIT_CATE AND gd_category.ENTRY_STATUS = '1'
+                LEFT JOIN GENERIC_DETAIL gd_services ON gd_services.FK_GENERIC_HEADPAR = 'D104'
+                    AND gd_services.SERIAL_NUM = 1 AND gd_services.ENTRY_STATUS = '1'
+                LEFT JOIN GENERIC_DETAIL gd_mobile ON gd_mobile.FK_GENERIC_HEADPAR = 'D70'
+                    AND gd_mobile.SERIAL_NUM = 1 AND gd_mobile.ENTRY_STATUS = '1'
+                LEFT JOIN GENERIC_DETAIL gd_license ON gd_license.FK_GENERIC_HEADPAR = 'LICNS'
+                    AND gd_license.SERIAL_NUM = 1 AND gd_license.ENTRY_STATUS = '1'
+                LEFT JOIN GENERIC_DETAIL gd_fsr ON gd_fsr.FK_GENERIC_HEADPAR = 'FSRCD'
+                    AND gd_fsr.SERIAL_NUM = u.CODE AND gd_fsr.ENTRY_STATUS = '1'
+                WHERE u.ENTRY_STATUS = '1' 
+                    AND u.CODE IS NOT NULL 
+                    AND u.INACTIVE_UNIT = '0'
+                    AND u.TMSTAMP >= TIMESTAMP('2024-01-01 00:00:00')
+                ORDER BY u.TMSTAMP, u.CODE
+                FETCH FIRST 1000 ROWS ONLY
+                """,
+                timestamp_column='lastModified',
+                target_table='branch',
+                queue_name='branch_queue',
+                processor_class='BranchProcessor',
+                batch_size=500,
+                poll_interval=30
             )
         }
     

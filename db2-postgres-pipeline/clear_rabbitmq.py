@@ -36,7 +36,8 @@ def clear_rabbitmq():
             'balances_with_mnos_queue',
             'balance_with_other_banks_queue',
             'other_assets_queue',
-            'overdraft_queue'
+            'overdraft_queue',
+            'branch_queue'
         ]
         
         logger.info("🧹 Starting RabbitMQ cleanup...")

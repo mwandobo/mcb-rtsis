@@ -402,7 +402,8 @@ CREATE TABLE "branch" (
     "contactPerson" VARCHAR(200),
     "telephoneNumber" VARCHAR(50),
     "altTelephoneNumber" VARCHAR(50),
-    "branchCategory" VARCHAR(100)
+    "branchCategory" VARCHAR(100),
+    "lastModified" VARCHAR(50)
 );
 
 -- Indexes for common queries
@@ -419,8 +420,9 @@ CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_maturity ON "investmentDebtSecuritie
 CREATE INDEX IF NOT EXISTS idx_claim_treasury_reporting ON "claimTreasury"("reportingDate");
 CREATE INDEX IF NOT EXISTS idx_claim_treasury_institution ON "claimTreasury"("govInstitutionName");
 CREATE INDEX IF NOT EXISTS idx_claim_treasury_classification ON "claimTreasury"("assetClassificationCategory");
-CREATE INDEX IF NOT EXISTS idx_branch_code ON "branch"("branchCode");
+CREATE UNIQUE INDEX IF NOT EXISTS idx_branch_code_unique ON "branch"("branchCode");
 CREATE INDEX IF NOT EXISTS idx_branch_name ON "branch"("branchName");
 CREATE INDEX IF NOT EXISTS idx_branch_status ON "branch"("branchStatus");
 CREATE INDEX IF NOT EXISTS idx_branch_region ON "branch"("region");
 CREATE INDEX IF NOT EXISTS idx_branch_district ON "branch"("district");
+CREATE INDEX IF NOT EXISTS idx_branch_last_modified ON "branch"("lastModified");
