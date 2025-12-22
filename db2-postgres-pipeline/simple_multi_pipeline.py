@@ -23,6 +23,8 @@ from processors.mnos_processor import MnosProcessor, MnosRecord
 from processors.other_banks_processor import OtherBanksProcessor, OtherBanksRecord
 from processors.other_assets_processor import OtherAssetsProcessor, OtherAssetsRecord
 from processors.overdraft_processor import OverdraftProcessor, OverdraftRecord
+from processors.branch_processor import BranchProcessor, BranchRecord
+from processors.agent_processor import AgentProcessor, AgentRecord
 from pipeline_tracker import PipelineTracker
 
 class SimpleMultiPipeline:
@@ -44,6 +46,8 @@ class SimpleMultiPipeline:
         self.other_banks_processor = OtherBanksProcessor()
         self.other_assets_processor = OtherAssetsProcessor()
         self.overdraft_processor = OverdraftProcessor()
+        self.branch_processor = BranchProcessor()
+        self.agent_processor = AgentProcessor()
         
         self.logger.info("Multi-table pipeline initialized with tracking")
         
@@ -96,6 +100,8 @@ class SimpleMultiPipeline:
             channel.queue_declare(queue='balance_with_other_banks_queue', durable=True)
             channel.queue_declare(queue='other_assets_queue', durable=True)
             channel.queue_declare(queue='overdraft_queue', durable=True)
+            channel.queue_declare(queue='branch_queue', durable=True)
+            channel.queue_declare(queue='agents_queue', durable=True)
             
             connection.close()
             self.logger.info("✅ RabbitMQ queues created: cash_information_queue, asset_owned_queue, balances_bot_queue, balances_with_mnos_queue, balance_with_other_banks_queue, other_assets_queue, overdraft_queue")
@@ -747,6 +753,154 @@ class SimpleMultiPipeline:
         except Exception as e:
             self.logger.error(f"❌ Overdraft consumer error: {e}")
     
+    def fetch_and_publish_branch(self):
+        """Fetch Branch data and publish to queue"""
+        branch_config = self.config.tables['branch']
+        
+        try:
+            with self.get_db2_connection() as db2_conn:
+                cursor = db2_conn.cursor()
+                cursor.execute(branch_config.query)
+                
+                records = []
+                for row in cursor.fetchall():
+                    record = self.branch_processor.process_record(row, 'branch')
+                    if self.branch_processor.validate_record(record):
+                        records.append(record)
+                
+                if records:
+                    self.publish_to_queue(records, 'branch_queue')
+                    self.logger.info(f"🏢 Published {len(records)} branch records")
+                else:
+                    self.logger.info("🏢 No branch records to publish")
+                    
+        except Exception as e:
+            self.logger.error(f"❌ Branch fetch error: {e}")
+    
+    def consume_branch_queue(self):
+        """Consume Branch records from queue"""
+        self.logger.info("🏢 Starting Branch consumer...")
+        
+        try:
+            credentials = pika.PlainCredentials(
+                self.config.message_queue.rabbitmq_user,
+                self.config.message_queue.rabbitmq_password
+            )
+            parameters = pika.ConnectionParameters(
+                host=self.config.message_queue.rabbitmq_host,
+                port=self.config.message_queue.rabbitmq_port,
+                credentials=credentials
+            )
+            connection = pika.BlockingConnection(parameters)
+            channel = connection.channel()
+            
+            def process_branch_message(ch, method, properties, body):
+                try:
+                    record_data = json.loads(body)
+                    record = BranchRecord(**record_data)
+                    
+                    with self.get_postgres_connection() as pg_conn:
+                        cursor = pg_conn.cursor()
+                        self.branch_processor.insert_to_postgres(record, cursor)
+                        pg_conn.commit()
+                        cursor.close()
+                    
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    self.logger.info(f"✅ Processed branch: {record.branch_code}")
+                    
+                except Exception as e:
+                    self.logger.error(f"❌ Branch processing error: {e}")
+                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            
+            channel.basic_consume(
+                queue='branch_queue',
+                on_message_callback=process_branch_message
+            )
+            
+            # Process messages for a short time
+            start_time = time.time()
+            while time.time() - start_time < 30 and self.running:  # Run for 30 seconds
+                connection.process_data_events(time_limit=1)
+            
+            connection.close()
+            
+        except Exception as e:
+            self.logger.error(f"❌ Branch consumer error: {e}")
+    
+    def fetch_and_publish_agents(self):
+        """Fetch Agents data and publish to queue"""
+        agents_config = self.config.tables['agents']
+        
+        try:
+            with self.get_db2_connection() as db2_conn:
+                cursor = db2_conn.cursor()
+                cursor.execute(agents_config.query)
+                
+                records = []
+                for row in cursor.fetchall():
+                    record = self.agent_processor.process_record(row, 'agents')
+                    if self.agent_processor.validate_record(record):
+                        records.append(record)
+                
+                if records:
+                    self.publish_to_queue(records, 'agents_queue')
+                    self.logger.info(f"👥 Published {len(records)} agent records")
+                else:
+                    self.logger.info("👥 No agent records to publish")
+                    
+        except Exception as e:
+            self.logger.error(f"❌ Agents fetch error: {e}")
+    
+    def consume_agents_queue(self):
+        """Consume Agents records from queue"""
+        self.logger.info("👥 Starting Agents consumer...")
+        
+        try:
+            credentials = pika.PlainCredentials(
+                self.config.message_queue.rabbitmq_user,
+                self.config.message_queue.rabbitmq_password
+            )
+            parameters = pika.ConnectionParameters(
+                host=self.config.message_queue.rabbitmq_host,
+                port=self.config.message_queue.rabbitmq_port,
+                credentials=credentials
+            )
+            connection = pika.BlockingConnection(parameters)
+            channel = connection.channel()
+            
+            def process_agents_message(ch, method, properties, body):
+                try:
+                    record_data = json.loads(body)
+                    record = AgentRecord(**record_data)
+                    
+                    with self.get_postgres_connection() as pg_conn:
+                        cursor = pg_conn.cursor()
+                        self.agent_processor.insert_to_postgres(record, cursor)
+                        pg_conn.commit()
+                        cursor.close()
+                    
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    self.logger.info(f"✅ Processed agent: {record.agent_id}")
+                    
+                except Exception as e:
+                    self.logger.error(f"❌ Agents processing error: {e}")
+                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            
+            channel.basic_consume(
+                queue='agents_queue',
+                on_message_callback=process_agents_message
+            )
+            
+            # Process messages for a short time
+            start_time = time.time()
+            while time.time() - start_time < 30 and self.running:  # Run for 30 seconds
+                connection.process_data_events(time_limit=1)
+            
+            connection.close()
+            
+        except Exception as e:
+            self.logger.error(f"❌ Agents consumer error: {e}")
+    
     def run_test(self):
         """Run a test of the multi-table pipeline"""
         self.logger.info("🚀 Starting Multi-table Pipeline Test")
@@ -765,6 +919,8 @@ class SimpleMultiPipeline:
             self.fetch_and_publish_other_banks()
             self.fetch_and_publish_other_assets()
             self.fetch_and_publish_overdraft()
+            self.fetch_and_publish_branch()
+            self.fetch_and_publish_agents()
             
             # Step 3: Start consumers in threads
             self.logger.info("🔄 Starting consumers...")
@@ -776,6 +932,8 @@ class SimpleMultiPipeline:
             other_banks_thread = threading.Thread(target=self.consume_other_banks_queue, daemon=True)
             other_assets_thread = threading.Thread(target=self.consume_other_assets_queue, daemon=True)
             overdraft_thread = threading.Thread(target=self.consume_overdraft_queue, daemon=True)
+            branch_thread = threading.Thread(target=self.consume_branch_queue, daemon=True)
+            agents_thread = threading.Thread(target=self.consume_agents_queue, daemon=True)
             
             cash_thread.start()
             assets_thread.start()
@@ -784,6 +942,8 @@ class SimpleMultiPipeline:
             other_banks_thread.start()
             other_assets_thread.start()
             overdraft_thread.start()
+            branch_thread.start()
+            agents_thread.start()
             
             # Wait for consumers to process
             self.logger.info("⏳ Processing for 35 seconds...")
