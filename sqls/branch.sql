@@ -11,7 +11,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
            WHEN u.CODE = 200 THEN 'BL20000102884'
            END                                           AS businessLicense,
        CAST(u.CODE AS VARCHAR(10))                       AS branchCode,
-       'FSR-' || CAST(u.CODE AS VARCHAR(10))    AS qrFsrCode,
+       'FSR-' || CAST(u.CODE AS VARCHAR(10))             AS qrFsrCode,
        U.ADDRESS_2                                       AS region,
        CASE
            WHEN u.CODE = 201 THEN 'Ubungo'
@@ -39,7 +39,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
            WHEN u.CODE = 201 OR U.CODE = 200 THEN 'Fully fledged'
            ELSE 'Service center'
            END                                           AS bankingServices,
-       'M-Pesa Airtel Money Tigo Pesa Halopesa'          AS mobileMoneyServices,
+       'M-Pesa'                                          AS mobileMoneyServices,
        VARCHAR_FORMAT(
                DATE(u.TMSTAMP),
                'DDMMYYYYHHMM'
@@ -64,7 +64,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
            WHEN u.CODE = 200 THEN '0682697276'
            END                                           AS altTelephoneNumber,
        'Brick and Mortar'                                AS branchCategory
-FROM UNIT u WHERE
-    u.UNIT_NAME = 'MLIMANI BRANCH'
-               OR u.UNIT_NAME = 'SAMORA BRANCH'
+FROM UNIT u
+WHERE u.UNIT_NAME = 'MLIMANI BRANCH'
+   OR u.UNIT_NAME = 'SAMORA BRANCH'
 ORDER BY u.CODE;
