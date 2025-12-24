@@ -43,16 +43,16 @@ class CashProcessor(BaseProcessor):
             cash_category=str(raw_data[2]),
             cash_sub_category=str(raw_data[3]) if raw_data[3] else None,
             cash_submission_time=str(raw_data[4]),
-            currency=str(raw_data[5]),
+            currency=str(raw_data[5]).strip(),
             cash_denomination=str(raw_data[6]) if raw_data[6] else None,
             quantity_of_coins_notes=int(raw_data[7]) if raw_data[7] else None,
-            amount_local=float(raw_data[8]),
-            usd_amount=float(raw_data[9]) if raw_data[9] else None,
-            tzs_amount=float(raw_data[10]),
+            amount_local=float(raw_data[8]) if raw_data[8] is not None else 0.0,
+            usd_amount=float(raw_data[9]) if raw_data[9] is not None else None,
+            tzs_amount=float(raw_data[10]) if raw_data[10] is not None else 0.0,
             transaction_date=str(raw_data[11]),
             maturity_date=str(raw_data[12]),
-            allowance_probable_loss=float(raw_data[13]),
-            bot_provision=float(raw_data[14]),
+            allowance_probable_loss=float(raw_data[13]) if raw_data[13] is not None else 0.0,
+            bot_provision=float(raw_data[14]) if raw_data[14] is not None else 0.0,
             original_timestamp=datetime.now().isoformat()
         )
     

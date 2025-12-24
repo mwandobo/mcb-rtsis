@@ -576,85 +576,75 @@ class Config:
             'branch': TableConfig(
                 name='branch',
                 query="""
-                SELECT
-                    VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
-                    COALESCE(u.UNIT_NAME, u.UNIT_NAME_LATIN, 'Unknown Branch') AS branchName,
-                    COALESCE(bp.BANK_COMPANY_RECOR, '123456789') AS taxIdentificationNumber,
-                    COALESCE(gd_license.LATIN_DESC, 'TL-' || CAST(u.CODE AS VARCHAR(10))) AS businessLicense,
-                    CAST(u.CODE AS VARCHAR(10)) AS branchCode,
-                    COALESCE(gd_fsr.LATIN_DESC, 'FSR-' || CAST(u.CODE AS VARCHAR(10))) AS qrFsrCode,
-                    COALESCE(gd_region.LATIN_DESC, gd_region.DESCRIPTION, 'Unknown Region') AS region,
-                    COALESCE(bd.DESCRIPTION, gd_district.LATIN_DESC, 'Unknown District') AS district,
-                    COALESCE(gd_ward.LATIN_DESC, 'Unknown Ward') AS ward,
-                    COALESCE(u.LC_STREET_NAME, u.ADDRESS, u.ADDRESS_LATIN, u.ADDRESS_2) AS street,
-                    COALESCE(u.PLOT_STREET, u.BUILDING_UNIT) AS houseNumber,
-                    COALESCE(u.ZIP_CODE, u.PO_BOX) AS postalCode,
-                    CASE
-                        WHEN u.LATITUDE_LOCATION IS NOT NULL AND u.LONGITUDE_LOCATION IS NOT NULL
-                            THEN TRIM(u.LATITUDE_LOCATION) || ',' || TRIM(u.LONGITUDE_LOCATION)
-                        WHEN u.GEO_AREA IS NOT NULL
-                            THEN u.GEO_AREA
-                        ELSE '0.0000,0.0000'
-                    END AS gpsCoordinates,
-                    COALESCE(gd_services.LATIN_DESC,
-                        CASE WHEN u.CS_UNIT = '1' THEN 'Full Banking Services'
-                        ELSE 'Limited Banking Services' END) AS bankingServices,
-                    COALESCE(gd_mobile.LATIN_DESC, 'Not Available') AS mobileMoneyServices,
-                    VARCHAR_FORMAT(COALESCE(u.OPEN_DATE, DATE(u.TMSTAMP), CURRENT_DATE), 'DDMMYYYYHHMM') AS registrationDate,
-                    CASE
-                        WHEN u.ENTRY_STATUS = '1' AND u.INACTIVE_UNIT = '0' THEN 'Active'
-                        WHEN u.ENTRY_STATUS = '1' AND u.INACTIVE_UNIT = '1' THEN 'Inactive'
-                        WHEN u.ENTRY_STATUS = '0' THEN 'Closed'
-                        ELSE 'Unknown'
-                    END AS branchStatus,
-                    CASE
-                        WHEN u.ENTRY_STATUS = '0' OR u.INACTIVE_UNIT = '1'
-                            THEN VARCHAR_FORMAT(CURRENT_DATE, 'DDMMYYYYHHMM')
-                        ELSE NULL
-                    END AS closureDate,
-                    COALESCE(emp.FIRST_NAME || ' ' || emp.LAST_NAME, 'Branch Manager') AS contactPerson,
-                    COALESCE(u.TELEPHONE_1, u.TELEPHONE_2, '255000000000') AS telephoneNumber,
-                    CASE
-                        WHEN u.TELEPHONE_1 IS NOT NULL AND u.TELEPHONE_2 IS NOT NULL
-                            AND u.TELEPHONE_1 != u.TELEPHONE_2
-                            THEN u.TELEPHONE_2
-                        ELSE u.FAX
-                    END AS altTelephoneNumber,
-                    COALESCE(gd_category.LATIN_DESC,
-                        CASE
-                            WHEN u.CS_HEAD_UNIT IS NULL THEN 'Head Office'
-                            WHEN u.CS_UNIT = '1' THEN 'Full Service Branch'
-                            ELSE 'Sub Branch'
-                        END) AS branchCategory,
-                    u.TMSTAMP AS lastModified
-                FROM UNIT u
-                LEFT JOIN BANK_PARAMETERS bp ON 1=1
-                LEFT JOIN BDG_DISTRICT bd ON bd.ID = u.FK_BDG_DISTRICTID
-                LEFT JOIN BANKEMPLOYEE emp ON emp.ID = (
-                    SELECT MIN(be.ID) FROM BANKEMPLOYEE be WHERE be.EMPL_STATUS = '1'
-                )
-                LEFT JOIN GENERIC_DETAIL gd_region ON gd_region.FK_GENERIC_HEADPAR = u.FKGH_RESIDES_IN_RE
-                    AND gd_region.SERIAL_NUM = u.FKGD_RESIDES_IN_RE AND gd_region.ENTRY_STATUS = '1'
-                LEFT JOIN GENERIC_DETAIL gd_district ON gd_district.FK_GENERIC_HEADPAR = u.FKGH_RESIDES_IN_R1
-                    AND gd_district.SERIAL_NUM = u.FKGD_RESIDES_IN_R1 AND gd_district.ENTRY_STATUS = '1'
-                LEFT JOIN GENERIC_DETAIL gd_ward ON gd_ward.FK_GENERIC_HEADPAR = u.FKGH_RESID_REGION3
-                    AND gd_ward.SERIAL_NUM = u.FKGD_RESID_REGION3 AND gd_ward.ENTRY_STATUS = '1'
-                LEFT JOIN GENERIC_DETAIL gd_category ON gd_category.FK_GENERIC_HEADPAR = u.FKGH_HAS_UNIT_CATE
-                    AND gd_category.SERIAL_NUM = u.FKGD_HAS_UNIT_CATE AND gd_category.ENTRY_STATUS = '1'
-                LEFT JOIN GENERIC_DETAIL gd_services ON gd_services.FK_GENERIC_HEADPAR = 'D104'
-                    AND gd_services.SERIAL_NUM = 1 AND gd_services.ENTRY_STATUS = '1'
-                LEFT JOIN GENERIC_DETAIL gd_mobile ON gd_mobile.FK_GENERIC_HEADPAR = 'D70'
-                    AND gd_mobile.SERIAL_NUM = 1 AND gd_mobile.ENTRY_STATUS = '1'
-                LEFT JOIN GENERIC_DETAIL gd_license ON gd_license.FK_GENERIC_HEADPAR = 'LICNS'
-                    AND gd_license.SERIAL_NUM = 1 AND gd_license.ENTRY_STATUS = '1'
-                LEFT JOIN GENERIC_DETAIL gd_fsr ON gd_fsr.FK_GENERIC_HEADPAR = 'FSRCD'
-                    AND gd_fsr.SERIAL_NUM = u.CODE AND gd_fsr.ENTRY_STATUS = '1'
-                WHERE u.ENTRY_STATUS = '1' 
-                    AND u.CODE IS NOT NULL 
-                    AND u.INACTIVE_UNIT = '0'
+                SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
+                       COALESCE(
+                               u.UNIT_NAME,
+                               u.UNIT_NAME_LATIN,
+                               'Unknown Branch'
+                       )                                                 AS branchName,
+                       117039447                                         AS taxIdentificationNumber,
+                       CASE
+                           WHEN u.CODE = 201 THEN 'BL20000102884'
+                           WHEN u.CODE = 200 THEN 'BL20000102884'
+                           END                                           AS businessLicense,
+                       CAST(u.CODE AS VARCHAR(10))                       AS branchCode,
+                       'FSR-' || CAST(u.CODE AS VARCHAR(10))    AS qrFsrCode,
+                       U.ADDRESS_2                                       AS region,
+                       CASE
+                           WHEN u.CODE = 201 THEN 'Ubungo'
+                           WHEN u.CODE = 200 THEN 'Ilala'
+                           END                                           AS district,
+                       CASE
+                           WHEN u.CODE = 201 THEN 'Sinza'
+                           WHEN u.CODE = 200 THEN 'Kisutu'
+                           END                                           AS ward,
+                       CASE
+                           WHEN u.CODE = 201 THEN 'Sam Nujoma Road'
+                           WHEN u.CODE = 200 THEN 'Samora Avenue'
+                           END                                           AS street,
+                       null                                              AS houseNumber,
+                       u.ADDRESS_LATIN                                   AS postalCode,
+                       CASE
+                           WHEN u.LATITUDE_LOCATION IS NOT NULL AND u.LONGITUDE_LOCATION IS NOT NULL
+                               THEN TRIM(u.LATITUDE_LOCATION) || ',' || TRIM(u.LONGITUDE_LOCATION)
+                           WHEN u.GEO_AREA IS NOT NULL
+                               THEN u.GEO_AREA
+                           ELSE '0.0000,0.0000'
+                           END                                           AS gpsCoordinates,
+                       CASE
+                           WHEN u.CODE = 201 OR U.CODE = 200 THEN 'Fully fledged'
+                           ELSE 'Service center'
+                           END                                           AS bankingServices,
+                       'M-Pesa Airtel Money Tigo Pesa Halopesa'          AS mobileMoneyServices,
+                       VARCHAR_FORMAT(
+                               DATE(u.TMSTAMP),
+                               'DDMMYYYYHHMM'
+                       )                                                 AS registrationDate,
+                       CASE
+                           WHEN u.ENTRY_STATUS = '1' AND u.INACTIVE_UNIT != '0' THEN 'Active'
+                           WHEN u.ENTRY_STATUS = '1' AND u.INACTIVE_UNIT = '0' THEN 'Inactive'
+                           WHEN u.ENTRY_STATUS = '0' THEN 'Closed'
+                           ELSE 'Unknown'
+                           END                                           AS branchStatus,
+                       null                                              AS closureDate,
+                       CASE
+                           WHEN u.CODE = 201 THEN 'Furahini S. Lema'
+                           WHEN u.CODE = 200 THEN 'Monica G. Malisa'
+                           END                                           AS contactPerson,
+                       CASE
+                           WHEN u.CODE = 201 THEN '0713249528'
+                           WHEN u.CODE = 200 THEN '0682697276'
+                           END                                           AS telephoneNumber,
+                       CASE
+                           WHEN u.CODE = 201 THEN '0756818609'
+                           WHEN u.CODE = 200 THEN '0682697276'
+                           END                                           AS altTelephoneNumber,
+                       'Brick and Mortar'                                AS branchCategory,
+                       u.TMSTAMP AS lastModified
+                FROM UNIT u WHERE
+                    (u.UNIT_NAME = 'MLIMANI BRANCH' OR u.UNIT_NAME = 'SAMORA BRANCH')
                     AND u.TMSTAMP >= TIMESTAMP('2016-01-01 00:00:00')
-                ORDER BY u.TMSTAMP, u.CODE
-                FETCH FIRST 1000 ROWS ONLY
+                ORDER BY u.CODE
                 """,
                 timestamp_column='lastModified',
                 target_table='branch',
@@ -670,7 +660,7 @@ class Config:
                     VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
                     TRIM(COALESCE(c.FIRST_NAME, '') || ' ' || COALESCE(c.MIDDLE_NAME, '') || ' ' || COALESCE(c.SURNAME, '')) AS agentName,
                     CAST(c.CUST_ID AS VARCHAR(50)) AS agentId,
-                    COALESCE(RIGHT(c.MOBILE_TEL, 6), CAST(c.CUST_ID AS VARCHAR(8))) AS tillNumber,
+                    COALESCE(at.USER_CODE, RIGHT(c.MOBILE_TEL, 6), CAST(c.CUST_ID AS VARCHAR(8))) AS tillNumber,
                     CASE 
                         WHEN c.CUST_TYPE = '1' THEN 'Individual'
                         WHEN c.CUST_TYPE = '2' THEN 'Corporate'
@@ -693,8 +683,8 @@ class Config:
                     COALESCE(c.CHAMBER_ID, 'CERT' || CAST(c.CUST_ID AS VARCHAR(10))) AS certIncorporation,
                     'Tanzania' AS nationality,
                     CASE 
-                        WHEN c.ENTRY_STATUS = '1' THEN 'Active'
-                        WHEN c.ENTRY_STATUS = '0' THEN 'Inactive'
+                        WHEN c.ENTRY_STATUS = '1' AND COALESCE(at.ENTRY_STATUS, '1') = '1' THEN 'Active'
+                        WHEN c.ENTRY_STATUS = '0' OR at.ENTRY_STATUS = '0' THEN 'Inactive'
                         ELSE 'Suspended'
                     END AS agentStatus,
                     CASE 
@@ -704,10 +694,28 @@ class Config:
                         ELSE 'Other'
                     END AS agentType,
                     'ACC' || CAST(c.CUST_ID AS VARCHAR(10)) AS accountNumber,
-                    'Dar es Salaam' AS region,
-                    'Kinondoni' AS district,
-                    'Msasani' AS ward,
-                    COALESCE(c.EMPLOYER_ADDRESS, 'Unknown Street') AS street,
+                    CASE 
+                        WHEN at.LOCATION LIKE '%DSM%' OR at.LOCATION LIKE '%DAR%' THEN 'Dar es Salaam'
+                        WHEN at.LOCATION LIKE '%MWANZA%' THEN 'Mwanza'
+                        WHEN at.LOCATION LIKE '%MBEYA%' THEN 'Mbeya'
+                        WHEN at.LOCATION LIKE '%MOROGORO%' THEN 'Morogoro'
+                        WHEN at.LOCATION LIKE '%ARUSHA%' THEN 'Arusha'
+                        ELSE 'Dar es Salaam'
+                    END AS region,
+                    CASE 
+                        WHEN at.LOCATION LIKE '%KINONDONI%' THEN 'Kinondoni'
+                        WHEN at.LOCATION LIKE '%TEMEKE%' THEN 'Temeke'
+                        WHEN at.LOCATION LIKE '%ILALA%' THEN 'Ilala'
+                        WHEN at.LOCATION LIKE '%UBUNGO%' THEN 'Ubungo'
+                        ELSE 'Kinondoni'
+                    END AS district,
+                    CASE 
+                        WHEN at.LOCATION LIKE '%MSASANI%' THEN 'Msasani'
+                        WHEN at.LOCATION LIKE '%MAGOMENI%' THEN 'Magomeni'
+                        WHEN at.LOCATION LIKE '%KARIAKOO%' THEN 'Kariakoo'
+                        ELSE 'Msasani'
+                    END AS ward,
+                    COALESCE(SUBSTR(at.LOCATION, 1, 50), c.EMPLOYER_ADDRESS, 'Unknown Street') AS street,
                     'Plot 123' AS houseNumber,
                     COALESCE(c.DAI_NUMBER, '12345') AS postalCode,
                     'Tanzania' AS country,
@@ -716,14 +724,10 @@ class Config:
                     COALESCE(c.CHAMBER_ID, 'BL' || CAST(c.CUST_ID AS VARCHAR(10))) AS businessLicense,
                     COALESCE(c.LAST_UPDATE, CURRENT_TIMESTAMP) AS lastModified
                 FROM CUSTOMER c
-                WHERE c.ENTRY_STATUS = '1'
-                    AND c.CUST_TYPE = '2'
-                    AND c.MOBILE_TEL IS NOT NULL 
-                    AND c.MOBILE_TEL != ''
-                    AND LENGTH(TRIM(c.MOBILE_TEL)) > 5
+                LEFT JOIN AGENT_TERMINAL at ON at.FK_AGENT_CUST_ID = c.CUST_ID AND at.ENTRY_STATUS = '1'
+                WHERE c.CUST_ID IN (186,8536,8661,9368,13692,16765,22410,23958,25980,26587,26962,28651,32799,32992,34671,34967,37538,38208,38480,38971,38988,39122,39572,40248,41480,42338,42488,43415,45012,45117,45186,47027,47054,47283,48297,48877,50489,51611,51853,51893,52592,52733,52815,55606,56431,57175,59921,60087,60130,60175,60265,60611,60723,61305,61335,61927,62098,62310,62673)
                     AND COALESCE(c.LAST_UPDATE, c.CUSTOMER_BEGIN_DAT) >= TIMESTAMP('2016-01-01 00:00:00')
                 ORDER BY COALESCE(c.LAST_UPDATE, c.CUSTOMER_BEGIN_DAT), c.CUST_ID
-                FETCH FIRST 1000 ROWS ONLY
                 """,
                 timestamp_column='lastModified',
                 target_table='agents',
