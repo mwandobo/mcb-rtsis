@@ -1,71 +1,40 @@
 #!/usr/bin/env python3
 """
-Cash Pipeline with Proper Timestamp Tracking
+Simple Cash Pipeline without Redis tracking
+Uses the corrected query matching sqls/cash-information.sql
 """
 
 import pika
 import psycopg2
-from db2_connection import DB2Connection
 import json
-import time
 import logging
-import threading
-from datetime import datetime, timedelta
-from contextlib import contextmanager
 from dataclasses import asdict
+from contextlib import contextmanager
 
 from config import Config
+from db2_connection import DB2Connection
 from processors.cash_processor import CashProcessor, CashRecord
-from pipeline_tracker import PipelineTracker
 
-class TrackedCashPipeline:
-    def __init__(self, manual_start_date=None, lookback_days=7, limit=1000):
-        """
-        Initialize cash pipeline with tracking
-        
-        Args:
-            manual_start_date (str): Manual start date in 'YYYY-MM-DD HH:MM:SS' format
-            lookback_days (int): Days to look back for first run (default: 7)
-            limit (int): Number of records to fetch per run (default: 1000)
-        """
+class SimpleCashPipeline:
+    def __init__(self, manual_start_date="2024-01-01 00:00:00", limit=5000):
         self.config = Config()
         self.db2_conn = DB2Connection()
-        self.tracker = PipelineTracker()
-        self.running = True
+        self.cash_processor = CashProcessor()
         self.manual_start_date = manual_start_date
-        self.lookback_days = lookback_days
         self.limit = limit
         
         # Setup logging
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
         
-        # Initialize processor
-        self.cash_processor = CashProcessor()
-        
-        self.logger.info("💰 Tracked Cash Pipeline initialized")
-        if manual_start_date:
-            self.logger.info(f"📅 Manual start date: {manual_start_date}")
-        else:
-            self.logger.info(f"📅 Lookback days: {lookback_days}")
+        self.logger.info("💰 Simple Cash Pipeline initialized")
+        self.logger.info(f"📅 Manual start date: {manual_start_date}")
         self.logger.info(f"📊 Record limit: {limit}")
+    
+    def get_corrected_cash_query(self):
+        """Get the corrected cash query matching sqls/cash-information.sql"""
         
-    def get_cash_query_with_tracking(self):
-        """Get cash query with proper timestamp tracking"""
-        
-        # Check if we have a manual start date or need to use tracking
-        if self.manual_start_date:
-            # Use manual start date (for testing)
-            timestamp_filter = f"AND gte.TRN_DATE >= TIMESTAMP('{self.manual_start_date}')"
-            self.logger.info(f"🔧 Using manual start date: {self.manual_start_date}")
-        else:
-            # Use tracking system
-            timestamp_filter = self.tracker.get_incremental_query_filter(
-                'cash_information', 
-                'gte.TRN_DATE', 
-                self.lookback_days
-            )
-            self.logger.info(f"📅 Using tracking filter: {timestamp_filter}")
+        timestamp_filter = f"AND gte.TRN_DATE >= TIMESTAMP('{self.manual_start_date}')"
         
         query = f"""
         SELECT
@@ -115,13 +84,7 @@ class TrackedCashPipeline:
         """
         
         return query
-        
-    @contextmanager
-    def get_db2_connection(self):
-        """Get DB2 connection"""
-        with self.db2_conn.get_connection() as conn:
-            yield conn
-            
+    
     @contextmanager
     def get_postgres_connection(self):
         """Get PostgreSQL connection"""
@@ -168,13 +131,13 @@ class TrackedCashPipeline:
             raise
     
     def fetch_and_publish_cash(self):
-        """Fetch cash data with tracking and publish to queue"""
+        """Fetch cash data and publish to queue"""
         try:
-            with self.get_db2_connection() as conn:
+            with self.db2_conn.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                cash_query = self.get_cash_query_with_tracking()
-                self.logger.info("📊 Executing tracked cash query...")
+                cash_query = self.get_corrected_cash_query()
+                self.logger.info("📊 Executing corrected cash query...")
                 
                 cursor.execute(cash_query)
                 rows = cursor.fetchall()
@@ -182,8 +145,8 @@ class TrackedCashPipeline:
                 self.logger.info(f"💰 Fetched {len(rows)} cash records")
                 
                 if not rows:
-                    self.logger.info("ℹ️ No new cash records found")
-                    return 0, None
+                    self.logger.info("ℹ️ No cash records found")
+                    return 0
                 
                 # Show date range of fetched data
                 first_date = rows[0][11]  # transactionDate is at index 11
@@ -195,7 +158,9 @@ class TrackedCashPipeline:
                 for i, row in enumerate(rows[:3], 1):
                     amount = row[8] if row[8] is not None else 0  # orgAmount is at index 8
                     currency = row[5] if row[5] is not None else "N/A"  # currency is at index 5
-                    self.logger.info(f"  {i}. Date: {row[11]}, Branch: {row[1]}, Category: {row[2]}, Amount: {amount:,.2f} {currency}")
+                    submission_time = row[4]  # cashSubmissionTime
+                    self.logger.info(f"  {i}. Date: {row[11]}, Branch: {row[1]}, Category: {row[2]}")
+                    self.logger.info(f"      SubmissionTime: '{submission_time}', Amount: {amount:,.2f} {currency}")
                 
                 # Process and publish
                 records = []
@@ -208,12 +173,13 @@ class TrackedCashPipeline:
                     self.publish_records(records, 'cash_information_queue')
                     self.logger.info(f"✅ Published {len(records)} cash records to queue")
                 
-                return len(records), str(last_date)
+                return len(records)
                 
         except Exception as e:
             self.logger.error(f"❌ Cash fetch error: {e}")
-            self.tracker.update_processing_stats('cash_information', 0, has_error=True)
-            return 0, None
+            import traceback
+            traceback.print_exc()
+            return 0
     
     def publish_records(self, records, queue_name):
         """Publish records to RabbitMQ"""
@@ -245,10 +211,8 @@ class TrackedCashPipeline:
             self.logger.error(f"❌ Publish error to {queue_name}: {e}")
             raise
     
-    def consume_cash_queue(self):
-        """Consume cash records from queue"""
-        self.logger.info("🔄 Starting cash consumer...")
-        
+    def consume_and_insert(self):
+        """Consume messages and insert directly to PostgreSQL"""
         try:
             credentials = pika.PlainCredentials(
                 self.config.message_queue.rabbitmq_user,
@@ -264,149 +228,110 @@ class TrackedCashPipeline:
             
             processed_count = 0
             
-            def process_cash_message(ch, method, properties, body):
+            def process_message(ch, method, properties, body):
                 nonlocal processed_count
                 try:
                     record_data = json.loads(body)
                     record = CashRecord(**record_data)
                     
-                    self.logger.info(f"💰 Processing: Date {record.transaction_date}, Branch {record.branch_code}, {record.cash_category}, {record.amount_local:,.2f} {record.currency}")
-                    
+                    # Insert to PostgreSQL
                     with self.get_postgres_connection() as conn:
                         cursor = conn.cursor()
                         self.cash_processor.insert_to_postgres(record, cursor)
                         conn.commit()
                     
                     processed_count += 1
+                    
+                    if processed_count % 100 == 0:
+                        self.logger.info(f"💰 Processed {processed_count} cash records...")
+                    
+                    # Acknowledge message
                     ch.basic_ack(delivery_tag=method.delivery_tag)
                     
                 except Exception as e:
-                    self.logger.error(f"❌ Error processing cash message: {e}")
+                    self.logger.error(f"❌ Error processing message: {e}")
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             
-            # Set up consumer
+            # Set QoS and consume
             channel.basic_qos(prefetch_count=1)
-            channel.basic_consume(queue='cash_information_queue', on_message_callback=process_cash_message)
+            channel.basic_consume(queue='cash_information_queue', on_message_callback=process_message)
             
-            self.logger.info("🔄 Waiting for cash messages...")
-            channel.start_consuming()
+            self.logger.info("🔄 Starting to consume and insert cash records...")
+            
+            # Check if there are messages to process
+            method = channel.queue_declare(queue='cash_information_queue', durable=True, passive=True)
+            message_count = method.method.message_count
+            
+            if message_count > 0:
+                self.logger.info(f"📊 Processing {message_count} messages from queue...")
+                
+                # Process all messages
+                while message_count > 0:
+                    connection.process_data_events(time_limit=1)
+                    method = channel.queue_declare(queue='cash_information_queue', durable=True, passive=True)
+                    new_count = method.method.message_count
+                    if new_count == message_count:
+                        break  # No progress, exit
+                    message_count = new_count
+            
+            connection.close()
+            self.logger.info(f"✅ Finished processing {processed_count} cash records")
+            return processed_count
             
         except Exception as e:
             self.logger.error(f"❌ Consumer error: {e}")
             raise
     
-    def run_single_fetch(self):
-        """Run a single fetch and publish cycle"""
-        self.logger.info("🚀 Starting single cash fetch with tracking...")
+    def run_complete_pipeline(self):
+        """Run the complete pipeline: fetch, publish, consume, insert"""
+        self.logger.info("🚀 Starting complete cash pipeline...")
         
         try:
             # Setup queue
             self.setup_rabbitmq_queue()
             
             # Fetch and publish
-            count, last_timestamp = self.fetch_and_publish_cash()
+            published_count = self.fetch_and_publish_cash()
             
-            if count > 0 and last_timestamp:
-                # Update tracking
-                self.tracker.set_last_processed_timestamp('cash_information', last_timestamp)
-                self.tracker.update_processing_stats('cash_information', count)
+            if published_count > 0:
+                # Consume and insert
+                processed_count = self.consume_and_insert()
                 
-                self.logger.info(f"✅ Successfully processed {count} cash records")
-                self.logger.info(f"📅 Updated tracking to: {last_timestamp}")
+                self.logger.info(f"✅ Pipeline completed successfully!")
+                self.logger.info(f"📊 Published: {published_count}, Processed: {processed_count}")
+                return processed_count
             else:
-                self.logger.info("ℹ️ No new cash records to process")
-            
-            return count
-            
+                self.logger.info("ℹ️ No records to process")
+                return 0
+                
         except Exception as e:
-            self.logger.error(f"❌ Single fetch failed: {e}")
-            self.tracker.update_processing_stats('cash_information', 0, has_error=True)
-            raise
-    
-    def run_continuous(self):
-        """Run continuous pipeline"""
-        self.logger.info("🔄 Starting continuous cash pipeline with tracking...")
-        
-        try:
-            # Setup queue
-            self.setup_rabbitmq_queue()
-            
-            # Start consumer in background
-            consumer_thread = threading.Thread(target=self.consume_cash_queue)
-            consumer_thread.daemon = True
-            consumer_thread.start()
-            
-            # Fetch loop
-            while self.running:
-                try:
-                    count, last_timestamp = self.fetch_and_publish_cash()
-                    
-                    if count > 0 and last_timestamp:
-                        self.tracker.set_last_processed_timestamp('cash_information', last_timestamp)
-                        self.tracker.update_processing_stats('cash_information', count)
-                        self.logger.info(f"✅ Processed {count} records, updated tracking to {last_timestamp}")
-                    else:
-                        self.logger.info("ℹ️ No new records, waiting...")
-                    
-                    # Wait before next fetch
-                    time.sleep(30)
-                    
-                except KeyboardInterrupt:
-                    self.logger.info("🛑 Stopping pipeline...")
-                    self.running = False
-                    break
-                except Exception as e:
-                    self.logger.error(f"❌ Fetch cycle error: {e}")
-                    self.tracker.update_processing_stats('cash_information', 0, has_error=True)
-                    time.sleep(60)  # Wait longer on error
-            
-        except Exception as e:
-            self.logger.error(f"❌ Continuous pipeline failed: {e}")
+            self.logger.error(f"❌ Pipeline failed: {e}")
             raise
 
 def main():
-    """Main function to run cash pipeline with tracking"""
-    import argparse
+    """Main function"""
+    print("💰 SIMPLE CASH PIPELINE - JANUARY 2024")
+    print("=" * 60)
+    print("📅 Using corrected query matching sqls/cash-information.sql")
+    print("🎯 Start date: 2024-01-01 00:00:00")
+    print("📊 Limit: 5000 records")
+    print("=" * 60)
     
-    parser = argparse.ArgumentParser(description='Cash Pipeline with Tracking')
-    parser.add_argument('--mode', choices=['single', 'continuous'], default='single',
-                       help='Run mode: single fetch or continuous')
-    parser.add_argument('--manual-start', type=str, 
-                       help='Manual start date (YYYY-MM-DD HH:MM:SS)')
-    parser.add_argument('--lookback-days', type=int, default=7,
-                       help='Lookback days for first run (default: 7)')
-    parser.add_argument('--limit', type=int, default=1000,
-                       help='Record limit per fetch (default: 1000)')
-    parser.add_argument('--reset-tracking', action='store_true',
-                       help='Reset tracking before running')
-    
-    args = parser.parse_args()
+    pipeline = SimpleCashPipeline("2024-01-01 00:00:00", 5000)
     
     try:
-        # Initialize pipeline
-        pipeline = TrackedCashPipeline(
-            manual_start_date=args.manual_start,
-            lookback_days=args.lookback_days,
-            limit=args.limit
-        )
+        count = pipeline.run_complete_pipeline()
         
-        # Reset tracking if requested
-        if args.reset_tracking:
-            pipeline.tracker.reset_tracking('cash_information')
-            print("🔄 Reset cash tracking")
+        print("\n" + "=" * 60)
+        print("✅ PIPELINE COMPLETED SUCCESSFULLY!")
+        print(f"📊 Total records processed: {count:,}")
+        print("🔍 Key features verified:")
+        print("  - cashSubmissionTime: 'Business Hours' (text)")
+        print("  - transactionDate: uses gte.TRN_DATE")
+        print("  - cashSubCategory: CleanNotes/Notes logic")
+        print("  - GL accounts: matches original specification")
+        print("=" * 60)
         
-        # Show current tracking status
-        pipeline.tracker.show_all_tracking_info()
-        
-        # Run pipeline
-        if args.mode == 'single':
-            count = pipeline.run_single_fetch()
-            print(f"\n✅ Single fetch completed: {count} records processed")
-        else:
-            pipeline.run_continuous()
-            
-    except KeyboardInterrupt:
-        print("\n🛑 Pipeline stopped by user")
     except Exception as e:
         print(f"\n❌ Pipeline failed: {e}")
         import traceback

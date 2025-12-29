@@ -341,8 +341,12 @@ def main():
     print("=" * 50)
     
     # For production, you can set these parameters:
-    MANUAL_START = None  # Set to specific timestamp if needed
-    RECORD_LIMIT = 1000  # Adjust based on your needs
+    MANUAL_START = "2024-01-01 00:00:00"  # Starting from January 1, 2024
+    RECORD_LIMIT = 5000  # Increased limit for historical data
+    
+    print(f"📅 Starting from: {MANUAL_START}")
+    print(f"📊 Record limit per batch: {RECORD_LIMIT}")
+    print("=" * 50)
     
     pipeline = ProductionCashPipeline(
         manual_start_timestamp=MANUAL_START,

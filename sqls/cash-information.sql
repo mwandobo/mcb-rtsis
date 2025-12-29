@@ -40,7 +40,7 @@ SELECT
         ELSE
             gte.DC_AMOUNT
     END AS tzsAmount,
-    gte.TRX_GL_TRN_DATE as transactionDate,
+    gte.TRN_DATE as transactionDate,
     gte.AVAILABILITY_DATE as maturityDate,
     0 as allowanceProbableLoss,
     0 as botProvision
