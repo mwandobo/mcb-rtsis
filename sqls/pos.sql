@@ -7,8 +7,22 @@ SELECT
     NULL                                                 AS posHolderNin,
     '103847451'                                          AS posHolderTin,
     NULL                                                 AS postalCode,
-    dl.REGION                                           AS region,
-    dl.DISTRICT                                         AS district,
+    COALESCE(
+            dl.REGION,
+            (SELECT r.REGION
+             FROM PROFITS.BANK_LOCATION_LOOKUP r
+             WHERE UPPER(TRIM(at.LOCATION)) LIKE '%' || UPPER(r.REGION) || '%'
+                 FETCH FIRST 1 ROW ONLY),
+            'DAR ES SALAAM'  -- final hardcoded fallback
+    ) AS region,
+    COALESCE(
+            dl.DISTRICT,
+            (SELECT r.DISTRICT
+             FROM PROFITS.BANK_LOCATION_LOOKUP r
+             WHERE UPPER(TRIM(at.LOCATION)) LIKE '%' || UPPER(r.REGION) || '%'
+                 FETCH FIRST 1 ROW ONLY),
+            'ILALA'          -- final hardcoded fallback
+    ) AS district,
     NULL                                                AS ward,
     NULL                                                AS street,
     NULL                                                AS houseNumber,
