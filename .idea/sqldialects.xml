@@ -5,6 +5,7 @@
     <file url="file://$PROJECT_DIR$/sqls/agents.sql" dialect="DB2" />
     <file url="file://$PROJECT_DIR$/sqls/branch.sql" dialect="DB2" />
     <file url="file://$PROJECT_DIR$/sqls/collateral.sql" dialect="DB2" />
+    <file url="file://$PROJECT_DIR$/sqls/employee.sql" dialect="DB2" />
     <file url="file://$PROJECT_DIR$/sqls/loan_information-v1.sql" dialect="DB2" />
     <file url="file://$PROJECT_DIR$/sqls/loan_information.sql" dialect="DB2" />
     <file url="file://$PROJECT_DIR$/sqls/overdraft.sql" dialect="DB2" />

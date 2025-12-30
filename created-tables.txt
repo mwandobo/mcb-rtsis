@@ -2,3 +2,11 @@ BANK_BIC_LOOKUP
 CUSTOMER_TYPES_LOOKUP
 COUNTRIES_LOOKUP
 BANK_LOCATION_LOOKUP
+
+below is the query to update employees sex after female employees have been updated
+UPDATE  BANKEMPLOYEE set sex = 'M'
+WHERE STAFF_NO IS NOT NULL
+  AND STAFF_NO = TRIM(STAFF_NO)
+  AND EMPL_STATUS = 1
+  AND (SEX IS NULL OR TRIM(SEX) = '')
+  AND STAFF_NO LIKE 'EIC%';
