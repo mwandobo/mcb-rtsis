@@ -43,7 +43,8 @@ class AgentsPipelineStandalone:
                     port=self.config.message_queue.rabbitmq_port,
                     credentials=pika.PlainCredentials(
                         self.config.message_queue.rabbitmq_user,
-                        self.config.message_queue.rabbitmq_password
+                        self.
+                        config.message_queue.rabbitmq_password
                     )
                 )
             )
