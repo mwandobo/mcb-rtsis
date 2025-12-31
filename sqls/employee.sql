@@ -27,7 +27,8 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
        VARCHAR_FORMAT(c.TMSTAMP, 'DDMMYYYYHHMM')                                                    AS appointmentDate,
        'TANZANIA, UNITED REPUBLIC OF'                                                               AS empNationality,
        VARCHAR_FORMAT(be.TMSTAMP, 'DDMMYYYYHHMM')                                                   AS lastPromotionDate,
-       c.SALARY_AMN                                                                                 AS basicSalary
+       c.SALARY_AMN                                                                                 AS basicSalary,
+       null                                                                                         AS empBenefits
 FROM BANKEMPLOYEE be
          LEFT JOIN (SELECT *
                     FROM (SELECT c.*,
