@@ -1,5 +1,5 @@
 SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                                            AS reportingDate,
-       201                                                                                          AS branchCode,
+       c.FK_BRANCH_PORTFBRA                                                                         AS branchCode,
        TRIM(
                CAST(TRIM(COALESCE(be.FIRST_NAME, '')) AS VARCHAR(100)) ||
                CASE
@@ -17,14 +17,17 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
        VARCHAR_FORMAT(c.DATE_OF_BIRTH, 'DDMMYYYYHHMM')                                              AS empDob,
        'NationalIdentityCard'                                                                       AS empIdentificationType,
        id.ID_NO                                                                                     AS empIdentificationNumber,
-       'bank'                                                                                       AS empPosition,
-       'Selcom'                                                                                     AS empPositionCategory,
-       VARCHAR_FORMAT(COALESCE(be.TMSTAMP, CURRENT_DATE), 'DDMMYYYYHHMM')                           AS empStatus,
-       null                                                                                         AS empDepartment,
-       null                                                                                         AS appointmentDate,
+       COALESCE(position_data.DESCRIPTION, 'N/A')                                                   AS empPosition,
+       CASE
+           WHEN UPPER(COALESCE(position_data.DESCRIPTION, '')) LIKE '%SENIOR%' THEN 'Senior management'
+           ELSE 'Non-Senior management'
+           END                                                                                      AS empPositionCategory,
+       'Permanent and pensionable'                                                                  AS empStatus,
+       COALESCE(department_data.DESCRIPTION, 'N/A')                                                 AS empDepartment,
+       VARCHAR_FORMAT(c.TMSTAMP, 'DDMMYYYYHHMM')                                                    AS appointmentDate,
        'TANZANIA, UNITED REPUBLIC OF'                                                               AS empNationality,
-       null                                                                                         AS lastPromotionDate,
-       null                                                                                         AS basicSalary
+       VARCHAR_FORMAT(be.TMSTAMP, 'DDMMYYYYHHMM')                                                   AS lastPromotionDate,
+       c.SALARY_AMN                                                                                 AS basicSalary
 FROM BANKEMPLOYEE be
          LEFT JOIN (SELECT *
                     FROM (SELECT c.*,
@@ -40,6 +43,10 @@ FROM BANKEMPLOYEE be
                        AND UPPER(TRIM(c.SURNAME)) = UPPER(TRIM(be.LAST_NAME))
          LEFT JOIN other_id id ON (CASE WHEN (id.serial_no IS NULL) THEN '1' ELSE id.main_flag END = '1' AND
                                    id.fk_customercust_id = c.cust_id)
+         LEFT JOIN generic_detail position_data ON (be.FKGH_WORKS_IN_POSI = position_data.fk_generic_headpar AND
+                                                    be.FKGD_WORKS_IN_POSI = position_data.serial_num)
+         LEFT JOIN generic_detail department_data ON (be.FKGH_HAS_AS_GRADE = department_data.fk_generic_headpar AND
+                                                      be.FKGD_HAS_AS_GRADE = department_data.serial_num)
 WHERE STAFF_NO IS NOT NULL
   AND STAFF_NO = TRIM(STAFF_NO)
   AND EMPL_STATUS = 1
