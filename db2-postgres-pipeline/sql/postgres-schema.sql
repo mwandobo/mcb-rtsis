@@ -459,6 +459,30 @@ CREATE TABLE "agents" (
     "lastModified" TIMESTAMP
 );
 
+-- ATM Information
+CREATE TABLE "atmInformation" (
+    "id" SERIAL PRIMARY KEY,
+    "reportingDate" VARCHAR(20),
+    "atmName" VARCHAR(200),
+    "branchCode" VARCHAR(20),
+    "atmCode" VARCHAR(50),
+    "tillNumber" VARCHAR(50),
+    "mobileMoneyServices" VARCHAR(100),
+    "qrFsrCode" VARCHAR(50),
+    "postalCode" VARCHAR(20),
+    "region" VARCHAR(100),
+    "district" VARCHAR(100),
+    "ward" VARCHAR(100),
+    "street" VARCHAR(200),
+    "houseNumber" VARCHAR(50),
+    "gpsCoordinates" VARCHAR(100),
+    "linkedAccount" VARCHAR(50),
+    "openingDate" VARCHAR(20),
+    "atmStatus" VARCHAR(50),
+    "closureDate" VARCHAR(20),
+    "atmChannel" VARCHAR(100)
+);
+
 -- Indexes for agents
 CREATE UNIQUE INDEX IF NOT EXISTS idx_agents_id_unique ON "agents"("agentId");
 CREATE INDEX IF NOT EXISTS idx_agents_name ON "agents"("agentName");
@@ -467,3 +491,18 @@ CREATE INDEX IF NOT EXISTS idx_agents_type ON "agents"("agentType");
 CREATE INDEX IF NOT EXISTS idx_agents_region ON "agents"("region");
 CREATE INDEX IF NOT EXISTS idx_agents_district ON "agents"("district");
 CREATE INDEX IF NOT EXISTS idx_agents_last_modified ON "agents"("lastModified");
+
+-- Indexes for ATM information
+CREATE UNIQUE INDEX IF NOT EXISTS idx_atm_code_unique ON "atmInformation"("atmCode");
+CREATE INDEX IF NOT EXISTS idx_atm_branch_code ON "atmInformation"("branchCode");
+CREATE INDEX IF NOT EXISTS idx_atm_status ON "atmInformation"("atmStatus");
+CREATE INDEX IF NOT EXISTS idx_atm_region ON "atmInformation"("region");
+CREATE INDEX IF NOT EXISTS idx_atm_district ON "atmInformation"("district");
+CREATE INDEX IF NOT EXISTS idx_atm_opening_date ON "atmInformation"("openingDate");
+CREATE INDEX IF NOT EXISTS idx_atm_linked_account ON "atmInformation"("linkedAccount");
+
+
+
+
+atmCategory
+
