@@ -2,7 +2,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                    AS r
        be.FIRST_NAME                                                        AS atmName,
        b.branchCode,
        be.STAFF_NO                                                          AS atmCode,
-       NULL                                                                 AS tillNumber,
+       CASE WHEN b.branchCode = 200 THEN '200' ELSE '300' END               AS tillNumber,
        'M-Pesa'                                                             AS mobileMoneyServices,
        'FSR-' || CAST(be.STAFF_NO AS VARCHAR(10))                           AS qrFsrCode,
        NULL                                                                 AS postalCode,
