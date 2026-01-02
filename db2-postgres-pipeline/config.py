@@ -763,6 +763,7 @@ class Config:
                        VARCHAR_FORMAT(be.TMSTAMP, 'DDMMYYYYHHMM')                           AS openingDate,
                        'active'                                                             AS atmStatus,
                        null                                                                 AS closureDate,
+                       'onsite'                                                             AS atmCategory,
                        'Card and Mobile Based'                                              AS atmChannel
                 FROM BANKEMPLOYEE be
                          JOIN (SELECT STAFF_NO,

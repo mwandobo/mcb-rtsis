@@ -9,7 +9,7 @@ from .base import BaseProcessor, BaseRecord
 
 @dataclass
 class AtmRecord(BaseRecord):
-    """ATM information record structure - Updated for BANKEMPLOYEE-based query"""
+    """ATM information record structure - Updated for BANKEMPLOYEE-based query with atmCategory"""
     reporting_date: str
     atm_name: str
     branch_code: str
@@ -28,6 +28,7 @@ class AtmRecord(BaseRecord):
     opening_date: str
     atm_status: str
     closure_date: Optional[str]
+    atm_category: str
     atm_channel: str
     retry_count: int = 0
 
@@ -35,37 +36,38 @@ class AtmProcessor(BaseProcessor):
     """Processor for ATM information data - Updated for BANKEMPLOYEE-based query"""
     
     def process_record(self, raw_data: Tuple, table_name: str) -> AtmRecord:
-        """Convert raw DB2 data to AtmRecord - Exactly matching your atm.sql (18 fields)"""
-        # raw_data structure: reportingDate, atmName, branchCode, atmCode, tillNumber, 
+        """Convert raw DB2 data to AtmRecord - 19 fields after removing reportingDate"""
+        # raw_data structure (after removing reportingDate): atmName, branchCode, atmCode, tillNumber, 
         # mobileMoneyServices, qrFsrCode, postalCode, region, district, ward, street, 
-        # houseNumber, gpsCoordinates, linkedAccount, openingDate, atmStatus, closureDate, atmChannel
+        # houseNumber, gpsCoordinates, linkedAccount, openingDate, atmStatus, closureDate, atmCategory, atmChannel
         return AtmRecord(
             source_table=table_name,
-            timestamp_column_value=str(raw_data[15]),  # openingDate for tracking (16th field, index 15)
-            reporting_date=str(raw_data[0]),
-            atm_name=str(raw_data[1]),
-            branch_code=str(raw_data[2]),
-            atm_code=str(raw_data[3]),
-            till_number=str(raw_data[4]),
-            mobile_money_services=str(raw_data[5]),
-            qr_fsr_code=str(raw_data[6]),
-            postal_code=str(raw_data[7]) if raw_data[7] else None,
-            region=str(raw_data[8]),
-            district=str(raw_data[9]),
-            ward=str(raw_data[10]),
-            street=str(raw_data[11]),
-            house_number=str(raw_data[12]) if raw_data[12] else None,
-            gps_coordinates=str(raw_data[13]),
-            linked_account=str(raw_data[14]),
-            opening_date=str(raw_data[15]),
-            atm_status=str(raw_data[16]),
-            closure_date=str(raw_data[17]) if raw_data[17] else None,
+            timestamp_column_value=str(raw_data[14]),  # openingDate for tracking (15th field, index 14)
+            reporting_date="",  # Not available after removing from query
+            atm_name=str(raw_data[0]),
+            branch_code=str(raw_data[1]),
+            atm_code=str(raw_data[2]),
+            till_number=str(raw_data[3]),
+            mobile_money_services=str(raw_data[4]),
+            qr_fsr_code=str(raw_data[5]),
+            postal_code=str(raw_data[6]) if raw_data[6] else None,
+            region=str(raw_data[7]),
+            district=str(raw_data[8]),
+            ward=str(raw_data[9]),
+            street=str(raw_data[10]),
+            house_number=str(raw_data[11]) if raw_data[11] else None,
+            gps_coordinates=str(raw_data[12]),
+            linked_account=str(raw_data[13]),
+            opening_date=str(raw_data[14]),
+            atm_status=str(raw_data[15]),
+            closure_date=str(raw_data[16]) if raw_data[16] else None,
+            atm_category=str(raw_data[17]),
             atm_channel=str(raw_data[18]),
             original_timestamp=datetime.now().isoformat()
         )
     
     def insert_to_postgres(self, record: AtmRecord, pg_cursor) -> None:
-        """Insert ATM record to PostgreSQL - Updated for new field structure"""
+        """Insert ATM record to PostgreSQL - Updated to include atmCategory"""
         query = self.get_upsert_query()
         
         pg_cursor.execute(query, (
@@ -87,19 +89,20 @@ class AtmProcessor(BaseProcessor):
             record.opening_date,
             record.atm_status,
             record.closure_date,
+            record.atm_category,
             record.atm_channel
         ))
     
     def get_upsert_query(self) -> str:
-        """Get insert query for ATM information - Updated for new field structure"""
+        """Get insert query for ATM information - Updated to include atmCategory"""
         return """
         INSERT INTO "atmInformation" (
             "reportingDate", "atmName", "branchCode", "atmCode", "tillNumber",
             "mobileMoneyServices", "qrFsrCode", "postalCode", "region", "district",
             "ward", "street", "houseNumber", "gpsCoordinates", "linkedAccount",
-            "openingDate", "atmStatus", "closureDate", "atmChannel"
+            "openingDate", "atmStatus", "closureDate", "atmCategory", "atmChannel"
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
         """
     

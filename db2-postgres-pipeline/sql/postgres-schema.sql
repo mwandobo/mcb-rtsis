@@ -480,6 +480,7 @@ CREATE TABLE "atmInformation" (
     "openingDate" VARCHAR(20),
     "atmStatus" VARCHAR(50),
     "closureDate" VARCHAR(20),
+    "atmCategory" VARCHAR(50),
     "atmChannel" VARCHAR(100)
 );
 
@@ -496,13 +497,10 @@ CREATE INDEX IF NOT EXISTS idx_agents_last_modified ON "agents"("lastModified");
 CREATE UNIQUE INDEX IF NOT EXISTS idx_atm_code_unique ON "atmInformation"("atmCode");
 CREATE INDEX IF NOT EXISTS idx_atm_branch_code ON "atmInformation"("branchCode");
 CREATE INDEX IF NOT EXISTS idx_atm_status ON "atmInformation"("atmStatus");
+CREATE INDEX IF NOT EXISTS idx_atm_category ON "atmInformation"("atmCategory");
 CREATE INDEX IF NOT EXISTS idx_atm_region ON "atmInformation"("region");
 CREATE INDEX IF NOT EXISTS idx_atm_district ON "atmInformation"("district");
 CREATE INDEX IF NOT EXISTS idx_atm_opening_date ON "atmInformation"("openingDate");
 CREATE INDEX IF NOT EXISTS idx_atm_linked_account ON "atmInformation"("linkedAccount");
 
-
-
-
-atmCategory
 
