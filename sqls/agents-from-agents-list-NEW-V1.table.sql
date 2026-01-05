@@ -1,7 +1,18 @@
 SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                                            AS reportingDate,
-       al.AGENT_NAME                                                                                AS agentName,
+       TRIM(
+               CAST(TRIM(COALESCE(be.FIRST_NAME, '')) AS VARCHAR(100)) ||
+               CASE
+                   WHEN TRIM(COALESCE(be.FATHER_NAME, '')) <> ''
+                       THEN ' ' || CAST(TRIM(be.FATHER_NAME) AS VARCHAR(100))
+                   ELSE ''
+                   END ||
+               CASE
+                   WHEN TRIM(COALESCE(be.LAST_NAME, '')) <> ''
+                       THEN ' ' || CAST(TRIM(be.LAST_NAME) AS VARCHAR(100))
+                   ELSE ''
+                   END
+       )                                                                                            AS agentName,
        al.AGENT_ID                                                                                  AS agentId,
-       al.TERMINAL_ID                                                                               AS TERMINALiD,
        null                                                                                         AS tillNumber,
        al.BUSINESS_FORM                                                                             AS businessForm,
        'bank'                                                                                       AS agentPrincipal,
@@ -18,12 +29,12 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
            END                                                                                      AS agentStatus,
        'super agent'                                                                                AS agentType,
        null                                                                                         AS accountNumber,
-       al.REGION                                                                                    AS region,
-       al.DISTRICT                                                                                  AS district,
-       null                                                                                         AS ward,
-       null                                                                                         AS street,
-       null                                                                                         AS houseNumber,
-       null                                                                                         AS postalCode,
+       COALESCE(al.REGION, 'N/A')                                                                   AS region,
+       COALESCE(al.DISTRICT, 'N/A')                                                                 AS district,
+       'N/A'                                                                                        AS ward,
+       'N/A'                                                                                        AS street,
+       'N/A'                                                                                        AS houseNumber,
+       'N/A'                                                                                        AS postalCode,
        'TANZANIA, UNITED REPUBLIC OF'                                                               AS country,
        al.GPS                                                                                       AS gpsCoordinates,
        al.TIN                                                                                       AS agentTaxIdentificationNumber,
@@ -32,7 +43,8 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
            WHEN LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) > 0 THEN
                CASE
                    -- 1a. If there's a space before the comma, use first word (up to first space)
-                   WHEN LOCATE(' ', SUBSTR(al.BUSINESS_LICENCE_ISSUER_AND_DATE, 1, LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1)) > 0 THEN
+                   WHEN LOCATE(' ', SUBSTR(al.BUSINESS_LICENCE_ISSUER_AND_DATE, 1,
+                                           LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1)) > 0 THEN
                        TRIM(
                                SUBSTR(
                                        al.BUSINESS_LICENCE_ISSUER_AND_DATE,
@@ -61,6 +73,32 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
                )
            -- 3️⃣ Last resort: use whole string
            ELSE TRIM(al.BUSINESS_LICENCE_ISSUER_AND_DATE)
-           END AS businessLicense
+           END                                                                                      AS businessLicense
 FROM AGENTS_LIST al
-         LEFT JOIN BANKEMPLOYEE be ON be.STAFF_NO = al.TERMINAL_ID
+         RIGHT JOIN BANKEMPLOYEE be
+                    ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(be.STAFF_NO)
+WHERE be.STAFF_NO IS NOT NULL
+  AND be.STAFF_NO = TRIM(be.STAFF_NO)
+  AND be.EMPL_STATUS = 1
+  AND be.STAFF_NO NOT LIKE 'ATMUSER%'
+  AND be.STAFF_NO NOT LIKE '993%'
+  AND be.STAFF_NO NOT LIKE '999%'
+  AND be.STAFF_NO NOT LIKE '900%'
+  AND be.STAFF_NO NOT LIKE 'IAP%'
+  AND be.STAFF_NO NOT LIKE 'MCB%'
+  AND be.STAFF_NO NOT LIKE 'MIP%'
+  AND be.STAFF_NO NOT LIKE 'MOB%'
+  AND be.STAFF_NO NOT LIKE 'MWL%'
+  AND be.STAFF_NO NOT LIKE 'OWP%'
+  AND be.STAFF_NO NOT LIKE 'PI0%'
+  AND be.STAFF_NO NOT LIKE 'POS%'
+  AND be.STAFF_NO NOT LIKE 'STP%'
+  AND be.STAFF_NO NOT LIKE 'TER%'
+  AND be.STAFF_NO NOT LIKE 'EIC%'
+  AND be.STAFF_NO NOT LIKE 'GEP%'
+  AND be.STAFF_NO NOT LIKE 'EYU%'
+  AND be.STAFF_NO NOT LIKE 'GLA%'
+  AND be.STAFF_NO NOT LIKE 'SYS%'
+  AND be.STAFF_NO NOT LIKE 'MLN%'
+  AND be.STAFF_NO NOT LIKE 'PET%'
+  AND be.STAFF_NO NOT LIKE 'VRT%';

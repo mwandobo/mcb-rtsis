@@ -37,9 +37,44 @@
            null                                                                                         AS postalCode,
            'TANZANIA, UNITED REPUBLIC OF'                                                               AS country,
            null                                                                                         AS gpsCoordinates,
-           null                                                                                         AS agentTaxIdentificationNumber,
-           null                                                                                         AS businessLicense
+           al.TIN                                                                                         AS agentTaxIdentificationNumber,
+           CASE
+               -- 1️⃣ Comma exists
+               WHEN LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) > 0 THEN
+                   CASE
+                       -- 1a. If there's a space before the comma, use first word (up to first space)
+                       WHEN LOCATE(' ', SUBSTR(al.BUSINESS_LICENCE_ISSUER_AND_DATE, 1, LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1)) > 0 THEN
+                           TRIM(
+                                   SUBSTR(
+                                           al.BUSINESS_LICENCE_ISSUER_AND_DATE,
+                                           1,
+                                           LOCATE(' ', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1
+                                   )
+                           )
+                       -- 1b. No space before comma, use everything before comma
+                       ELSE
+                           TRIM(
+                                   SUBSTR(
+                                           al.BUSINESS_LICENCE_ISSUER_AND_DATE,
+                                           1,
+                                           LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1
+                                   )
+                           )
+                       END
+               -- 2️⃣ No comma, but space exists
+               WHEN LOCATE(' ', al.BUSINESS_LICENCE_ISSUER_AND_DATE) > 0 THEN
+                   TRIM(
+                           SUBSTR(
+                                   al.BUSINESS_LICENCE_ISSUER_AND_DATE,
+                                   1,
+                                   LOCATE(' ', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1
+                           )
+                   )
+               -- 3️⃣ Last resort: use whole string
+               ELSE TRIM(al.BUSINESS_LICENCE_ISSUER_AND_DATE)
+               END AS businessLicense
     FROM BANKEMPLOYEE be
+         LEFT JOIN AGENTS_LIST al ON al.TERMINAL_ID = be.STAFF_NO
     WHERE STAFF_NO IS NOT NULL
       AND STAFF_NO = TRIM(STAFF_NO)
       AND EMPL_STATUS = 1
