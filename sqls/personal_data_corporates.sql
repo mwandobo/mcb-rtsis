@@ -3,7 +3,7 @@ SELECT
     c.SURNAME AS companyName,
     c.CUST_ID AS customerIdentificationNumber,
     NULL AS smrCode,
-    NULL AS accountNumber,
+    pa.ACCOUNT_NUMBER AS accountNumber,
     cu.SHORT_DESCR AS currency,
     NULL AS accountOperationStatus,
     NULL AS establishmentDate,
@@ -57,7 +57,7 @@ SELECT
     NULL AS structuredAddress,
     NULL AS textAddress,
     NULL AS companyContacts,
-    NULL AS mobileNumber,
+    wdc.TELEPHONE AS mobileNumber,
     NULL AS alternativeMobileNumber,
     NULL AS fixedLineNumber,
     NULL AS faxNumber,
@@ -84,6 +84,10 @@ LEFT JOIN (
         *
         FROM CURRENCY
 ) cu ON c.FKCURR_THINKS_IN = cu.ID_CURRENCY
+LEFT JOIN (
+    SELECT
+        *
+    FROM PROFITS_ACCOUNT) pa ON pa.CUST_ID = c.CUST_ID AND  PRFT_SYSTEM=3
 INNER JOIN (
     SELECT
         CUST_ID,

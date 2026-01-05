@@ -1,5 +1,5 @@
 """
-POS information processor - Based on pos.sql
+POS information processor - Based on pos-v1.sql
 """
 
 from dataclasses import dataclass
@@ -9,7 +9,7 @@ from .base import BaseProcessor, BaseRecord
 
 @dataclass
 class POSRecord(BaseRecord):
-    """POS information record structure - Based on pos.sql"""
+    """POS information record structure - Based on pos-v1.sql"""
     reporting_date: str
     pos_branch_code: str
     pos_number: str
@@ -30,13 +30,15 @@ class POSRecord(BaseRecord):
     retry_count: int = 0
 
 class POSProcessor(BaseProcessor):
-    """Processor for POS information data - Based on pos.sql"""
+    """Processor for POS information data - Based on pos-v1.sql"""
     
     def process_record(self, raw_data: Tuple, table_name: str) -> POSRecord:
-        """Convert raw DB2 data to POSRecord"""
-        # raw_data structure: reportingDate, posBranchCode, posNumber, qrFsrCode, posHolderName, 
-        # posHolderNin, posHolderTin, postalCode, region, district, ward, street, houseNumber, 
-        # gpsCoordinates, linkedAccount, issueDate, returnDate
+        """Convert raw DB2 data to POSRecord - Updated for pos-v1.sql"""
+        # raw_data structure from pos-v1.sql (17 fields):
+        # 0: reportingDate, 1: posBranchCode, 2: posNumber, 3: qrFsrCode, 4: posHolderName, 
+        # 5: posHolderNin, 6: posHolderTin, 7: postalCode, 8: region, 9: district, 
+        # 10: ward, 11: street, 12: houseNumber, 13: gpsCoordinates, 14: linkedAccount, 
+        # 15: issueDate, 16: returnDate
         return POSRecord(
             source_table=table_name,
             timestamp_column_value=str(raw_data[15]),  # issueDate for tracking
@@ -85,7 +87,7 @@ class POSProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get insert query for POS information"""
+        """Get upsert query for POS information with duplicate handling"""
         return """
         INSERT INTO "posInformation" (
             "reportingDate", "posBranchCode", "posNumber", "qrFsrCode", "posHolderName",
@@ -95,6 +97,23 @@ class POSProcessor(BaseProcessor):
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
+        ON CONFLICT ("posNumber") DO UPDATE SET
+            "reportingDate" = EXCLUDED."reportingDate",
+            "posBranchCode" = EXCLUDED."posBranchCode",
+            "qrFsrCode" = EXCLUDED."qrFsrCode",
+            "posHolderName" = EXCLUDED."posHolderName",
+            "posHolderNin" = EXCLUDED."posHolderNin",
+            "posHolderTin" = EXCLUDED."posHolderTin",
+            "postalCode" = EXCLUDED."postalCode",
+            "region" = EXCLUDED."region",
+            "district" = EXCLUDED."district",
+            "ward" = EXCLUDED."ward",
+            "street" = EXCLUDED."street",
+            "houseNumber" = EXCLUDED."houseNumber",
+            "gpsCoordinates" = EXCLUDED."gpsCoordinates",
+            "linkedAccount" = EXCLUDED."linkedAccount",
+            "issueDate" = EXCLUDED."issueDate",
+            "returnDate" = EXCLUDED."returnDate"
         """
     
     def validate_record(self, record: POSRecord) -> bool:
