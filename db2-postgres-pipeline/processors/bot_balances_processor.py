@@ -70,16 +70,15 @@ class BotBalancesProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get insert query for BOT balances"""
+        """Get insert query for BOT transactions (no upsert needed for transaction data)"""
         return """
-        INSERT INTO balances_bot (
+        INSERT INTO "balances_bot" (
             "reportingDate", "accountNumber", "accountName", "accountType", "subAccountType",
-            currency, "orgAmount", "usdAmount", "tzsAmount", "transactionDate", "maturityDate",
+            "currency", "orgAmount", "usdAmount", "tzsAmount", "transactionDate", "maturityDate",
             "allowanceProbableLoss", "botProvision"
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
-
         """
     
     def validate_record(self, record: BotBalancesRecord) -> bool:

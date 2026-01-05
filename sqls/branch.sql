@@ -63,7 +63,8 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
            WHEN u.CODE = 201 THEN '0756818609'
            WHEN u.CODE = 200 THEN '0682697276'
            END                                           AS altTelephoneNumber,
-       'Brick and Mortar'                                AS branchCategory
+       'Brick and Mortar'                                AS branchCategory,
+       u.TMSTAMP                                         AS lastModified
 FROM UNIT u
 WHERE u.UNIT_NAME = 'MLIMANI BRANCH'
    OR u.UNIT_NAME = 'SAMORA BRANCH'
