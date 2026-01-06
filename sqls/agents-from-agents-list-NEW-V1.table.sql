@@ -14,7 +14,14 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
        )                                                                                            AS agentName,
        al.AGENT_ID                                                                                  AS agentId,
        null                                                                                         AS tillNumber,
-       al.BUSINESS_FORM                                                                             AS businessForm,
+       CASE
+           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'SOLE PROPRIETORY' THEN 'Sole Proprietor'
+           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'LIMITED COMPANY'  THEN 'Company'
+           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'PRIVATE COMPANY' THEN 'Company'
+           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'CO-OPERATIVE SOCIETY' THEN 'Trust'
+           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'PARTNERSHIP' THEN 'Partnership'
+           ELSE TRIM(al.BUSINESS_FORM)
+           END                                                                                      AS businessForm,
        'bank'                                                                                       AS agentPrincipal,
        'Selcom'                                                                                     AS agentPrincipalName,
        CASE WHEN be.SEX = 'M' then 'Male' WHEN be.SEX = 'F' then 'female' ELSE 'Not Applicable' END AS gender,
@@ -31,7 +38,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
        null                                                                                         AS accountNumber,
        COALESCE(al.REGION, 'N/A')                                                                   AS region,
        COALESCE(al.DISTRICT, 'N/A')                                                                 AS district,
-       'N/A'                                                                                        AS ward,
+       COALESCE(al.LOCATION, 'N/A')                                                                 AS ward,
        'N/A'                                                                                        AS street,
        'N/A'                                                                                        AS houseNumber,
        'N/A'                                                                                        AS postalCode,
