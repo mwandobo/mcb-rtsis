@@ -2,7 +2,7 @@ SELECT
     CURRENT_TIMESTAMP AS reportingDate,
     ca.TUN_UNIT AS bankCode,
     CA.FULL_CARD_NO AS cardNumber,
-    LPAD(CHAR(CA.CARD_NUMBER), 10, '0') AS binNumber,
+    RIGHT(TRIM(CA.FULL_CARD_NO), 10) AS binNumber,
     CA.FK_CUST_ID AS customerIdentificationNumber,
     'Debit' AS cardType,  
     NULL AS cardTypeSubCategory,  
@@ -16,7 +16,7 @@ SELECT
         ELSE 'Inactive'
     END AS cardStatus, 
     'VISA' AS cardScheme,  
-    'UBX Tanzania Limited' acquiringPartner,  
+    'UBX Tanzania Limited' AS acquiringPartner,  
     CA.CARD_EXPIRY_DATE AS cardExpireDate  
 
 FROM

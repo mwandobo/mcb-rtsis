@@ -62,7 +62,6 @@ SELECT
 
     c.blacklisted_ind AS negativeClientStatus,
 
-    c.spouse_name AS spousesFullName,
     idt.description AS spouseIdentificationType,
     NULL AS spouseIdentificationNumber,
 
@@ -116,13 +115,13 @@ SELECT
     NULL AS ward,
     c_country.description AS country,
 
-    w_address.address_1 AS street,
-    NULL AS houseNumber,
-    w_address.zip_code AS postalCode,
-    w_address.region AS region,
-    NULL AS district,
-    NULL AS ward,
-    w_country.description AS country
+    w_address.address_1 AS workStreet,
+    NULL AS workHouseNumber,
+    w_address.zip_code AS workPostalCode,
+    w_address.region AS workRegion,
+    NULL AS workDistrict,
+    NULL AS workWard,
+    w_country.description AS workCountry
 
 FROM customer c
 LEFT JOIN cust_address c_address

@@ -42,19 +42,19 @@ class AgentProcessor(BaseProcessor):
     """Processor for agent information data"""
     
     def process_record(self, raw_data: Tuple, table_name: str) -> AgentRecord:
-        """Convert raw DB2 data to AgentRecord"""
-        # raw_data structure from agents.sql:
+        """Convert raw DB2 data to AgentRecord - Updated for agents-from-agents-list-NEW-V1.table.sql"""
+        # raw_data structure from agents-from-agents-list-NEW-V1.table.sql (24 fields):
         # 0: reportingDate, 1: agentName, 2: agentId, 3: tillNumber, 4: businessForm,
         # 5: agentPrincipal, 6: agentPrincipalName, 7: gender, 8: registrationDate,
         # 9: closedDate, 10: certIncorporation, 11: nationality, 12: agentStatus,
         # 13: agentType, 14: accountNumber, 15: region, 16: district, 17: ward,
         # 18: street, 19: houseNumber, 20: postalCode, 21: country, 22: gpsCoordinates,
-        # 23: agentTaxIdentificationNumber, 24: businessLicense, 25: lastModified
+        # 23: agentTaxIdentificationNumber, 24: businessLicense
         
         return AgentRecord(
             source_table=table_name,
-            timestamp_column_value=str(raw_data[25]),  # lastModified for tracking
-            reporting_date=self._convert_db2_timestamp(str(raw_data[0])),
+            timestamp_column_value=str(raw_data[8]),  # registrationDate for tracking
+            reporting_date=str(raw_data[0]),
             agent_name=str(raw_data[1]).strip(),
             agent_id=str(raw_data[2]),
             till_number=str(raw_data[3]) if raw_data[3] else None,
@@ -62,13 +62,13 @@ class AgentProcessor(BaseProcessor):
             agent_principal=str(raw_data[5]),
             agent_principal_name=str(raw_data[6]).strip(),
             gender=str(raw_data[7]),
-            registration_date=self._convert_db2_timestamp(str(raw_data[8])),
-            closed_date=self._convert_db2_timestamp(str(raw_data[9])) if raw_data[9] else None,
+            registration_date=str(raw_data[8]),
+            closed_date=str(raw_data[9]) if raw_data[9] else None,
             cert_incorporation=str(raw_data[10]),
             nationality=str(raw_data[11]),
             agent_status=str(raw_data[12]),
             agent_type=str(raw_data[13]),
-            account_number=str(raw_data[14]),
+            account_number=str(raw_data[14]) if raw_data[14] else None,
             region=str(raw_data[15]),
             district=str(raw_data[16]),
             ward=str(raw_data[17]),
@@ -76,10 +76,10 @@ class AgentProcessor(BaseProcessor):
             house_number=str(raw_data[19]),
             postal_code=str(raw_data[20]),
             country=str(raw_data[21]),
-            gps_coordinates=str(raw_data[22]),
+            gps_coordinates=str(raw_data[22]) if raw_data[22] else None,
             agent_tax_identification_number=str(raw_data[23]),
-            business_license=str(raw_data[24]),
-            last_modified=self._convert_timestamp_to_postgres(raw_data[25]),
+            business_license=str(raw_data[24]) if len(raw_data) > 24 and raw_data[24] else None,
+            last_modified=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             original_timestamp=datetime.now().isoformat()
         )
     
@@ -210,16 +210,16 @@ class AgentProcessor(BaseProcessor):
         if not super().validate_record(record):
             return False
         
-        # Agent-specific validations - only check essential fields
-        if not record.agent_id or record.agent_id.strip() == '':
-            return False
+        # Agent-specific validations - be more lenient with agent_id
         if not record.agent_name or record.agent_name.strip() == '':
             return False
         if not record.agent_status or record.agent_status.strip() == '':
             return False
         if not record.agent_type or record.agent_type.strip() == '':
             return False
-            
+        
+        # Allow records with any agent_id (including #N/A, 0, etc.)
+        # The upsert will handle duplicates
         return True
     
     def transform_data(self, raw_data: Tuple) -> dict:

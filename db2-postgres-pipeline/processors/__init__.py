@@ -6,6 +6,7 @@ from .base import BaseProcessor, BaseRecord
 from .cash_processor import CashProcessor, CashRecord
 from .branch_processor import BranchProcessor, BranchRecord
 from .atm_processor import AtmProcessor, AtmRecord
+from .card_processor import CardProcessor, CardRecord
 
 __all__ = [
     'BaseProcessor',
@@ -15,5 +16,7 @@ __all__ = [
     'BranchProcessor',
     'BranchRecord',
     'AtmProcessor',
-    'AtmRecord'
+    'AtmRecord',
+    'CardProcessor',
+    'CardRecord'
 ]

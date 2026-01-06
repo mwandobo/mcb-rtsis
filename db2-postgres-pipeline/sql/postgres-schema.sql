@@ -484,6 +484,27 @@ CREATE TABLE "atmInformation" (
     "atmChannel" VARCHAR(100)
 );
 
+-- Card Information
+CREATE TABLE "cardInformation" (
+    "id" SERIAL PRIMARY KEY,
+    "reportingDate" TIMESTAMP,
+    "bankCode" VARCHAR(20),
+    "cardNumber" VARCHAR(50),
+    "binNumber" VARCHAR(20),
+    "customerIdentificationNumber" VARCHAR(50),
+    "cardType" VARCHAR(50),
+    "cardTypeSubCategory" VARCHAR(50),
+    "cardIssueDate" DATE,
+    "cardIssuer" VARCHAR(100),
+    "cardIssuerCategory" VARCHAR(50),
+    "cardIssuerCountry" VARCHAR(50),
+    "cardHolderName" VARCHAR(200),
+    "cardStatus" VARCHAR(50),
+    "cardScheme" VARCHAR(50),
+    "acquiringPartner" VARCHAR(100),
+    "cardExpireDate" DATE
+);
+
 -- Indexes for agents
 CREATE UNIQUE INDEX IF NOT EXISTS idx_agents_id_unique ON "agents"("agentId");
 CREATE INDEX IF NOT EXISTS idx_agents_name ON "agents"("agentName");
@@ -502,5 +523,15 @@ CREATE INDEX IF NOT EXISTS idx_atm_region ON "atmInformation"("region");
 CREATE INDEX IF NOT EXISTS idx_atm_district ON "atmInformation"("district");
 CREATE INDEX IF NOT EXISTS idx_atm_opening_date ON "atmInformation"("openingDate");
 CREATE INDEX IF NOT EXISTS idx_atm_linked_account ON "atmInformation"("linkedAccount");
+
+-- Indexes for card information
+CREATE UNIQUE INDEX IF NOT EXISTS idx_card_number_unique ON "cardInformation"("cardNumber");
+CREATE INDEX IF NOT EXISTS idx_card_customer_id ON "cardInformation"("customerIdentificationNumber");
+CREATE INDEX IF NOT EXISTS idx_card_type ON "cardInformation"("cardType");
+CREATE INDEX IF NOT EXISTS idx_card_status ON "cardInformation"("cardStatus");
+CREATE INDEX IF NOT EXISTS idx_card_scheme ON "cardInformation"("cardScheme");
+CREATE INDEX IF NOT EXISTS idx_card_issue_date ON "cardInformation"("cardIssueDate");
+CREATE INDEX IF NOT EXISTS idx_card_expire_date ON "cardInformation"("cardExpireDate");
+CREATE INDEX IF NOT EXISTS idx_card_bank_code ON "cardInformation"("bankCode");
 
 
