@@ -39,7 +39,7 @@ def create_agent_table():
             id SERIAL PRIMARY KEY,
             "reportingDate" VARCHAR(20),
             "agentName" VARCHAR(200) NOT NULL,
-            "agentId" VARCHAR(50) UNIQUE NOT NULL,
+            "agentId" VARCHAR(50),
             "tillNumber" VARCHAR(50),
             "businessForm" VARCHAR(100),
             "agentPrincipal" VARCHAR(100),

@@ -165,7 +165,7 @@ class AgentProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get insert query for agent information with camelCase"""
+        """Get insert query for agent information without unique constraints"""
         return """
         INSERT INTO "agents" (
             "reportingDate", "agentName", "agentId", "tillNumber", "businessForm",
@@ -177,32 +177,6 @@ class AgentProcessor(BaseProcessor):
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
-        ON CONFLICT ("agentId") DO UPDATE SET
-            "reportingDate" = EXCLUDED."reportingDate",
-            "agentName" = EXCLUDED."agentName",
-            "tillNumber" = EXCLUDED."tillNumber",
-            "businessForm" = EXCLUDED."businessForm",
-            "agentPrincipal" = EXCLUDED."agentPrincipal",
-            "agentPrincipalName" = EXCLUDED."agentPrincipalName",
-            "gender" = EXCLUDED."gender",
-            "registrationDate" = EXCLUDED."registrationDate",
-            "closedDate" = EXCLUDED."closedDate",
-            "certIncorporation" = EXCLUDED."certIncorporation",
-            "nationality" = EXCLUDED."nationality",
-            "agentStatus" = EXCLUDED."agentStatus",
-            "agentType" = EXCLUDED."agentType",
-            "accountNumber" = EXCLUDED."accountNumber",
-            "region" = EXCLUDED."region",
-            "district" = EXCLUDED."district",
-            "ward" = EXCLUDED."ward",
-            "street" = EXCLUDED."street",
-            "houseNumber" = EXCLUDED."houseNumber",
-            "postalCode" = EXCLUDED."postalCode",
-            "country" = EXCLUDED."country",
-            "gpsCoordinates" = EXCLUDED."gpsCoordinates",
-            "agentTaxIdentificationNumber" = EXCLUDED."agentTaxIdentificationNumber",
-            "businessLicense" = EXCLUDED."businessLicense",
-            "lastModified" = EXCLUDED."lastModified"
         """
     
     def validate_record(self, record: AgentRecord) -> bool:
