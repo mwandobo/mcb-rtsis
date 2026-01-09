@@ -16,7 +16,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
        null                                                                                         AS tillNumber,
        CASE
            WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'SOLE PROPRIETORY' THEN 'Sole Proprietor'
-           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'LIMITED COMPANY'  THEN 'Company'
+           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'LIMITED COMPANY' THEN 'Company'
            WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'PRIVATE COMPANY' THEN 'Company'
            WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'CO-OPERATIVE SOCIETY' THEN 'Trust'
            WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'PARTNERSHIP' THEN 'Partnership'
@@ -36,9 +36,9 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
            END                                                                                      AS agentStatus,
        'super agent'                                                                                AS agentType,
        null                                                                                         AS accountNumber,
-       COALESCE(al.REGION, 'N/A')                                                                   AS region,
-       COALESCE(al.DISTRICT, 'N/A')                                                                 AS district,
-       COALESCE(al.LOCATION, 'N/A')                                                                 AS ward,
+       COALESCE(region_lkp.BOT_REGION, al.REGION)                                                   AS region,
+       COALESCE(district_lkp.BOT_DISTRICT, al.DISTRICT)                                             AS district,
+       COALESCE(ward_lkp.BOT_WARD, al.LOCATION, 'N/A')                                              AS ward,
        'N/A'                                                                                        AS street,
        'N/A'                                                                                        AS houseNumber,
        'N/A'                                                                                        AS postalCode,
@@ -84,6 +84,90 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
 FROM AGENTS_LIST al
          RIGHT JOIN BANKEMPLOYEE be
                     ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(be.STAFF_NO)
+         LEFT JOIN (SELECT al.AGENT_ID,
+                           bl.REGION AS BOT_REGION,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY al.AGENT_ID
+                               ORDER BY
+                                   CASE
+                                       WHEN UPPER(TRIM(al.REGION)) = UPPER(TRIM(bl.REGION)) THEN 1 -- exact
+                                       WHEN UPPER(TRIM(al.REGION)) LIKE UPPER(TRIM(bl.REGION)) || '%'
+                                           THEN 2 -- safe starts-with
+                                       ELSE 99 -- do not allow random fallback
+                                       END,
+                                   LENGTH(TRIM(bl.REGION)) DESC
+                               )     AS rn
+                    FROM AGENTS_LIST al
+                             JOIN BANK_LOCATION_LOOKUP_V2 bl
+                                  ON UPPER(TRIM(al.REGION)) = UPPER(TRIM(bl.REGION))
+                                      OR (UPPER(TRIM(al.REGION)) LIKE UPPER(TRIM(bl.REGION)) || '%' AND
+                                          LENGTH(TRIM(bl.REGION)) >= 4)) region_lkp
+                   ON region_lkp.AGENT_ID = al.AGENT_ID
+                       AND region_lkp.rn = 1
+
+         LEFT JOIN (SELECT al.AGENT_ID,
+                           bl.DISTRICT AS BOT_DISTRICT,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY al.AGENT_ID
+                               ORDER BY
+                                   CASE
+                                       -- 1️⃣ Exact match
+                                       WHEN UPPER(TRIM(al.DISTRICT)) = UPPER(TRIM(bl.DISTRICT)) THEN 1
+
+                                       -- 2️⃣ Starts-with match (safe)
+                                       WHEN UPPER(TRIM(al.DISTRICT)) LIKE UPPER(TRIM(bl.DISTRICT)) || '%'
+                                           AND LENGTH(TRIM(bl.DISTRICT)) >= 4 THEN 2
+
+                                       -- 3️⃣ No fallback
+                                       ELSE 99
+                                       END,
+                                   LENGTH(TRIM(bl.DISTRICT)) DESC
+                               )       AS rn
+                    FROM AGENTS_LIST al
+                             JOIN BANK_LOCATION_LOOKUP_V2 bl
+                                  ON (
+                                      UPPER(TRIM(al.DISTRICT)) = UPPER(TRIM(bl.DISTRICT))
+                                          OR (
+                                          UPPER(TRIM(al.DISTRICT)) LIKE UPPER(TRIM(bl.DISTRICT)) || '%'
+                                              AND LENGTH(TRIM(bl.DISTRICT)) >= 4
+                                          )
+                                      )
+                    WHERE TRIM(al.DISTRICT) IS NOT NULL
+                      AND TRIM(al.DISTRICT) <> '') district_lkp
+                   ON district_lkp.AGENT_ID = al.AGENT_ID
+                       AND district_lkp.rn = 1
+         LEFT JOIN (SELECT al.AGENT_ID,
+                           bl.WARD AS BOT_WARD,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY al.AGENT_ID
+                               ORDER BY
+                                   CASE
+                                       -- 1️⃣ Exact match
+                                       WHEN UPPER(TRIM(al.LOCATION)) = UPPER(TRIM(bl.WARD)) THEN 1
+
+                                       -- 2️⃣ Starts-with match (safe)
+                                       WHEN UPPER(TRIM(al.LOCATION)) LIKE UPPER(TRIM(bl.WARD)) || '%'
+                                           AND LENGTH(TRIM(bl.WARD)) >= 4 THEN 2
+
+                                       -- 3️⃣ No fallback
+                                       ELSE 99
+                                       END,
+                                   LENGTH(TRIM(bl.WARD)) DESC
+                               )   AS rn
+                    FROM AGENTS_LIST al
+                             JOIN BANK_LOCATION_LOOKUP_V2 bl
+                                  ON (
+                                      UPPER(TRIM(al.LOCATION)) = UPPER(TRIM(bl.WARD))
+                                          OR (
+                                          UPPER(TRIM(al.LOCATION)) LIKE UPPER(TRIM(bl.WARD)) || '%'
+                                              AND LENGTH(TRIM(bl.WARD)) >= 4
+                                          )
+                                      )
+                    WHERE TRIM(al.LOCATION) IS NOT NULL
+                      AND TRIM(al.LOCATION) <> '') ward_lkp
+                   ON ward_lkp.AGENT_ID = al.AGENT_ID
+                       AND ward_lkp.rn = 1
+
 WHERE be.STAFF_NO IS NOT NULL
   AND be.STAFF_NO = TRIM(be.STAFF_NO)
   AND be.EMPL_STATUS = 1
