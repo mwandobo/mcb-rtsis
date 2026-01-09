@@ -1,0 +1,10 @@
+2026-01-08 16:22:44,005 - db2_connection - INFO - [OK] Connected to DB2
+2026-01-08 16:24:57,318 - __main__ - INFO -    Total Records: 0
+2026-01-08 16:24:57,318 - __main__ - INFO -    Security Types:
+2026-01-08 16:24:57,319 - __main__ - INFO -    Currency Distribution:
+2026-01-08 16:24:57,319 - __main__ - INFO -    Amount Totals by Currency:
+2026-01-08 16:24:57,326 - __main__ - INFO -    Total Processed: 1000
+2026-01-08 16:24:57,327 - __main__ - INFO -    Successful Inserts: 0
+2026-01-08 16:24:57,327 - __main__ - INFO -    Failed Inserts: 1000
+2026-01-08 16:24:57,328 - __main__ - INFO -    Duration: 0:02:17.296001
+2026-01-08 16:24:57,329 - __main__ - INFO -    Success Rate: 0.0%

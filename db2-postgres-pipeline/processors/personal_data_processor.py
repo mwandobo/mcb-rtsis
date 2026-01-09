@@ -183,6 +183,7 @@ class PersonalDataProcessor(BaseProcessor):
         """Insert personal data record to PostgreSQL"""
         query = self.get_upsert_query()
         
+        # Fixed: Added missing original_timestamp parameter to match 78 placeholders in query
         pg_cursor.execute(query, (
             record.reporting_date,
             record.customer_identification_number,
@@ -261,7 +262,8 @@ class PersonalDataProcessor(BaseProcessor):
             record.work_region,
             record.work_district,
             record.work_ward,
-            record.work_country
+            record.work_country,
+            record.original_timestamp  # Added missing parameter
         ))
     
     def get_upsert_query(self) -> str:
@@ -283,7 +285,7 @@ class PersonalDataProcessor(BaseProcessor):
             "businessNature", "mobileNumber", "alternativeMobileNumber", "fixedLineNumber",
             "faxNumber", "emailAddress", "socialMedia", "mainAddress", "street", "houseNumber",
             "postalCode", "region", "district", "ward", "country", "workStreet", "workHouseNumber",
-            "workPostalCode", "workRegion", "workDistrict", "workWard", "workCountry"
+            "workPostalCode", "workRegion", "workDistrict", "workWard", "workCountry", "originalTimestamp"
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
@@ -367,7 +369,8 @@ class PersonalDataProcessor(BaseProcessor):
             "workRegion" = EXCLUDED."workRegion",
             "workDistrict" = EXCLUDED."workDistrict",
             "workWard" = EXCLUDED."workWard",
-            "workCountry" = EXCLUDED."workCountry"
+            "workCountry" = EXCLUDED."workCountry",
+            "originalTimestamp" = EXCLUDED."originalTimestamp"
         """
     
     def validate_record(self, record: PersonalDataRecord) -> bool:

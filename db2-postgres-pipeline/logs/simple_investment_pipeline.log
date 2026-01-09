@@ -1,0 +1,2046 @@
+2026-01-09 10:14:17,729 - __main__ - INFO - Starting Simple Investment Debt Securities Pipeline
+2026-01-09 10:14:17,988 - __main__ - INFO - Connected to PostgreSQL database
+2026-01-09 10:14:17,988 - __main__ - INFO - Fetching investment securities from DEPOSIT_ACCOUNT...
+2026-01-09 10:14:18,992 - db2_connection - INFO - [OK] Connected to DB2
+2026-01-09 10:14:20,272 - __main__ - INFO - Fetched 1000 investment securities from DEPOSIT_ACCOUNT
+2026-01-09 10:14:20,281 - __main__ - INFO - Processing and inserting investment debt securities data...
+2026-01-09 10:14:20,342 - __main__ - ERROR - Error processing record 1: null value in column "securityNumber" of relation "investmentDebtSecurities" violates not-null constraint
+DETAIL:  Failing row contains (2026-01-09 10:14:20.282692, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 2026-01-09 10:14:20.282698).
+
+2026-01-09 10:14:20,393 - __main__ - ERROR - Error processing record 2: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,427 - __main__ - ERROR - Error processing record 3: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,453 - __main__ - ERROR - Error processing record 4: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,481 - __main__ - ERROR - Error processing record 5: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,512 - __main__ - ERROR - Error processing record 6: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,553 - __main__ - ERROR - Error processing record 7: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,592 - __main__ - ERROR - Error processing record 8: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,617 - __main__ - ERROR - Error processing record 9: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,645 - __main__ - ERROR - Error processing record 10: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,772 - __main__ - ERROR - Error processing record 11: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,800 - __main__ - ERROR - Error processing record 12: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,828 - __main__ - ERROR - Error processing record 13: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,875 - __main__ - ERROR - Error processing record 14: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,909 - __main__ - ERROR - Error processing record 15: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,954 - __main__ - ERROR - Error processing record 16: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:20,985 - __main__ - ERROR - Error processing record 17: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,012 - __main__ - ERROR - Error processing record 18: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,055 - __main__ - ERROR - Error processing record 19: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,084 - __main__ - ERROR - Error processing record 20: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,112 - __main__ - ERROR - Error processing record 21: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,144 - __main__ - ERROR - Error processing record 22: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,173 - __main__ - ERROR - Error processing record 23: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,200 - __main__ - ERROR - Error processing record 24: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,228 - __main__ - ERROR - Error processing record 25: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,253 - __main__ - ERROR - Error processing record 26: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,285 - __main__ - ERROR - Error processing record 27: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,320 - __main__ - ERROR - Error processing record 28: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,342 - __main__ - ERROR - Error processing record 29: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,376 - __main__ - ERROR - Error processing record 30: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,415 - __main__ - ERROR - Error processing record 31: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,444 - __main__ - ERROR - Error processing record 32: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,475 - __main__ - ERROR - Error processing record 33: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,503 - __main__ - ERROR - Error processing record 34: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,542 - __main__ - ERROR - Error processing record 35: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,572 - __main__ - ERROR - Error processing record 36: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,613 - __main__ - ERROR - Error processing record 37: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,669 - __main__ - ERROR - Error processing record 38: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,717 - __main__ - ERROR - Error processing record 39: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,809 - __main__ - ERROR - Error processing record 40: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,850 - __main__ - ERROR - Error processing record 41: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,877 - __main__ - ERROR - Error processing record 42: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,924 - __main__ - ERROR - Error processing record 43: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,955 - __main__ - ERROR - Error processing record 44: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:21,997 - __main__ - ERROR - Error processing record 45: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,035 - __main__ - ERROR - Error processing record 46: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,069 - __main__ - ERROR - Error processing record 47: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,096 - __main__ - ERROR - Error processing record 48: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,124 - __main__ - ERROR - Error processing record 49: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,152 - __main__ - ERROR - Error processing record 50: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,181 - __main__ - ERROR - Error processing record 51: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,209 - __main__ - ERROR - Error processing record 52: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,257 - __main__ - ERROR - Error processing record 53: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,296 - __main__ - ERROR - Error processing record 54: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,335 - __main__ - ERROR - Error processing record 55: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,360 - __main__ - ERROR - Error processing record 56: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,480 - __main__ - ERROR - Error processing record 57: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,543 - __main__ - ERROR - Error processing record 58: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,606 - __main__ - ERROR - Error processing record 59: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,637 - __main__ - ERROR - Error processing record 60: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,669 - __main__ - ERROR - Error processing record 61: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,698 - __main__ - ERROR - Error processing record 62: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,736 - __main__ - ERROR - Error processing record 63: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:22,773 - __main__ - ERROR - Error processing record 64: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,072 - __main__ - ERROR - Error processing record 65: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,129 - __main__ - ERROR - Error processing record 66: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,156 - __main__ - ERROR - Error processing record 67: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,440 - __main__ - ERROR - Error processing record 68: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,512 - __main__ - ERROR - Error processing record 69: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,559 - __main__ - ERROR - Error processing record 70: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,602 - __main__ - ERROR - Error processing record 71: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,644 - __main__ - ERROR - Error processing record 72: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,679 - __main__ - ERROR - Error processing record 73: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:23,980 - __main__ - ERROR - Error processing record 74: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,037 - __main__ - ERROR - Error processing record 75: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,070 - __main__ - ERROR - Error processing record 76: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,103 - __main__ - ERROR - Error processing record 77: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,132 - __main__ - ERROR - Error processing record 78: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,157 - __main__ - ERROR - Error processing record 79: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,182 - __main__ - ERROR - Error processing record 80: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,216 - __main__ - ERROR - Error processing record 81: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,242 - __main__ - ERROR - Error processing record 82: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,267 - __main__ - ERROR - Error processing record 83: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,295 - __main__ - ERROR - Error processing record 84: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,319 - __main__ - ERROR - Error processing record 85: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,390 - __main__ - ERROR - Error processing record 86: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,434 - __main__ - ERROR - Error processing record 87: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,460 - __main__ - ERROR - Error processing record 88: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,504 - __main__ - ERROR - Error processing record 89: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,537 - __main__ - ERROR - Error processing record 90: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,570 - __main__ - ERROR - Error processing record 91: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,611 - __main__ - ERROR - Error processing record 92: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,639 - __main__ - ERROR - Error processing record 93: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,677 - __main__ - ERROR - Error processing record 94: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,720 - __main__ - ERROR - Error processing record 95: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,763 - __main__ - ERROR - Error processing record 96: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,790 - __main__ - ERROR - Error processing record 97: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,817 - __main__ - ERROR - Error processing record 98: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,851 - __main__ - ERROR - Error processing record 99: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,883 - __main__ - ERROR - Error processing record 100: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,922 - __main__ - ERROR - Error processing record 101: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,948 - __main__ - ERROR - Error processing record 102: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:24,978 - __main__ - ERROR - Error processing record 103: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,027 - __main__ - ERROR - Error processing record 104: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,051 - __main__ - ERROR - Error processing record 105: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,090 - __main__ - ERROR - Error processing record 106: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,121 - __main__ - ERROR - Error processing record 107: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,159 - __main__ - ERROR - Error processing record 108: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,189 - __main__ - ERROR - Error processing record 109: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,228 - __main__ - ERROR - Error processing record 110: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,256 - __main__ - ERROR - Error processing record 111: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,282 - __main__ - ERROR - Error processing record 112: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,310 - __main__ - ERROR - Error processing record 113: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,343 - __main__ - ERROR - Error processing record 114: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,370 - __main__ - ERROR - Error processing record 115: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,402 - __main__ - ERROR - Error processing record 116: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,438 - __main__ - ERROR - Error processing record 117: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,475 - __main__ - ERROR - Error processing record 118: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,505 - __main__ - ERROR - Error processing record 119: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,534 - __main__ - ERROR - Error processing record 120: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,570 - __main__ - ERROR - Error processing record 121: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,610 - __main__ - ERROR - Error processing record 122: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,637 - __main__ - ERROR - Error processing record 123: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,665 - __main__ - ERROR - Error processing record 124: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,704 - __main__ - ERROR - Error processing record 125: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,738 - __main__ - ERROR - Error processing record 126: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,780 - __main__ - ERROR - Error processing record 127: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,805 - __main__ - ERROR - Error processing record 128: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,835 - __main__ - ERROR - Error processing record 129: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,862 - __main__ - ERROR - Error processing record 130: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,890 - __main__ - ERROR - Error processing record 131: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,917 - __main__ - ERROR - Error processing record 132: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,950 - __main__ - ERROR - Error processing record 133: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:25,987 - __main__ - ERROR - Error processing record 134: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,016 - __main__ - ERROR - Error processing record 135: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,052 - __main__ - ERROR - Error processing record 136: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,089 - __main__ - ERROR - Error processing record 137: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,130 - __main__ - ERROR - Error processing record 138: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,162 - __main__ - ERROR - Error processing record 139: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,193 - __main__ - ERROR - Error processing record 140: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,221 - __main__ - ERROR - Error processing record 141: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,285 - __main__ - ERROR - Error processing record 142: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,320 - __main__ - ERROR - Error processing record 143: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,348 - __main__ - ERROR - Error processing record 144: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,380 - __main__ - ERROR - Error processing record 145: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,408 - __main__ - ERROR - Error processing record 146: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,437 - __main__ - ERROR - Error processing record 147: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,470 - __main__ - ERROR - Error processing record 148: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,504 - __main__ - ERROR - Error processing record 149: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,808 - __main__ - ERROR - Error processing record 150: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,842 - __main__ - ERROR - Error processing record 151: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,872 - __main__ - ERROR - Error processing record 152: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,912 - __main__ - ERROR - Error processing record 153: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,940 - __main__ - ERROR - Error processing record 154: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,966 - __main__ - ERROR - Error processing record 155: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:26,995 - __main__ - ERROR - Error processing record 156: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,021 - __main__ - ERROR - Error processing record 157: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,047 - __main__ - ERROR - Error processing record 158: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,073 - __main__ - ERROR - Error processing record 159: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,099 - __main__ - ERROR - Error processing record 160: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,140 - __main__ - ERROR - Error processing record 161: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,169 - __main__ - ERROR - Error processing record 162: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,228 - __main__ - ERROR - Error processing record 163: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,262 - __main__ - ERROR - Error processing record 164: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,304 - __main__ - ERROR - Error processing record 165: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,330 - __main__ - ERROR - Error processing record 166: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,357 - __main__ - ERROR - Error processing record 167: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,405 - __main__ - ERROR - Error processing record 168: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,431 - __main__ - ERROR - Error processing record 169: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,462 - __main__ - ERROR - Error processing record 170: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,497 - __main__ - ERROR - Error processing record 171: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,523 - __main__ - ERROR - Error processing record 172: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,554 - __main__ - ERROR - Error processing record 173: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,593 - __main__ - ERROR - Error processing record 174: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,637 - __main__ - ERROR - Error processing record 175: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,670 - __main__ - ERROR - Error processing record 176: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,713 - __main__ - ERROR - Error processing record 177: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,740 - __main__ - ERROR - Error processing record 178: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,783 - __main__ - ERROR - Error processing record 179: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,816 - __main__ - ERROR - Error processing record 180: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,852 - __main__ - ERROR - Error processing record 181: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,893 - __main__ - ERROR - Error processing record 182: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,919 - __main__ - ERROR - Error processing record 183: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,945 - __main__ - ERROR - Error processing record 184: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:27,987 - __main__ - ERROR - Error processing record 185: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,021 - __main__ - ERROR - Error processing record 186: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,058 - __main__ - ERROR - Error processing record 187: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,089 - __main__ - ERROR - Error processing record 188: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,125 - __main__ - ERROR - Error processing record 189: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,153 - __main__ - ERROR - Error processing record 190: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,202 - __main__ - ERROR - Error processing record 191: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,232 - __main__ - ERROR - Error processing record 192: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,267 - __main__ - ERROR - Error processing record 193: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,298 - __main__ - ERROR - Error processing record 194: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,329 - __main__ - ERROR - Error processing record 195: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,355 - __main__ - ERROR - Error processing record 196: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,382 - __main__ - ERROR - Error processing record 197: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,428 - __main__ - ERROR - Error processing record 198: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,466 - __main__ - ERROR - Error processing record 199: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,508 - __main__ - ERROR - Error processing record 200: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,536 - __main__ - ERROR - Error processing record 201: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,838 - __main__ - ERROR - Error processing record 202: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:28,895 - __main__ - ERROR - Error processing record 203: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:29,183 - __main__ - ERROR - Error processing record 204: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:29,260 - __main__ - ERROR - Error processing record 205: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:29,289 - __main__ - ERROR - Error processing record 206: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:29,315 - __main__ - ERROR - Error processing record 207: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:29,682 - __main__ - ERROR - Error processing record 208: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:29,753 - __main__ - ERROR - Error processing record 209: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,054 - __main__ - ERROR - Error processing record 210: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,106 - __main__ - ERROR - Error processing record 211: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,133 - __main__ - ERROR - Error processing record 212: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,180 - __main__ - ERROR - Error processing record 213: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,222 - __main__ - ERROR - Error processing record 214: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,258 - __main__ - ERROR - Error processing record 215: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,309 - __main__ - ERROR - Error processing record 216: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,338 - __main__ - ERROR - Error processing record 217: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,368 - __main__ - ERROR - Error processing record 218: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,412 - __main__ - ERROR - Error processing record 219: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,440 - __main__ - ERROR - Error processing record 220: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,467 - __main__ - ERROR - Error processing record 221: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,510 - __main__ - ERROR - Error processing record 222: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,539 - __main__ - ERROR - Error processing record 223: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,566 - __main__ - ERROR - Error processing record 224: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,594 - __main__ - ERROR - Error processing record 225: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,620 - __main__ - ERROR - Error processing record 226: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,648 - __main__ - ERROR - Error processing record 227: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,681 - __main__ - ERROR - Error processing record 228: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,707 - __main__ - ERROR - Error processing record 229: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,738 - __main__ - ERROR - Error processing record 230: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,771 - __main__ - ERROR - Error processing record 231: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,798 - __main__ - ERROR - Error processing record 232: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,825 - __main__ - ERROR - Error processing record 233: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,906 - __main__ - ERROR - Error processing record 234: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,935 - __main__ - ERROR - Error processing record 235: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,960 - __main__ - ERROR - Error processing record 236: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:30,991 - __main__ - ERROR - Error processing record 237: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,021 - __main__ - ERROR - Error processing record 238: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,060 - __main__ - ERROR - Error processing record 239: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,091 - __main__ - ERROR - Error processing record 240: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,120 - __main__ - ERROR - Error processing record 241: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,239 - __main__ - ERROR - Error processing record 242: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,288 - __main__ - ERROR - Error processing record 243: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,313 - __main__ - ERROR - Error processing record 244: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,344 - __main__ - ERROR - Error processing record 245: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,370 - __main__ - ERROR - Error processing record 246: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,398 - __main__ - ERROR - Error processing record 247: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,426 - __main__ - ERROR - Error processing record 248: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,733 - __main__ - ERROR - Error processing record 249: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,807 - __main__ - ERROR - Error processing record 250: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,853 - __main__ - ERROR - Error processing record 251: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:31,961 - __main__ - ERROR - Error processing record 252: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,005 - __main__ - ERROR - Error processing record 253: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,034 - __main__ - ERROR - Error processing record 254: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,060 - __main__ - ERROR - Error processing record 255: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,089 - __main__ - ERROR - Error processing record 256: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,141 - __main__ - ERROR - Error processing record 257: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,169 - __main__ - ERROR - Error processing record 258: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,195 - __main__ - ERROR - Error processing record 259: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,221 - __main__ - ERROR - Error processing record 260: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,255 - __main__ - ERROR - Error processing record 261: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,288 - __main__ - ERROR - Error processing record 262: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,334 - __main__ - ERROR - Error processing record 263: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,363 - __main__ - ERROR - Error processing record 264: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,393 - __main__ - ERROR - Error processing record 265: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,436 - __main__ - ERROR - Error processing record 266: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,464 - __main__ - ERROR - Error processing record 267: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,504 - __main__ - ERROR - Error processing record 268: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,529 - __main__ - ERROR - Error processing record 269: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,558 - __main__ - ERROR - Error processing record 270: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,601 - __main__ - ERROR - Error processing record 271: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,634 - __main__ - ERROR - Error processing record 272: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,676 - __main__ - ERROR - Error processing record 273: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,709 - __main__ - ERROR - Error processing record 274: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,741 - __main__ - ERROR - Error processing record 275: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,782 - __main__ - ERROR - Error processing record 276: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,811 - __main__ - ERROR - Error processing record 277: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,851 - __main__ - ERROR - Error processing record 278: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,878 - __main__ - ERROR - Error processing record 279: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,911 - __main__ - ERROR - Error processing record 280: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,943 - __main__ - ERROR - Error processing record 281: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:32,977 - __main__ - ERROR - Error processing record 282: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,009 - __main__ - ERROR - Error processing record 283: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,041 - __main__ - ERROR - Error processing record 284: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,069 - __main__ - ERROR - Error processing record 285: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,101 - __main__ - ERROR - Error processing record 286: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,132 - __main__ - ERROR - Error processing record 287: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,173 - __main__ - ERROR - Error processing record 288: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,204 - __main__ - ERROR - Error processing record 289: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,235 - __main__ - ERROR - Error processing record 290: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,265 - __main__ - ERROR - Error processing record 291: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,295 - __main__ - ERROR - Error processing record 292: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,347 - __main__ - ERROR - Error processing record 293: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,389 - __main__ - ERROR - Error processing record 294: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,420 - __main__ - ERROR - Error processing record 295: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,450 - __main__ - ERROR - Error processing record 296: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,488 - __main__ - ERROR - Error processing record 297: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,519 - __main__ - ERROR - Error processing record 298: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,556 - __main__ - ERROR - Error processing record 299: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,605 - __main__ - ERROR - Error processing record 300: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,640 - __main__ - ERROR - Error processing record 301: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,923 - __main__ - ERROR - Error processing record 302: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:33,992 - __main__ - ERROR - Error processing record 303: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,022 - __main__ - ERROR - Error processing record 304: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,055 - __main__ - ERROR - Error processing record 305: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,099 - __main__ - ERROR - Error processing record 306: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,132 - __main__ - ERROR - Error processing record 307: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,166 - __main__ - ERROR - Error processing record 308: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,192 - __main__ - ERROR - Error processing record 309: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,218 - __main__ - ERROR - Error processing record 310: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,250 - __main__ - ERROR - Error processing record 311: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,283 - __main__ - ERROR - Error processing record 312: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,601 - __main__ - ERROR - Error processing record 313: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,646 - __main__ - ERROR - Error processing record 314: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,678 - __main__ - ERROR - Error processing record 315: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,708 - __main__ - ERROR - Error processing record 316: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,738 - __main__ - ERROR - Error processing record 317: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,766 - __main__ - ERROR - Error processing record 318: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,806 - __main__ - ERROR - Error processing record 319: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,837 - __main__ - ERROR - Error processing record 320: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,867 - __main__ - ERROR - Error processing record 321: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:34,902 - __main__ - ERROR - Error processing record 322: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,024 - __main__ - ERROR - Error processing record 323: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,073 - __main__ - ERROR - Error processing record 324: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,103 - __main__ - ERROR - Error processing record 325: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,133 - __main__ - ERROR - Error processing record 326: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,164 - __main__ - ERROR - Error processing record 327: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,192 - __main__ - ERROR - Error processing record 328: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,226 - __main__ - ERROR - Error processing record 329: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,258 - __main__ - ERROR - Error processing record 330: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,294 - __main__ - ERROR - Error processing record 331: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,320 - __main__ - ERROR - Error processing record 332: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,351 - __main__ - ERROR - Error processing record 333: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,392 - __main__ - ERROR - Error processing record 334: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,421 - __main__ - ERROR - Error processing record 335: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,465 - __main__ - ERROR - Error processing record 336: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,507 - __main__ - ERROR - Error processing record 337: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,536 - __main__ - ERROR - Error processing record 338: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,565 - __main__ - ERROR - Error processing record 339: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,598 - __main__ - ERROR - Error processing record 340: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,625 - __main__ - ERROR - Error processing record 341: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,665 - __main__ - ERROR - Error processing record 342: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,700 - __main__ - ERROR - Error processing record 343: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,734 - __main__ - ERROR - Error processing record 344: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,769 - __main__ - ERROR - Error processing record 345: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,802 - __main__ - ERROR - Error processing record 346: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,847 - __main__ - ERROR - Error processing record 347: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,881 - __main__ - ERROR - Error processing record 348: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,911 - __main__ - ERROR - Error processing record 349: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,942 - __main__ - ERROR - Error processing record 350: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:35,977 - __main__ - ERROR - Error processing record 351: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:36,007 - __main__ - ERROR - Error processing record 352: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:36,037 - __main__ - ERROR - Error processing record 353: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:36,080 - __main__ - ERROR - Error processing record 354: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:36,119 - __main__ - ERROR - Error processing record 355: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:36,148 - __main__ - ERROR - Error processing record 356: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:36,174 - __main__ - ERROR - Error processing record 357: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:36,732 - __main__ - ERROR - Error processing record 358: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:36,866 - __main__ - ERROR - Error processing record 359: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,174 - __main__ - ERROR - Error processing record 360: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,229 - __main__ - ERROR - Error processing record 361: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,262 - __main__ - ERROR - Error processing record 362: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,312 - __main__ - ERROR - Error processing record 363: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,343 - __main__ - ERROR - Error processing record 364: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,383 - __main__ - ERROR - Error processing record 365: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,415 - __main__ - ERROR - Error processing record 366: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,446 - __main__ - ERROR - Error processing record 367: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,480 - __main__ - ERROR - Error processing record 368: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,794 - __main__ - ERROR - Error processing record 369: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,854 - __main__ - ERROR - Error processing record 370: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:37,980 - __main__ - ERROR - Error processing record 371: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,015 - __main__ - ERROR - Error processing record 372: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,055 - __main__ - ERROR - Error processing record 373: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,090 - __main__ - ERROR - Error processing record 374: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,118 - __main__ - ERROR - Error processing record 375: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,147 - __main__ - ERROR - Error processing record 376: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,191 - __main__ - ERROR - Error processing record 377: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,235 - __main__ - ERROR - Error processing record 378: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,275 - __main__ - ERROR - Error processing record 379: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,375 - __main__ - ERROR - Error processing record 380: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,422 - __main__ - ERROR - Error processing record 381: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,454 - __main__ - ERROR - Error processing record 382: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,486 - __main__ - ERROR - Error processing record 383: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,787 - __main__ - ERROR - Error processing record 384: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,845 - __main__ - ERROR - Error processing record 385: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,880 - __main__ - ERROR - Error processing record 386: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,920 - __main__ - ERROR - Error processing record 387: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,949 - __main__ - ERROR - Error processing record 388: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:38,981 - __main__ - ERROR - Error processing record 389: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,009 - __main__ - ERROR - Error processing record 390: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,040 - __main__ - ERROR - Error processing record 391: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,069 - __main__ - ERROR - Error processing record 392: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,403 - __main__ - ERROR - Error processing record 393: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,447 - __main__ - ERROR - Error processing record 394: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,498 - __main__ - ERROR - Error processing record 395: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,625 - __main__ - ERROR - Error processing record 396: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,681 - __main__ - ERROR - Error processing record 397: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,712 - __main__ - ERROR - Error processing record 398: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,748 - __main__ - ERROR - Error processing record 399: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,789 - __main__ - ERROR - Error processing record 400: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:39,846 - __main__ - ERROR - Error processing record 401: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,075 - __main__ - ERROR - Error processing record 402: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,117 - __main__ - ERROR - Error processing record 403: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,163 - __main__ - ERROR - Error processing record 404: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,213 - __main__ - ERROR - Error processing record 405: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,240 - __main__ - ERROR - Error processing record 406: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,311 - __main__ - ERROR - Error processing record 407: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,348 - __main__ - ERROR - Error processing record 408: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,378 - __main__ - ERROR - Error processing record 409: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,413 - __main__ - ERROR - Error processing record 410: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,465 - __main__ - ERROR - Error processing record 411: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,500 - __main__ - ERROR - Error processing record 412: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,531 - __main__ - ERROR - Error processing record 413: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,688 - __main__ - ERROR - Error processing record 414: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,718 - __main__ - ERROR - Error processing record 415: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,745 - __main__ - ERROR - Error processing record 416: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,774 - __main__ - ERROR - Error processing record 417: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,810 - __main__ - ERROR - Error processing record 418: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,844 - __main__ - ERROR - Error processing record 419: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,884 - __main__ - ERROR - Error processing record 420: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,928 - __main__ - ERROR - Error processing record 421: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,962 - __main__ - ERROR - Error processing record 422: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:40,993 - __main__ - ERROR - Error processing record 423: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,025 - __main__ - ERROR - Error processing record 424: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,059 - __main__ - ERROR - Error processing record 425: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,093 - __main__ - ERROR - Error processing record 426: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,137 - __main__ - ERROR - Error processing record 427: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,166 - __main__ - ERROR - Error processing record 428: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,238 - __main__ - ERROR - Error processing record 429: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,270 - __main__ - ERROR - Error processing record 430: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,295 - __main__ - ERROR - Error processing record 431: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,325 - __main__ - ERROR - Error processing record 432: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,364 - __main__ - ERROR - Error processing record 433: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,395 - __main__ - ERROR - Error processing record 434: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,427 - __main__ - ERROR - Error processing record 435: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,457 - __main__ - ERROR - Error processing record 436: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,490 - __main__ - ERROR - Error processing record 437: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,525 - __main__ - ERROR - Error processing record 438: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,555 - __main__ - ERROR - Error processing record 439: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,582 - __main__ - ERROR - Error processing record 440: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,612 - __main__ - ERROR - Error processing record 441: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,642 - __main__ - ERROR - Error processing record 442: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,675 - __main__ - ERROR - Error processing record 443: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,710 - __main__ - ERROR - Error processing record 444: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,749 - __main__ - ERROR - Error processing record 445: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,780 - __main__ - ERROR - Error processing record 446: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,819 - __main__ - ERROR - Error processing record 447: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,847 - __main__ - ERROR - Error processing record 448: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,891 - __main__ - ERROR - Error processing record 449: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,935 - __main__ - ERROR - Error processing record 450: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:41,973 - __main__ - ERROR - Error processing record 451: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,001 - __main__ - ERROR - Error processing record 452: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,034 - __main__ - ERROR - Error processing record 453: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,081 - __main__ - ERROR - Error processing record 454: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,114 - __main__ - ERROR - Error processing record 455: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,155 - __main__ - ERROR - Error processing record 456: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,190 - __main__ - ERROR - Error processing record 457: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,225 - __main__ - ERROR - Error processing record 458: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,522 - __main__ - ERROR - Error processing record 459: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,580 - __main__ - ERROR - Error processing record 460: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,611 - __main__ - ERROR - Error processing record 461: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,658 - __main__ - ERROR - Error processing record 462: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:42,986 - __main__ - ERROR - Error processing record 463: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,031 - __main__ - ERROR - Error processing record 464: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,233 - __main__ - ERROR - Error processing record 465: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,278 - __main__ - ERROR - Error processing record 466: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,308 - __main__ - ERROR - Error processing record 467: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,340 - __main__ - ERROR - Error processing record 468: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,381 - __main__ - ERROR - Error processing record 469: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,451 - __main__ - ERROR - Error processing record 470: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,483 - __main__ - ERROR - Error processing record 471: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,527 - __main__ - ERROR - Error processing record 472: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,561 - __main__ - ERROR - Error processing record 473: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,593 - __main__ - ERROR - Error processing record 474: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,646 - __main__ - ERROR - Error processing record 475: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,675 - __main__ - ERROR - Error processing record 476: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,717 - __main__ - ERROR - Error processing record 477: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,745 - __main__ - ERROR - Error processing record 478: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,775 - __main__ - ERROR - Error processing record 479: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,804 - __main__ - ERROR - Error processing record 480: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,835 - __main__ - ERROR - Error processing record 481: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,873 - __main__ - ERROR - Error processing record 482: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,920 - __main__ - ERROR - Error processing record 483: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,949 - __main__ - ERROR - Error processing record 484: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:43,982 - __main__ - ERROR - Error processing record 485: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,011 - __main__ - ERROR - Error processing record 486: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,038 - __main__ - ERROR - Error processing record 487: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,074 - __main__ - ERROR - Error processing record 488: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,113 - __main__ - ERROR - Error processing record 489: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,140 - __main__ - ERROR - Error processing record 490: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,176 - __main__ - ERROR - Error processing record 491: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,208 - __main__ - ERROR - Error processing record 492: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,483 - __main__ - ERROR - Error processing record 493: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,537 - __main__ - ERROR - Error processing record 494: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,578 - __main__ - ERROR - Error processing record 495: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,716 - __main__ - ERROR - Error processing record 496: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,753 - __main__ - ERROR - Error processing record 497: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,803 - __main__ - ERROR - Error processing record 498: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,838 - __main__ - ERROR - Error processing record 499: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,880 - __main__ - ERROR - Error processing record 500: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,916 - __main__ - ERROR - Error processing record 501: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,948 - __main__ - ERROR - Error processing record 502: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:44,983 - __main__ - ERROR - Error processing record 503: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,010 - __main__ - ERROR - Error processing record 504: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,054 - __main__ - ERROR - Error processing record 505: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,092 - __main__ - ERROR - Error processing record 506: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,124 - __main__ - ERROR - Error processing record 507: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,159 - __main__ - ERROR - Error processing record 508: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,193 - __main__ - ERROR - Error processing record 509: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,236 - __main__ - ERROR - Error processing record 510: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,275 - __main__ - ERROR - Error processing record 511: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,318 - __main__ - ERROR - Error processing record 512: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,355 - __main__ - ERROR - Error processing record 513: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,391 - __main__ - ERROR - Error processing record 514: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,420 - __main__ - ERROR - Error processing record 515: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,456 - __main__ - ERROR - Error processing record 516: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,487 - __main__ - ERROR - Error processing record 517: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,519 - __main__ - ERROR - Error processing record 518: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,548 - __main__ - ERROR - Error processing record 519: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,575 - __main__ - ERROR - Error processing record 520: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,612 - __main__ - ERROR - Error processing record 521: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,651 - __main__ - ERROR - Error processing record 522: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,685 - __main__ - ERROR - Error processing record 523: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,727 - __main__ - ERROR - Error processing record 524: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,768 - __main__ - ERROR - Error processing record 525: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,799 - __main__ - ERROR - Error processing record 526: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,839 - __main__ - ERROR - Error processing record 527: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,877 - __main__ - ERROR - Error processing record 528: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,917 - __main__ - ERROR - Error processing record 529: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:45,951 - __main__ - ERROR - Error processing record 530: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,264 - __main__ - ERROR - Error processing record 531: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,328 - __main__ - ERROR - Error processing record 532: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,366 - __main__ - ERROR - Error processing record 533: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,398 - __main__ - ERROR - Error processing record 534: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,441 - __main__ - ERROR - Error processing record 535: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,479 - __main__ - ERROR - Error processing record 536: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,508 - __main__ - ERROR - Error processing record 537: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,540 - __main__ - ERROR - Error processing record 538: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,589 - __main__ - ERROR - Error processing record 539: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,629 - __main__ - ERROR - Error processing record 540: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:46,668 - __main__ - ERROR - Error processing record 541: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,477 - __main__ - ERROR - Error processing record 542: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,528 - __main__ - ERROR - Error processing record 543: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,570 - __main__ - ERROR - Error processing record 544: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,608 - __main__ - ERROR - Error processing record 545: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,637 - __main__ - ERROR - Error processing record 546: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,670 - __main__ - ERROR - Error processing record 547: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,707 - __main__ - ERROR - Error processing record 548: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,747 - __main__ - ERROR - Error processing record 549: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,789 - __main__ - ERROR - Error processing record 550: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,822 - __main__ - ERROR - Error processing record 551: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:47,850 - __main__ - ERROR - Error processing record 552: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,021 - __main__ - ERROR - Error processing record 553: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,051 - __main__ - ERROR - Error processing record 554: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,081 - __main__ - ERROR - Error processing record 555: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,117 - __main__ - ERROR - Error processing record 556: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,151 - __main__ - ERROR - Error processing record 557: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,183 - __main__ - ERROR - Error processing record 558: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,212 - __main__ - ERROR - Error processing record 559: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,250 - __main__ - ERROR - Error processing record 560: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,297 - __main__ - ERROR - Error processing record 561: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,337 - __main__ - ERROR - Error processing record 562: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,378 - __main__ - ERROR - Error processing record 563: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,414 - __main__ - ERROR - Error processing record 564: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,744 - __main__ - ERROR - Error processing record 565: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,780 - __main__ - ERROR - Error processing record 566: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,831 - __main__ - ERROR - Error processing record 567: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,861 - __main__ - ERROR - Error processing record 568: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,889 - __main__ - ERROR - Error processing record 569: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,918 - __main__ - ERROR - Error processing record 570: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,945 - __main__ - ERROR - Error processing record 571: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:48,976 - __main__ - ERROR - Error processing record 572: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,021 - __main__ - ERROR - Error processing record 573: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,053 - __main__ - ERROR - Error processing record 574: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,083 - __main__ - ERROR - Error processing record 575: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,120 - __main__ - ERROR - Error processing record 576: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,175 - __main__ - ERROR - Error processing record 577: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,226 - __main__ - ERROR - Error processing record 578: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,286 - __main__ - ERROR - Error processing record 579: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,325 - __main__ - ERROR - Error processing record 580: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,355 - __main__ - ERROR - Error processing record 581: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,412 - __main__ - ERROR - Error processing record 582: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,461 - __main__ - ERROR - Error processing record 583: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,492 - __main__ - ERROR - Error processing record 584: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,531 - __main__ - ERROR - Error processing record 585: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,559 - __main__ - ERROR - Error processing record 586: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,592 - __main__ - ERROR - Error processing record 587: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,616 - __main__ - ERROR - Error processing record 588: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,645 - __main__ - ERROR - Error processing record 589: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,673 - __main__ - ERROR - Error processing record 590: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,706 - __main__ - ERROR - Error processing record 591: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,751 - __main__ - ERROR - Error processing record 592: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,798 - __main__ - ERROR - Error processing record 593: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,825 - __main__ - ERROR - Error processing record 594: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,899 - __main__ - ERROR - Error processing record 595: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,949 - __main__ - ERROR - Error processing record 596: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:49,988 - __main__ - ERROR - Error processing record 597: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,016 - __main__ - ERROR - Error processing record 598: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,052 - __main__ - ERROR - Error processing record 599: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,088 - __main__ - ERROR - Error processing record 600: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,118 - __main__ - ERROR - Error processing record 601: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,157 - __main__ - ERROR - Error processing record 602: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,202 - __main__ - ERROR - Error processing record 603: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,522 - __main__ - ERROR - Error processing record 604: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,589 - __main__ - ERROR - Error processing record 605: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,621 - __main__ - ERROR - Error processing record 606: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,654 - __main__ - ERROR - Error processing record 607: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,698 - __main__ - ERROR - Error processing record 608: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,844 - __main__ - ERROR - Error processing record 609: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,898 - __main__ - ERROR - Error processing record 610: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,929 - __main__ - ERROR - Error processing record 611: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:50,974 - __main__ - ERROR - Error processing record 612: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,000 - __main__ - ERROR - Error processing record 613: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,041 - __main__ - ERROR - Error processing record 614: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,081 - __main__ - ERROR - Error processing record 615: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,113 - __main__ - ERROR - Error processing record 616: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,154 - __main__ - ERROR - Error processing record 617: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,194 - __main__ - ERROR - Error processing record 618: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,238 - __main__ - ERROR - Error processing record 619: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,280 - __main__ - ERROR - Error processing record 620: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,319 - __main__ - ERROR - Error processing record 621: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,356 - __main__ - ERROR - Error processing record 622: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,392 - __main__ - ERROR - Error processing record 623: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,425 - __main__ - ERROR - Error processing record 624: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,474 - __main__ - ERROR - Error processing record 625: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,505 - __main__ - ERROR - Error processing record 626: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,537 - __main__ - ERROR - Error processing record 627: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,574 - __main__ - ERROR - Error processing record 628: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,869 - __main__ - ERROR - Error processing record 629: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,911 - __main__ - ERROR - Error processing record 630: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,941 - __main__ - ERROR - Error processing record 631: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,971 - __main__ - ERROR - Error processing record 632: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:51,994 - __main__ - ERROR - Error processing record 633: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,026 - __main__ - ERROR - Error processing record 634: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,060 - __main__ - ERROR - Error processing record 635: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,093 - __main__ - ERROR - Error processing record 636: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,203 - __main__ - ERROR - Error processing record 637: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,234 - __main__ - ERROR - Error processing record 638: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,271 - __main__ - ERROR - Error processing record 639: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,312 - __main__ - ERROR - Error processing record 640: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,358 - __main__ - ERROR - Error processing record 641: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,387 - __main__ - ERROR - Error processing record 642: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,431 - __main__ - ERROR - Error processing record 643: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,460 - __main__ - ERROR - Error processing record 644: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,505 - __main__ - ERROR - Error processing record 645: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,536 - __main__ - ERROR - Error processing record 646: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,567 - __main__ - ERROR - Error processing record 647: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,611 - __main__ - ERROR - Error processing record 648: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,643 - __main__ - ERROR - Error processing record 649: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,675 - __main__ - ERROR - Error processing record 650: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,709 - __main__ - ERROR - Error processing record 651: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,735 - __main__ - ERROR - Error processing record 652: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,772 - __main__ - ERROR - Error processing record 653: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,811 - __main__ - ERROR - Error processing record 654: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,835 - __main__ - ERROR - Error processing record 655: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,867 - __main__ - ERROR - Error processing record 656: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,901 - __main__ - ERROR - Error processing record 657: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,935 - __main__ - ERROR - Error processing record 658: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,965 - __main__ - ERROR - Error processing record 659: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:52,997 - __main__ - ERROR - Error processing record 660: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,036 - __main__ - ERROR - Error processing record 661: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,080 - __main__ - ERROR - Error processing record 662: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,114 - __main__ - ERROR - Error processing record 663: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,152 - __main__ - ERROR - Error processing record 664: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,177 - __main__ - ERROR - Error processing record 665: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,305 - __main__ - ERROR - Error processing record 666: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,359 - __main__ - ERROR - Error processing record 667: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,404 - __main__ - ERROR - Error processing record 668: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,436 - __main__ - ERROR - Error processing record 669: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,481 - __main__ - ERROR - Error processing record 670: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,508 - __main__ - ERROR - Error processing record 671: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,537 - __main__ - ERROR - Error processing record 672: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,568 - __main__ - ERROR - Error processing record 673: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,594 - __main__ - ERROR - Error processing record 674: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,631 - __main__ - ERROR - Error processing record 675: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,662 - __main__ - ERROR - Error processing record 676: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,693 - __main__ - ERROR - Error processing record 677: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,727 - __main__ - ERROR - Error processing record 678: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,757 - __main__ - ERROR - Error processing record 679: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,792 - __main__ - ERROR - Error processing record 680: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,916 - __main__ - ERROR - Error processing record 681: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,946 - __main__ - ERROR - Error processing record 682: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:53,981 - __main__ - ERROR - Error processing record 683: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,019 - __main__ - ERROR - Error processing record 684: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,047 - __main__ - ERROR - Error processing record 685: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,076 - __main__ - ERROR - Error processing record 686: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,117 - __main__ - ERROR - Error processing record 687: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,156 - __main__ - ERROR - Error processing record 688: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,186 - __main__ - ERROR - Error processing record 689: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,212 - __main__ - ERROR - Error processing record 690: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,250 - __main__ - ERROR - Error processing record 691: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,278 - __main__ - ERROR - Error processing record 692: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,326 - __main__ - ERROR - Error processing record 693: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,357 - __main__ - ERROR - Error processing record 694: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,409 - __main__ - ERROR - Error processing record 695: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,443 - __main__ - ERROR - Error processing record 696: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,474 - __main__ - ERROR - Error processing record 697: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,506 - __main__ - ERROR - Error processing record 698: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,557 - __main__ - ERROR - Error processing record 699: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,605 - __main__ - ERROR - Error processing record 700: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,637 - __main__ - ERROR - Error processing record 701: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:54,776 - __main__ - ERROR - Error processing record 702: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,087 - __main__ - ERROR - Error processing record 703: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,161 - __main__ - ERROR - Error processing record 704: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,191 - __main__ - ERROR - Error processing record 705: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,235 - __main__ - ERROR - Error processing record 706: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,275 - __main__ - ERROR - Error processing record 707: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,311 - __main__ - ERROR - Error processing record 708: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,339 - __main__ - ERROR - Error processing record 709: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,370 - __main__ - ERROR - Error processing record 710: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,408 - __main__ - ERROR - Error processing record 711: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,442 - __main__ - ERROR - Error processing record 712: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,495 - __main__ - ERROR - Error processing record 713: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,522 - __main__ - ERROR - Error processing record 714: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,559 - __main__ - ERROR - Error processing record 715: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,592 - __main__ - ERROR - Error processing record 716: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,619 - __main__ - ERROR - Error processing record 717: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,655 - __main__ - ERROR - Error processing record 718: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,695 - __main__ - ERROR - Error processing record 719: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,739 - __main__ - ERROR - Error processing record 720: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,767 - __main__ - ERROR - Error processing record 721: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,812 - __main__ - ERROR - Error processing record 722: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,843 - __main__ - ERROR - Error processing record 723: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,887 - __main__ - ERROR - Error processing record 724: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,929 - __main__ - ERROR - Error processing record 725: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:55,969 - __main__ - ERROR - Error processing record 726: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,016 - __main__ - ERROR - Error processing record 727: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,142 - __main__ - ERROR - Error processing record 728: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,172 - __main__ - ERROR - Error processing record 729: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,206 - __main__ - ERROR - Error processing record 730: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,233 - __main__ - ERROR - Error processing record 731: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,272 - __main__ - ERROR - Error processing record 732: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,298 - __main__ - ERROR - Error processing record 733: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,326 - __main__ - ERROR - Error processing record 734: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,353 - __main__ - ERROR - Error processing record 735: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,476 - __main__ - ERROR - Error processing record 736: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,806 - __main__ - ERROR - Error processing record 737: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:56,964 - __main__ - ERROR - Error processing record 738: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,019 - __main__ - ERROR - Error processing record 739: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,076 - __main__ - ERROR - Error processing record 740: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,211 - __main__ - ERROR - Error processing record 741: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,250 - __main__ - ERROR - Error processing record 742: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,280 - __main__ - ERROR - Error processing record 743: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,319 - __main__ - ERROR - Error processing record 744: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,351 - __main__ - ERROR - Error processing record 745: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,380 - __main__ - ERROR - Error processing record 746: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,406 - __main__ - ERROR - Error processing record 747: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,449 - __main__ - ERROR - Error processing record 748: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,476 - __main__ - ERROR - Error processing record 749: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,515 - __main__ - ERROR - Error processing record 750: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,552 - __main__ - ERROR - Error processing record 751: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,588 - __main__ - ERROR - Error processing record 752: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,696 - __main__ - ERROR - Error processing record 753: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,729 - __main__ - ERROR - Error processing record 754: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,770 - __main__ - ERROR - Error processing record 755: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,802 - __main__ - ERROR - Error processing record 756: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,839 - __main__ - ERROR - Error processing record 757: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,866 - __main__ - ERROR - Error processing record 758: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,892 - __main__ - ERROR - Error processing record 759: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,926 - __main__ - ERROR - Error processing record 760: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:57,952 - __main__ - ERROR - Error processing record 761: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:58,286 - __main__ - ERROR - Error processing record 762: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:58,321 - __main__ - ERROR - Error processing record 763: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:58,482 - __main__ - ERROR - Error processing record 764: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:58,542 - __main__ - ERROR - Error processing record 765: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:58,861 - __main__ - ERROR - Error processing record 766: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:58,941 - __main__ - ERROR - Error processing record 767: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:58,966 - __main__ - ERROR - Error processing record 768: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:58,996 - __main__ - ERROR - Error processing record 769: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,025 - __main__ - ERROR - Error processing record 770: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,054 - __main__ - ERROR - Error processing record 771: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,091 - __main__ - ERROR - Error processing record 772: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,161 - __main__ - ERROR - Error processing record 773: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,223 - __main__ - ERROR - Error processing record 774: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,262 - __main__ - ERROR - Error processing record 775: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,327 - __main__ - ERROR - Error processing record 776: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,372 - __main__ - ERROR - Error processing record 777: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,402 - __main__ - ERROR - Error processing record 778: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,444 - __main__ - ERROR - Error processing record 779: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,500 - __main__ - ERROR - Error processing record 780: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,550 - __main__ - ERROR - Error processing record 781: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,595 - __main__ - ERROR - Error processing record 782: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,656 - __main__ - ERROR - Error processing record 783: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,701 - __main__ - ERROR - Error processing record 784: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,788 - __main__ - ERROR - Error processing record 785: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,872 - __main__ - ERROR - Error processing record 786: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:14:59,902 - __main__ - ERROR - Error processing record 787: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:00,112 - __main__ - ERROR - Error processing record 788: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:00,155 - __main__ - ERROR - Error processing record 789: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:00,209 - __main__ - ERROR - Error processing record 790: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:00,267 - __main__ - ERROR - Error processing record 791: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:00,326 - __main__ - ERROR - Error processing record 792: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:00,961 - __main__ - ERROR - Error processing record 793: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,060 - __main__ - ERROR - Error processing record 794: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,113 - __main__ - ERROR - Error processing record 795: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,196 - __main__ - ERROR - Error processing record 796: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,248 - __main__ - ERROR - Error processing record 797: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,307 - __main__ - ERROR - Error processing record 798: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,359 - __main__ - ERROR - Error processing record 799: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,412 - __main__ - ERROR - Error processing record 800: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,488 - __main__ - ERROR - Error processing record 801: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,552 - __main__ - ERROR - Error processing record 802: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,600 - __main__ - ERROR - Error processing record 803: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,672 - __main__ - ERROR - Error processing record 804: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,732 - __main__ - ERROR - Error processing record 805: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,770 - __main__ - ERROR - Error processing record 806: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,817 - __main__ - ERROR - Error processing record 807: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,848 - __main__ - ERROR - Error processing record 808: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,884 - __main__ - ERROR - Error processing record 809: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,917 - __main__ - ERROR - Error processing record 810: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,957 - __main__ - ERROR - Error processing record 811: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:01,992 - __main__ - ERROR - Error processing record 812: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,037 - __main__ - ERROR - Error processing record 813: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,072 - __main__ - ERROR - Error processing record 814: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,112 - __main__ - ERROR - Error processing record 815: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,143 - __main__ - ERROR - Error processing record 816: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,173 - __main__ - ERROR - Error processing record 817: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,212 - __main__ - ERROR - Error processing record 818: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,238 - __main__ - ERROR - Error processing record 819: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,265 - __main__ - ERROR - Error processing record 820: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,293 - __main__ - ERROR - Error processing record 821: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,588 - __main__ - ERROR - Error processing record 822: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,638 - __main__ - ERROR - Error processing record 823: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,668 - __main__ - ERROR - Error processing record 824: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,708 - __main__ - ERROR - Error processing record 825: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,738 - __main__ - ERROR - Error processing record 826: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,771 - __main__ - ERROR - Error processing record 827: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,816 - __main__ - ERROR - Error processing record 828: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,850 - __main__ - ERROR - Error processing record 829: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,886 - __main__ - ERROR - Error processing record 830: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,948 - __main__ - ERROR - Error processing record 831: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:02,982 - __main__ - ERROR - Error processing record 832: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,013 - __main__ - ERROR - Error processing record 833: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,046 - __main__ - ERROR - Error processing record 834: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,076 - __main__ - ERROR - Error processing record 835: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,117 - __main__ - ERROR - Error processing record 836: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,154 - __main__ - ERROR - Error processing record 837: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,184 - __main__ - ERROR - Error processing record 838: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,493 - __main__ - ERROR - Error processing record 839: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,577 - __main__ - ERROR - Error processing record 840: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,661 - __main__ - ERROR - Error processing record 841: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,748 - __main__ - ERROR - Error processing record 842: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,830 - __main__ - ERROR - Error processing record 843: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:03,910 - __main__ - ERROR - Error processing record 844: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,120 - __main__ - ERROR - Error processing record 845: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,146 - __main__ - ERROR - Error processing record 846: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,173 - __main__ - ERROR - Error processing record 847: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,516 - __main__ - ERROR - Error processing record 848: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,575 - __main__ - ERROR - Error processing record 849: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,613 - __main__ - ERROR - Error processing record 850: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,639 - __main__ - ERROR - Error processing record 851: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,685 - __main__ - ERROR - Error processing record 852: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,715 - __main__ - ERROR - Error processing record 853: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,746 - __main__ - ERROR - Error processing record 854: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,776 - __main__ - ERROR - Error processing record 855: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,823 - __main__ - ERROR - Error processing record 856: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,853 - __main__ - ERROR - Error processing record 857: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,887 - __main__ - ERROR - Error processing record 858: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,919 - __main__ - ERROR - Error processing record 859: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:04,962 - __main__ - ERROR - Error processing record 860: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,008 - __main__ - ERROR - Error processing record 861: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,110 - __main__ - ERROR - Error processing record 862: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,151 - __main__ - ERROR - Error processing record 863: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,194 - __main__ - ERROR - Error processing record 864: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,268 - __main__ - ERROR - Error processing record 865: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,322 - __main__ - ERROR - Error processing record 866: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,402 - __main__ - ERROR - Error processing record 867: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,589 - __main__ - ERROR - Error processing record 868: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,645 - __main__ - ERROR - Error processing record 869: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,711 - __main__ - ERROR - Error processing record 870: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:05,764 - __main__ - ERROR - Error processing record 871: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:06,061 - __main__ - ERROR - Error processing record 872: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:06,428 - __main__ - ERROR - Error processing record 873: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:06,774 - __main__ - ERROR - Error processing record 874: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:06,871 - __main__ - ERROR - Error processing record 875: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:06,929 - __main__ - ERROR - Error processing record 876: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:06,976 - __main__ - ERROR - Error processing record 877: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,044 - __main__ - ERROR - Error processing record 878: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,126 - __main__ - ERROR - Error processing record 879: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,188 - __main__ - ERROR - Error processing record 880: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,228 - __main__ - ERROR - Error processing record 881: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,259 - __main__ - ERROR - Error processing record 882: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,338 - __main__ - ERROR - Error processing record 883: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,393 - __main__ - ERROR - Error processing record 884: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,439 - __main__ - ERROR - Error processing record 885: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,490 - __main__ - ERROR - Error processing record 886: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,535 - __main__ - ERROR - Error processing record 887: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,576 - __main__ - ERROR - Error processing record 888: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:07,995 - __main__ - ERROR - Error processing record 889: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,056 - __main__ - ERROR - Error processing record 890: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,105 - __main__ - ERROR - Error processing record 891: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,172 - __main__ - ERROR - Error processing record 892: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,231 - __main__ - ERROR - Error processing record 893: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,267 - __main__ - ERROR - Error processing record 894: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,298 - __main__ - ERROR - Error processing record 895: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,330 - __main__ - ERROR - Error processing record 896: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,362 - __main__ - ERROR - Error processing record 897: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,402 - __main__ - ERROR - Error processing record 898: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,439 - __main__ - ERROR - Error processing record 899: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,467 - __main__ - ERROR - Error processing record 900: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,503 - __main__ - ERROR - Error processing record 901: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,546 - __main__ - ERROR - Error processing record 902: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,577 - __main__ - ERROR - Error processing record 903: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,664 - __main__ - ERROR - Error processing record 904: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,722 - __main__ - ERROR - Error processing record 905: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,784 - __main__ - ERROR - Error processing record 906: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,852 - __main__ - ERROR - Error processing record 907: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,894 - __main__ - ERROR - Error processing record 908: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:08,945 - __main__ - ERROR - Error processing record 909: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,023 - __main__ - ERROR - Error processing record 910: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,236 - __main__ - ERROR - Error processing record 911: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,376 - __main__ - ERROR - Error processing record 912: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,426 - __main__ - ERROR - Error processing record 913: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,484 - __main__ - ERROR - Error processing record 914: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,544 - __main__ - ERROR - Error processing record 915: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,575 - __main__ - ERROR - Error processing record 916: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,610 - __main__ - ERROR - Error processing record 917: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,820 - __main__ - ERROR - Error processing record 918: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,912 - __main__ - ERROR - Error processing record 919: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:09,996 - __main__ - ERROR - Error processing record 920: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,050 - __main__ - ERROR - Error processing record 921: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,184 - __main__ - ERROR - Error processing record 922: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,291 - __main__ - ERROR - Error processing record 923: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,339 - __main__ - ERROR - Error processing record 924: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,390 - __main__ - ERROR - Error processing record 925: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,511 - __main__ - ERROR - Error processing record 926: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,552 - __main__ - ERROR - Error processing record 927: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,670 - __main__ - ERROR - Error processing record 928: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,731 - __main__ - ERROR - Error processing record 929: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,876 - __main__ - ERROR - Error processing record 930: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:10,920 - __main__ - ERROR - Error processing record 931: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,122 - __main__ - ERROR - Error processing record 932: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,175 - __main__ - ERROR - Error processing record 933: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,203 - __main__ - ERROR - Error processing record 934: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,228 - __main__ - ERROR - Error processing record 935: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,255 - __main__ - ERROR - Error processing record 936: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,291 - __main__ - ERROR - Error processing record 937: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,319 - __main__ - ERROR - Error processing record 938: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,354 - __main__ - ERROR - Error processing record 939: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,430 - __main__ - ERROR - Error processing record 940: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,483 - __main__ - ERROR - Error processing record 941: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,533 - __main__ - ERROR - Error processing record 942: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,579 - __main__ - ERROR - Error processing record 943: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,634 - __main__ - ERROR - Error processing record 944: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,673 - __main__ - ERROR - Error processing record 945: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:11,752 - __main__ - ERROR - Error processing record 946: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,101 - __main__ - ERROR - Error processing record 947: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,296 - __main__ - ERROR - Error processing record 948: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,344 - __main__ - ERROR - Error processing record 949: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,372 - __main__ - ERROR - Error processing record 950: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,526 - __main__ - ERROR - Error processing record 951: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,584 - __main__ - ERROR - Error processing record 952: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,619 - __main__ - ERROR - Error processing record 953: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,663 - __main__ - ERROR - Error processing record 954: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:12,967 - __main__ - ERROR - Error processing record 955: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,052 - __main__ - ERROR - Error processing record 956: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,230 - __main__ - ERROR - Error processing record 957: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,430 - __main__ - ERROR - Error processing record 958: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,460 - __main__ - ERROR - Error processing record 959: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,530 - __main__ - ERROR - Error processing record 960: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,585 - __main__ - ERROR - Error processing record 961: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,631 - __main__ - ERROR - Error processing record 962: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,668 - __main__ - ERROR - Error processing record 963: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,698 - __main__ - ERROR - Error processing record 964: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,739 - __main__ - ERROR - Error processing record 965: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,772 - __main__ - ERROR - Error processing record 966: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,810 - __main__ - ERROR - Error processing record 967: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,840 - __main__ - ERROR - Error processing record 968: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,869 - __main__ - ERROR - Error processing record 969: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,909 - __main__ - ERROR - Error processing record 970: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,947 - __main__ - ERROR - Error processing record 971: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:13,980 - __main__ - ERROR - Error processing record 972: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,023 - __main__ - ERROR - Error processing record 973: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,065 - __main__ - ERROR - Error processing record 974: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,092 - __main__ - ERROR - Error processing record 975: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,121 - __main__ - ERROR - Error processing record 976: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,148 - __main__ - ERROR - Error processing record 977: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,174 - __main__ - ERROR - Error processing record 978: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,202 - __main__ - ERROR - Error processing record 979: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,244 - __main__ - ERROR - Error processing record 980: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,272 - __main__ - ERROR - Error processing record 981: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,300 - __main__ - ERROR - Error processing record 982: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,333 - __main__ - ERROR - Error processing record 983: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,367 - __main__ - ERROR - Error processing record 984: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,400 - __main__ - ERROR - Error processing record 985: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,520 - __main__ - ERROR - Error processing record 986: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,562 - __main__ - ERROR - Error processing record 987: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,593 - __main__ - ERROR - Error processing record 988: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,632 - __main__ - ERROR - Error processing record 989: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,665 - __main__ - ERROR - Error processing record 990: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,706 - __main__ - ERROR - Error processing record 991: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,741 - __main__ - ERROR - Error processing record 992: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,769 - __main__ - ERROR - Error processing record 993: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:14,799 - __main__ - ERROR - Error processing record 994: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:15,117 - __main__ - ERROR - Error processing record 995: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:15,167 - __main__ - ERROR - Error processing record 996: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:15,203 - __main__ - ERROR - Error processing record 997: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:15,241 - __main__ - ERROR - Error processing record 998: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:15,277 - __main__ - ERROR - Error processing record 999: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:15,401 - __main__ - ERROR - Error processing record 1000: current transaction is aborted, commands ignored until end of transaction block
+
+2026-01-09 10:15:15,427 - __main__ - INFO - Batch committed: 0 successful, 1000 failed
+2026-01-09 10:15:15,516 - __main__ - INFO - Investment Debt Securities Data Verification:
+2026-01-09 10:15:15,517 - __main__ - INFO -    Total Records: 0
+2026-01-09 10:15:15,517 - __main__ - INFO -    Security Types:
+2026-01-09 10:15:15,518 - __main__ - INFO - Simple Investment Debt Securities Pipeline completed!
+2026-01-09 10:15:15,518 - __main__ - INFO - Final Statistics:
+2026-01-09 10:15:15,518 - __main__ - INFO -    Total Processed: 1000
+2026-01-09 10:15:15,519 - __main__ - INFO -    Successful Inserts: 0
+2026-01-09 10:15:15,519 - __main__ - INFO -    Failed Inserts: 1000
+2026-01-09 10:15:15,520 - __main__ - INFO -    Duration: 0:00:57.788737
+2026-01-09 10:15:15,520 - __main__ - INFO -    Success Rate: 0.0%
+2026-01-09 10:20:26,839 - __main__ - INFO - Starting Simple Investment Debt Securities Pipeline
+2026-01-09 10:20:27,556 - __main__ - INFO - Connected to PostgreSQL database
+2026-01-09 10:20:27,557 - __main__ - INFO - Fetching investment securities from DEPOSIT_ACCOUNT...
+2026-01-09 10:20:28,265 - db2_connection - INFO - [OK] Connected to DB2
+2026-01-09 10:20:30,376 - __main__ - INFO - Fetched 1000 investment securities from DEPOSIT_ACCOUNT
+2026-01-09 10:20:30,377 - __main__ - INFO - Processing and inserting investment debt securities data...
+2026-01-09 10:20:35,755 - __main__ - INFO - Processed 100 records...
+2026-01-09 10:20:41,743 - __main__ - INFO - Processed 200 records...
+2026-01-09 10:20:46,248 - __main__ - INFO - Processed 300 records...
+2026-01-09 10:20:52,265 - __main__ - INFO - Processed 400 records...
+2026-01-09 10:20:57,387 - __main__ - INFO - Processed 500 records...
+2026-01-09 10:21:03,639 - __main__ - INFO - Processed 600 records...
+2026-01-09 10:21:08,204 - __main__ - INFO - Processed 700 records...
+2026-01-09 10:21:14,777 - __main__ - INFO - Processed 800 records...
+2026-01-09 10:21:23,344 - __main__ - INFO - Processed 900 records...
+2026-01-09 10:21:31,310 - __main__ - INFO - Processed 1000 records...
+2026-01-09 10:21:31,343 - __main__ - INFO - Batch committed: 1000 successful, 0 failed
+2026-01-09 10:21:31,462 - __main__ - INFO - Investment Debt Securities Data Verification:
+2026-01-09 10:21:31,462 - __main__ - INFO -    Total Records: 1000
+2026-01-09 10:21:31,462 - __main__ - INFO -    Security Types:
+2026-01-09 10:21:31,463 - __main__ - INFO -      Corporate bonds: 1000 records
+2026-01-09 10:21:31,463 - __main__ - INFO - Simple Investment Debt Securities Pipeline completed!
+2026-01-09 10:21:31,463 - __main__ - INFO - Final Statistics:
+2026-01-09 10:21:31,464 - __main__ - INFO -    Total Processed: 1000
+2026-01-09 10:21:31,464 - __main__ - INFO -    Successful Inserts: 1000
+2026-01-09 10:21:31,464 - __main__ - INFO -    Failed Inserts: 0
+2026-01-09 10:21:31,464 - __main__ - INFO -    Duration: 0:01:04.624351
+2026-01-09 10:21:31,465 - __main__ - INFO -    Success Rate: 100.0%

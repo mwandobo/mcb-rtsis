@@ -94,18 +94,17 @@ class OtherBanksProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get insert query for balance with other banks"""
+        """Get insert query for balance with other banks (simple insert for now)"""
         return """
-        INSERT INTO balance_with_other_bank (
-            "reportingDate", "accountNumber", "accountName", "bankCode", country,
-            "relationshipType", "accountType", "subAccountType", currency,
+        INSERT INTO "balanceWithOtherBank" (
+            "reportingDate", "accountNumber", "accountName", "bankCode", "country",
+            "relationshipType", "accountType", "subAccountType", "currency",
             "orgAmount", "usdAmount", "tzsAmount", "transactionDate", "pastDueDays",
             "allowanceProbableLoss", "botProvision", "assetsClassificationCategory",
             "contractDate", "maturityDate", "externalRatingCorrespondentBank", "gradesUnratedBanks"
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
-
         """
     
     def validate_record(self, record: OtherBanksRecord) -> bool:

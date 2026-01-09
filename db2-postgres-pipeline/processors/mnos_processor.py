@@ -44,7 +44,7 @@ class MnosProcessor(BaseProcessor):
         )
     
     def insert_to_postgres(self, record: MnosRecord, pg_cursor) -> None:
-        """Insert MNOs record to PostgreSQL"""
+        """Insert MNOs record to PostgreSQL with upsert on mnoCode"""
         query = self.get_upsert_query()
         
         pg_cursor.execute(query, (
@@ -61,15 +61,24 @@ class MnosProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get insert query for balances with MNOs"""
+        """Get upsert query for balances with MNOs using mnoCode as unique constraint"""
         return """
-        INSERT INTO balances_with_mnos (
-            "reportingDate", "floatBalanceDate", "mnoCode", "tillNumber", currency,
+        INSERT INTO "balanceWithMnos" (
+            "reportingDate", "floatBalanceDate", "mnoCode", "tillNumber", "currency",
             "allowanceProbableLoss", "botProvision", "orgFloatAmount", "usdFloatAmount", "tzsFloatAmount"
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
-
+        ON CONFLICT ("mnoCode") DO UPDATE SET
+            "reportingDate" = EXCLUDED."reportingDate",
+            "floatBalanceDate" = EXCLUDED."floatBalanceDate",
+            "tillNumber" = EXCLUDED."tillNumber",
+            "currency" = EXCLUDED."currency",
+            "allowanceProbableLoss" = EXCLUDED."allowanceProbableLoss",
+            "botProvision" = EXCLUDED."botProvision",
+            "orgFloatAmount" = EXCLUDED."orgFloatAmount",
+            "usdFloatAmount" = EXCLUDED."usdFloatAmount",
+            "tzsFloatAmount" = EXCLUDED."tzsFloatAmount"
         """
     
     def validate_record(self, record: MnosRecord) -> bool:

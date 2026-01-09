@@ -21,7 +21,7 @@ def create_bot_balances_table():
     config = Config()
     
     create_table_sql = """
-    CREATE TABLE IF NOT EXISTS "balances_bot" (
+    CREATE TABLE IF NOT EXISTS "balancesBot" (
         "id" SERIAL PRIMARY KEY,
         "reportingDate" TIMESTAMP NOT NULL,
         "accountNumber" VARCHAR(50) NOT NULL,
@@ -43,11 +43,11 @@ def create_bot_balances_table():
     
     # Create indexes for better performance
     create_indexes_sql = [
-        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_account_number" ON "balances_bot" ("accountNumber");',
-        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_currency" ON "balances_bot" ("currency");',
-        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_reporting_date" ON "balances_bot" ("reportingDate");',
-        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_transaction_date" ON "balances_bot" ("transactionDate");',
-        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_account_type" ON "balances_bot" ("accountType");'
+        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_account_number" ON "balancesBot" ("accountNumber");',
+        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_currency" ON "balancesBot" ("currency");',
+        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_reporting_date" ON "balancesBot" ("reportingDate");',
+        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_transaction_date" ON "balancesBot" ("transactionDate");',
+        'CREATE INDEX IF NOT EXISTS "idx_balances_bot_account_type" ON "balancesBot" ("accountType");'
     ]
     
     # Create trigger for updated_at
@@ -60,9 +60,9 @@ def create_bot_balances_table():
     END;
     $$ LANGUAGE plpgsql;
     
-    DROP TRIGGER IF EXISTS "trigger_balances_bot_updated_at" ON "balances_bot";
+    DROP TRIGGER IF EXISTS "trigger_balances_bot_updated_at" ON "balancesBot";
     CREATE TRIGGER "trigger_balances_bot_updated_at"
-        BEFORE UPDATE ON "balances_bot"
+        BEFORE UPDATE ON "balancesBot"
         FOR EACH ROW
         EXECUTE FUNCTION update_balances_bot_updated_at();
     """
@@ -101,7 +101,7 @@ def create_bot_balances_table():
         cursor.execute("""
             SELECT column_name, data_type, is_nullable
             FROM information_schema.columns 
-            WHERE table_name = 'balances_bot'
+            WHERE table_name = 'balancesBot'
             ORDER BY ordinal_position;
         """)
         

@@ -1,0 +1,15 @@
+2026-01-07 03:22:05,420 - db2_connection - INFO - [OK] Connected to DB2
+2026-01-07 03:23:56,626 - __main__ - INFO - Starting Overdraft Pipeline
+2026-01-07 03:23:57,277 - db2_connection - INFO - [OK] Connected to DB2
+2026-01-07 03:23:57,278 - __main__ - INFO - Executing overdraft query...
+2026-01-07 03:23:58,506 - __main__ - INFO - Processing batch of 10 overdraft records
+2026-01-07 03:23:59,000 - __main__ - INFO - Committed batch. Total processed: 10
+2026-01-07 03:23:59,001 - __main__ - INFO - Overdraft pipeline completed!
+2026-01-07 03:23:59,001 - __main__ - INFO - Successfully processed: 10 records
+2026-01-07 03:24:26,451 - __main__ - INFO - Starting Overdraft Pipeline
+2026-01-07 03:24:27,096 - db2_connection - INFO - [OK] Connected to DB2
+2026-01-07 03:24:27,096 - __main__ - INFO - Executing overdraft query...
+2026-01-07 03:24:30,724 - __main__ - INFO - Processing batch of 100 overdraft records
+2026-01-07 03:24:34,817 - __main__ - INFO - Committed batch. Total processed: 100
+2026-01-07 03:24:34,817 - __main__ - INFO - Overdraft pipeline completed!
+2026-01-07 03:24:34,818 - __main__ - INFO - Successfully processed: 100 records
