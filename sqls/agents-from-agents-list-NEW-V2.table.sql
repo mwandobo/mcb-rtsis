@@ -168,6 +168,5 @@ FROM AGENTS_LIST al
                    ON ward_lkp.AGENT_ID = al.AGENT_ID
                        AND ward_lkp.rn = 1
 
-
 -- FETCH FIRST 10 ROWS ONLY
 ;
