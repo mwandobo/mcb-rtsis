@@ -20,7 +20,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
        null                                                                                         AS accountNumber,
        al.REGION                                                                                    AS region,
        al.DISTRICT                                                                                  AS district,
-       null                                                                                         AS ward,
+       AL.LOCATION                                                                                         AS ward,
        null                                                                                         AS street,
        null                                                                                         AS houseNumber,
        null                                                                                         AS postalCode,
