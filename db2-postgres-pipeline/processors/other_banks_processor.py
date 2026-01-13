@@ -1,5 +1,5 @@
 """
-Balance with Other Banks processor
+Simple Balance with Other Banks processor
 """
 
 from dataclasses import dataclass
@@ -17,7 +17,7 @@ class OtherBanksRecord(BaseRecord):
     country: str
     relationship_type: str
     account_type: str
-    sub_account_type: str
+    sub_account_type: Optional[str]
     currency: str
     org_amount: float
     usd_amount: Optional[float]
@@ -30,44 +30,83 @@ class OtherBanksRecord(BaseRecord):
     contract_date: str
     maturity_date: str
     external_rating_correspondent_bank: str
-    grades_unrated_banks: str
+    grades_unrated_banks: Optional[str]
     retry_count: int = 0
 
 class OtherBanksProcessor(BaseProcessor):
-    """Processor for balance with other banks data"""
+    """Simple processor for balance with other banks data"""
     
     def process_record(self, raw_data: Tuple, table_name: str) -> OtherBanksRecord:
         """Convert raw DB2 data to OtherBanksRecord"""
         return OtherBanksRecord(
             source_table=table_name,
-            timestamp_column_value=str(raw_data[0]),  # reportingDate
-            reporting_date=str(raw_data[0]),
-            account_number=str(raw_data[1]),
-            account_name=str(raw_data[2]),
-            bank_code=str(raw_data[3]),
-            country=str(raw_data[4]),
-            relationship_type=str(raw_data[5]),
-            account_type=str(raw_data[6]),
-            sub_account_type=str(raw_data[7]),
-            currency=str(raw_data[8]),
-            org_amount=float(raw_data[9]),
-            usd_amount=float(raw_data[10]) if raw_data[10] else None,
-            tzs_amount=float(raw_data[11]),
-            transaction_date=str(raw_data[12]),
-            past_due_days=int(raw_data[13]) if raw_data[13] else 0,
-            allowance_probable_loss=float(raw_data[14]),
-            bot_provision=float(raw_data[15]),
-            assets_classification_category=str(raw_data[16]),
-            contract_date=str(raw_data[17]),
-            maturity_date=str(raw_data[18]),
-            external_rating_correspondent_bank=str(raw_data[19]),
-            grades_unrated_banks=str(raw_data[20]),
+            timestamp_column_value=str(raw_data[0]),
+            reporting_date=str(raw_data[0]) if raw_data[0] else '',
+            account_number=str(raw_data[1]) if raw_data[1] else '',
+            account_name=str(raw_data[2]) if raw_data[2] else '',
+            bank_code=str(raw_data[3]) if raw_data[3] else '',
+            country=str(raw_data[4]) if raw_data[4] else '',
+            relationship_type=str(raw_data[5]) if raw_data[5] else '',
+            account_type=str(raw_data[6]) if raw_data[6] else '',
+            sub_account_type=str(raw_data[7]) if raw_data[7] else None,
+            currency=str(raw_data[8]) if raw_data[8] else '',
+            org_amount=float(raw_data[9]) if raw_data[9] is not None else 0.0,
+            usd_amount=float(raw_data[10]) if raw_data[10] is not None else None,
+            tzs_amount=float(raw_data[11]) if raw_data[11] is not None else 0.0,
+            transaction_date=str(raw_data[12]) if raw_data[12] else '',
+            past_due_days=int(raw_data[13]) if raw_data[13] is not None else 0,
+            allowance_probable_loss=float(raw_data[14]) if raw_data[14] is not None else 0.0,
+            bot_provision=float(raw_data[15]) if raw_data[15] is not None else 0.0,
+            assets_classification_category=str(raw_data[16]) if raw_data[16] else '',
+            contract_date=str(raw_data[17]) if raw_data[17] else '',
+            maturity_date=str(raw_data[18]) if raw_data[18] else '',
+            external_rating_correspondent_bank=str(raw_data[19]) if raw_data[19] else '',
+            grades_unrated_banks=str(raw_data[20]) if raw_data[20] else None,
+            original_timestamp=datetime.now().isoformat()
+        )
+    
+    def create_record_from_dict(self, record_data: dict) -> OtherBanksRecord:
+        """Create OtherBanksRecord from dictionary (for RabbitMQ consumption)"""
+        return OtherBanksRecord(
+            source_table='balance_with_other_banks',
+            timestamp_column_value=record_data.get('reportingDate', ''),
+            reporting_date=record_data.get('reportingDate', ''),
+            account_number=record_data.get('accountNumber', ''),
+            account_name=record_data.get('accountName', ''),
+            bank_code=record_data.get('bankCode', ''),
+            country=record_data.get('country', ''),
+            relationship_type=record_data.get('relationshipType', ''),
+            account_type=record_data.get('accountType', ''),
+            sub_account_type=record_data.get('subAccountType'),
+            currency=record_data.get('currency', ''),
+            org_amount=float(record_data.get('orgAmount', 0)) if record_data.get('orgAmount') is not None else 0.0,
+            usd_amount=float(record_data.get('usdAmount')) if record_data.get('usdAmount') is not None else None,
+            tzs_amount=float(record_data.get('tzsAmount', 0)) if record_data.get('tzsAmount') is not None else 0.0,
+            transaction_date=record_data.get('transactionDate', ''),
+            past_due_days=int(record_data.get('pastDueDays', 0)) if record_data.get('pastDueDays') is not None else 0,
+            allowance_probable_loss=float(record_data.get('allowanceProbableLoss', 0)) if record_data.get('allowanceProbableLoss') is not None else 0.0,
+            bot_provision=float(record_data.get('botProvision', 0)) if record_data.get('botProvision') is not None else 0.0,
+            assets_classification_category=record_data.get('assetsClassificationCategory', ''),
+            contract_date=record_data.get('contractDate', ''),
+            maturity_date=record_data.get('maturityDate', ''),
+            external_rating_correspondent_bank=record_data.get('externalRatingCorrespondentBank', ''),
+            grades_unrated_banks=record_data.get('gradesUnratedBanks'),
             original_timestamp=datetime.now().isoformat()
         )
     
     def insert_to_postgres(self, record: OtherBanksRecord, pg_cursor) -> None:
         """Insert Other Banks record to PostgreSQL"""
-        query = self.get_upsert_query()
+        query = """
+        INSERT INTO "balanceWithOtherBank" (
+            "reportingDate", "accountNumber", "accountName", "bankCode", "country",
+            "relationshipType", "accountType", "subAccountType", "currency",
+            "orgAmount", "usdAmount", "tzsAmount", "transactionDate", "pastDueDays",
+            "allowanceProbableLoss", "botProvision", "assetsClassificationCategory",
+            "contractDate", "maturityDate", "externalRatingCorrespondentBank", "gradesUnratedBanks"
+        ) VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        )
+        """
         
         pg_cursor.execute(query, (
             record.reporting_date,
@@ -94,7 +133,7 @@ class OtherBanksProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get insert query for balance with other banks (simple insert for now)"""
+        """Get upsert query for balance with other banks"""
         return """
         INSERT INTO "balanceWithOtherBank" (
             "reportingDate", "accountNumber", "accountName", "bankCode", "country",
@@ -112,10 +151,8 @@ class OtherBanksProcessor(BaseProcessor):
         if not super().validate_record(record):
             return False
         
-        # Other Banks-specific validations
+        # Basic validations
         if not record.account_number:
-            return False
-        if record.org_amount is None:
             return False
         if not record.currency:
             return False
@@ -123,11 +160,3 @@ class OtherBanksProcessor(BaseProcessor):
             return False
             
         return True
-    
-    def transform_data(self, raw_data: Tuple) -> dict:
-        """Transform Other Banks data"""
-        # Add any Other Banks-specific transformations here
-        return {
-            'currency_normalized': str(raw_data[8]).strip().upper(),
-            'amount_validated': max(0, float(raw_data[9])) if raw_data[9] else 0
-        }

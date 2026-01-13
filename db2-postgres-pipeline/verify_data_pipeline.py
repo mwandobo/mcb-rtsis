@@ -32,6 +32,7 @@ def verify_data_pipeline():
         
         # List of tables to check
         tables_to_check = [
+            'agents',
             'microfinanceSegmentLoans',
             'balanceWithOtherBank',
             'balancesBot',

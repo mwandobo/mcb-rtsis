@@ -287,47 +287,54 @@ class Config:
             'balance_with_other_banks': TableConfig(
                 name='balance_with_other_banks',
                 query="""
-                SELECT
-                    CURRENT_TIMESTAMP AS reportingDate,
-                    gte.FK_GLG_ACCOUNTACCO as accountNumber,
-                    c.FIRST_NAME as accountName,
-                    CASE
-                        WHEN UPPER(c.FIRST_NAME) = 'ECOBANK' THEN 'ECOCTZTZXXX'
-                        WHEN UPPER(c.FIRST_NAME) = 'BOA' THEN 'EUAFTZTZXXX'
-                        WHEN UPPER(c.FIRST_NAME) = 'TPB' THEN 'TAPBTZTZ'
-                        WHEN UPPER(c.FIRST_NAME) = 'TANZANIA POSTAL BANK' THEN 'TAPBTZTZXX'
-                        ELSE VARCHAR(gte.FK0UNITCODE)
-                    END AS bankCode,
-                    'Tanzania' as Country,
-                    'Domestic bank related' as relationshipType,
-                    '' as accountType,
-                    '' as subAccountType,
-                    gte.CURRENCY_SHORT_DES as currency,
-                    gte.DC_AMOUNT AS orgAmount,
-                    CASE
-                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                            THEN gte.DC_AMOUNT
-                        ELSE NULL
-                    END AS usdAmount,
-                    CASE
-                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                            THEN gte.DC_AMOUNT * 2500
-                        ELSE
-                            gte.DC_AMOUNT
-                    END AS tzsAmount,
-                    gte.TRN_DATE as transactionDate,
-                    (DATE(gte.AVAILABILITY_DATE) - DATE(gte.TRN_DATE)) AS pastDueDays,
-                    0 as allowanceProbableLoss,
-                    0 as botProvision,
-                    'Current' as assetsClassificationCategory,
-                    gte.TRN_DATE as contractDate,
-                    gte.AVAILABILITY_DATE as maturityDate,
-                    'Highly rated Multilateral Development Banks' as externalRatingCorrespondentBank,
-                    '' as gradesUnratedBanks
+                SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
+                       pa.ACCOUNT_NUMBER                                  as accountNumber,
+                       c.SURNAME                                          as accountName,
+                       CASE
+                           WHEN UPPER(c.FIRST_NAME) = 'ECOBANK' THEN '040'
+                           WHEN UPPER(c.FIRST_NAME) = 'BOA' THEN '009'
+                           WHEN UPPER(c.FIRST_NAME) = 'TPB' THEN '048'
+                           WHEN UPPER(c.FIRST_NAME) = 'TANZANIA POSTAL BANK' THEN '048'
+                           END                                            AS bankCode,
+                       'TANZANIA, UNITED REPUBLIC OF'                     as Country,
+                       'Domestic bank related'                            as relationshipType,
+                       'Current'                                          as accountType,
+                       null                                               as subAccountType,
+                       gte.CURRENCY_SHORT_DES                             as currency,
+                       gte.DC_AMOUNT                                      AS orgAmount,
+                       CASE
+                           WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                               THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+                           WHEN gte.CURRENCY_SHORT_DES IN ('TZ', 'TZS')
+                               THEN DECIMAL(gte.DC_AMOUNT / 2500.00, 18, 2)
+                           ELSE
+                               NULL
+                           END                                            AS usdAmount,
+                       CASE
+                           WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                               THEN DECIMAL(gte.DC_AMOUNT * 2500.00, 18, 2)
+                           WHEN gte.CURRENCY_SHORT_DES IN ('TZ', 'TZS')
+                               THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+                           ELSE
+                               NULL
+                           END                                            AS tzsAmount,
+                       gte.TRN_DATE                                       as transactionDate,
+                       (DATE(gte.AVAILABILITY_DATE) - DATE(gte.TRN_DATE)) AS pastDueDays,
+                       0                                                  as allowanceProbableLoss,
+                       0                                                  as botProvision,
+                       'Current'                                          as assetsClassificationCategory,
+                       gte.TRN_DATE                                       as contractDate,
+                       gte.AVAILABILITY_DATE                              as maturityDate,
+                       'Highly rated Multilateral Development Banks'      as externalRatingCorrespondentBank,
+                       NULL                                               as gradesUnratedBanks
                 FROM GLI_TRX_EXTRACT as gte
-                JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
-                JOIN CUSTOMER c ON gte.CUST_ID = c.CUST_ID
-                WHERE gl.EXTERNAL_GLACCOUNT IN('100050001')
+                         LEFT JOIN
+                     GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                         LEFT JOIN
+                     CUSTOMER c ON gte.CUST_ID = c.CUST_ID
+                         LEFT JOIN
+                     PROFITS.PROFITS_ACCOUNT pa ON gte.CUST_ID = pa.CUST_ID and PRFT_SYSTEM = 3
+                where gl.EXTERNAL_GLACCOUNT IN ('100050001','100013000','100050000') AND pa.ACCOUNT_NUMBER <> ''
                 ORDER BY gte.TRN_DATE
                 FETCH FIRST 1000 ROWS ONLY
                 """,
@@ -690,78 +697,204 @@ class Config:
             'agents': TableConfig(
                 name='agents',
                 query="""
-                SELECT
-                    VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
-                    TRIM(COALESCE(c.FIRST_NAME, '') || ' ' || COALESCE(c.MIDDLE_NAME, '') || ' ' || COALESCE(c.SURNAME, '')) AS agentName,
-                    CAST(c.CUST_ID AS VARCHAR(50)) AS agentId,
-                    COALESCE(at.USER_CODE, RIGHT(c.MOBILE_TEL, 6), CAST(c.CUST_ID AS VARCHAR(8))) AS tillNumber,
-                    CASE 
-                        WHEN c.CUST_TYPE = '1' THEN 'Individual'
-                        WHEN c.CUST_TYPE = '2' THEN 'Corporate'
-                        WHEN c.CUST_TYPE = 'B' THEN 'Business'
-                        ELSE 'Other'
-                    END AS businessForm,
-                    'ThirdPartyAgent' AS agentPrincipal,
-                    TRIM(COALESCE(c.FIRST_NAME, '') || ' ' || COALESCE(c.MIDDLE_NAME, '') || ' ' || COALESCE(c.SURNAME, '')) AS agentPrincipalName,
-                    CASE 
-                        WHEN c.SEX = 'M' THEN 'Male'
-                        WHEN c.SEX = 'F' THEN 'Female'
-                        ELSE 'NotSpecified'
-                    END AS gender,
-                    VARCHAR_FORMAT(COALESCE(c.CUSTOMER_BEGIN_DAT, CURRENT_DATE), 'DDMMYYYYHHMM') AS registrationDate,
-                    CASE 
-                        WHEN c.ENTRY_STATUS = '0' 
-                            THEN VARCHAR_FORMAT(COALESCE(c.LAST_UPDATE, CURRENT_DATE), 'DDMMYYYYHHMM')
-                        ELSE NULL
-                    END AS closedDate,
-                    COALESCE(c.CHAMBER_ID, 'CERT' || CAST(c.CUST_ID AS VARCHAR(10))) AS certIncorporation,
-                    'Tanzania' AS nationality,
-                    CASE 
-                        WHEN c.ENTRY_STATUS = '1' AND COALESCE(at.ENTRY_STATUS, '1') = '1' THEN 'Active'
-                        WHEN c.ENTRY_STATUS = '0' OR at.ENTRY_STATUS = '0' THEN 'Inactive'
-                        ELSE 'Suspended'
-                    END AS agentStatus,
-                    CASE 
-                        WHEN c.CUST_TYPE = '1' THEN 'Individual'
-                        WHEN c.CUST_TYPE = '2' THEN 'Corporate'
-                        WHEN c.CUST_TYPE = 'B' THEN 'Business'
-                        ELSE 'Other'
-                    END AS agentType,
-                    'ACC' || CAST(c.CUST_ID AS VARCHAR(10)) AS accountNumber,
-                    CASE 
-                        WHEN at.LOCATION LIKE '%DSM%' OR at.LOCATION LIKE '%DAR%' THEN 'Dar es Salaam'
-                        WHEN at.LOCATION LIKE '%MWANZA%' THEN 'Mwanza'
-                        WHEN at.LOCATION LIKE '%MBEYA%' THEN 'Mbeya'
-                        WHEN at.LOCATION LIKE '%MOROGORO%' THEN 'Morogoro'
-                        WHEN at.LOCATION LIKE '%ARUSHA%' THEN 'Arusha'
-                        ELSE 'Dar es Salaam'
-                    END AS region,
-                    CASE 
-                        WHEN at.LOCATION LIKE '%KINONDONI%' THEN 'Kinondoni'
-                        WHEN at.LOCATION LIKE '%TEMEKE%' THEN 'Temeke'
-                        WHEN at.LOCATION LIKE '%ILALA%' THEN 'Ilala'
-                        WHEN at.LOCATION LIKE '%UBUNGO%' THEN 'Ubungo'
-                        ELSE 'Kinondoni'
-                    END AS district,
-                    CASE 
-                        WHEN at.LOCATION LIKE '%MSASANI%' THEN 'Msasani'
-                        WHEN at.LOCATION LIKE '%MAGOMENI%' THEN 'Magomeni'
-                        WHEN at.LOCATION LIKE '%KARIAKOO%' THEN 'Kariakoo'
-                        ELSE 'Msasani'
-                    END AS ward,
-                    COALESCE(SUBSTR(at.LOCATION, 1, 50), c.EMPLOYER_ADDRESS, 'Unknown Street') AS street,
-                    'Plot 123' AS houseNumber,
-                    COALESCE(c.DAI_NUMBER, '12345') AS postalCode,
-                    'Tanzania' AS country,
-                    '0.0000,0.0000' AS gpsCoordinates,
-                    COALESCE(c.CHAMBER_ID, 'TIN' || CAST(c.CUST_ID AS VARCHAR(10))) AS agentTaxIdentificationNumber,
-                    COALESCE(c.CHAMBER_ID, 'BL' || CAST(c.CUST_ID AS VARCHAR(10))) AS businessLicense,
-                    COALESCE(c.LAST_UPDATE, CURRENT_TIMESTAMP) AS lastModified
-                FROM CUSTOMER c
-                LEFT JOIN AGENT_TERMINAL at ON at.FK_AGENT_CUST_ID = c.CUST_ID AND at.ENTRY_STATUS = '1'
-                WHERE c.CUST_ID IN (186,8536,8661,9368,13692,16765,22410,23958,25980,26587,26962,28651,32799,32992,34671,34967,37538,38208,38480,38971,38988,39122,39572,40248,41480,42338,42488,43415,45012,45117,45186,47027,47054,47283,48297,48877,50489,51611,51853,51893,52592,52733,52815,55606,56431,57175,59921,60087,60130,60175,60265,60611,60723,61305,61335,61927,62098,62310,62673)
-                    AND COALESCE(c.LAST_UPDATE, c.CUSTOMER_BEGIN_DAT) >= TIMESTAMP('2016-01-01 00:00:00')
-                ORDER BY COALESCE(c.LAST_UPDATE, c.CUSTOMER_BEGIN_DAT), c.CUST_ID
+                SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                                            AS reportingDate,
+                       TRIM(
+                               CAST(TRIM(COALESCE(be.FIRST_NAME, '')) AS VARCHAR(100)) ||
+                               CASE
+                                   WHEN TRIM(COALESCE(be.FATHER_NAME, '')) <> ''
+                                       THEN ' ' || CAST(TRIM(be.FATHER_NAME) AS VARCHAR(100))
+                                   ELSE ''
+                                   END ||
+                               CASE
+                                   WHEN TRIM(COALESCE(be.LAST_NAME, '')) <> ''
+                                       THEN ' ' || CAST(TRIM(be.LAST_NAME) AS VARCHAR(100))
+                                   ELSE ''
+                                   END
+                       )                                                                                            AS agentName,
+                       al.AGENT_ID                                                                                  AS agentId,
+                       null                                                                                         AS tillNumber,
+                       CASE
+                           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'SOLE PROPRIETORY' THEN 'Sole Proprietor'
+                           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'LIMITED COMPANY' THEN 'Company'
+                           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'PRIVATE COMPANY' THEN 'Company'
+                           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'CO-OPERATIVE SOCIETY' THEN 'Trust'
+                           WHEN UPPER(TRIM(al.BUSINESS_FORM)) = 'PARTNERSHIP' THEN 'Partnership'
+                           ELSE TRIM(al.BUSINESS_FORM)
+                           END                                                                                      AS businessForm,
+                       'bank'                                                                                       AS agentPrincipal,
+                       'Selcom'                                                                                     AS agentPrincipalName,
+                       CASE WHEN be.SEX = 'M' then 'Male' WHEN be.SEX = 'F' then 'female' ELSE 'Not Applicable' END AS gender,
+                       VARCHAR_FORMAT(COALESCE(be.TMSTAMP, CURRENT_DATE), 'DDMMYYYYHHMM')                           AS registrationDate,
+                       null                                                                                         AS closedDate,
+                       al.CERT_IN_CORPORATION                                                                       AS certIncorporation,
+                       'TANZANIA, UNITED REPUBLIC OF'                                                               AS nationality,
+                       CASE
+                           WHEN be.EMPL_STATUS = '1' THEN 'Active'
+                           WHEN be.EMPL_STATUS = '0' THEN 'Inactive'
+                           ELSE 'Suspended'
+                           END                                                                                      AS agentStatus,
+                       'super agent'                                                                                AS agentType,
+                       null                                                                                         AS accountNumber,
+                       COALESCE(region_lkp.BOT_REGION, al.REGION)                                                   AS region,
+                       COALESCE(district_lkp.BOT_DISTRICT, al.DISTRICT)                                             AS district,
+                       COALESCE(ward_lkp.BOT_WARD, al.LOCATION, 'N/A')                                              AS ward,
+                       'N/A'                                                                                        AS street,
+                       'N/A'                                                                                        AS houseNumber,
+                       'N/A'                                                                                        AS postalCode,
+                       'TANZANIA, UNITED REPUBLIC OF'                                                               AS country,
+                       al.GPS                                                                                       AS gpsCoordinates,
+                       al.TIN                                                                                       AS agentTaxIdentificationNumber,
+                       CASE
+                           -- 1️⃣ Comma exists
+                           WHEN LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) > 0 THEN
+                               CASE
+                                   -- 1a. If there's a space before the comma, use first word (up to first space)
+                                   WHEN LOCATE(' ', SUBSTR(al.BUSINESS_LICENCE_ISSUER_AND_DATE, 1,
+                                                           LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1)) > 0 THEN
+                                       TRIM(
+                                               SUBSTR(
+                                                       al.BUSINESS_LICENCE_ISSUER_AND_DATE,
+                                                       1,
+                                                       LOCATE(' ', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1
+                                               )
+                                       )
+                                   -- 1b. No space before comma, use everything before comma
+                                   ELSE
+                                       TRIM(
+                                               SUBSTR(
+                                                       al.BUSINESS_LICENCE_ISSUER_AND_DATE,
+                                                       1,
+                                                       LOCATE(',', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1
+                                               )
+                                       )
+                                   END
+                           -- 2️⃣ No comma, but space exists
+                           WHEN LOCATE(' ', al.BUSINESS_LICENCE_ISSUER_AND_DATE) > 0 THEN
+                               TRIM(
+                                       SUBSTR(
+                                               al.BUSINESS_LICENCE_ISSUER_AND_DATE,
+                                               1,
+                                               LOCATE(' ', al.BUSINESS_LICENCE_ISSUER_AND_DATE) - 1
+                                       )
+                               )
+                           -- 3️⃣ Last resort: use whole string
+                           ELSE TRIM(al.BUSINESS_LICENCE_ISSUER_AND_DATE)
+                           END                                                                                      AS businessLicense,
+                       COALESCE(be.TMSTAMP, CURRENT_TIMESTAMP)                                                      AS lastModified
+                FROM AGENTS_LIST al
+                         RIGHT JOIN BANKEMPLOYEE be
+                                    ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(be.STAFF_NO)
+                         LEFT JOIN (SELECT al.AGENT_ID,
+                                           bl.REGION AS BOT_REGION,
+                                           ROW_NUMBER() OVER (
+                                               PARTITION BY al.AGENT_ID
+                                               ORDER BY
+                                                   CASE
+                                                       WHEN UPPER(TRIM(al.REGION)) = UPPER(TRIM(bl.REGION)) THEN 1 -- exact
+                                                       WHEN UPPER(TRIM(al.REGION)) LIKE UPPER(TRIM(bl.REGION)) || '%'
+                                                           THEN 2 -- safe starts-with
+                                                       ELSE 99 -- do not allow random fallback
+                                                       END,
+                                                   LENGTH(TRIM(bl.REGION)) DESC
+                                               )     AS rn
+                                    FROM AGENTS_LIST al
+                                             JOIN BANK_LOCATION_LOOKUP_V2 bl
+                                                  ON UPPER(TRIM(al.REGION)) = UPPER(TRIM(bl.REGION))
+                                                      OR (UPPER(TRIM(al.REGION)) LIKE UPPER(TRIM(bl.REGION)) || '%' AND
+                                                          LENGTH(TRIM(bl.REGION)) >= 4)) region_lkp
+                                   ON region_lkp.AGENT_ID = al.AGENT_ID
+                                       AND region_lkp.rn = 1
+
+                         LEFT JOIN (SELECT al.AGENT_ID,
+                                           bl.DISTRICT AS BOT_DISTRICT,
+                                           ROW_NUMBER() OVER (
+                                               PARTITION BY al.AGENT_ID
+                                               ORDER BY
+                                                   CASE
+                                                       -- 1️⃣ Exact match
+                                                       WHEN UPPER(TRIM(al.DISTRICT)) = UPPER(TRIM(bl.DISTRICT)) THEN 1
+
+                                                       -- 2️⃣ Starts-with match (safe)
+                                                       WHEN UPPER(TRIM(al.DISTRICT)) LIKE UPPER(TRIM(bl.DISTRICT)) || '%'
+                                                           AND LENGTH(TRIM(bl.DISTRICT)) >= 4 THEN 2
+
+                                                       -- 3️⃣ No fallback
+                                                       ELSE 99
+                                                       END,
+                                                   LENGTH(TRIM(bl.DISTRICT)) DESC
+                                               )       AS rn
+                                    FROM AGENTS_LIST al
+                                             JOIN BANK_LOCATION_LOOKUP_V2 bl
+                                                  ON (
+                                                      UPPER(TRIM(al.DISTRICT)) = UPPER(TRIM(bl.DISTRICT))
+                                                          OR (
+                                                          UPPER(TRIM(al.DISTRICT)) LIKE UPPER(TRIM(bl.DISTRICT)) || '%'
+                                                              AND LENGTH(TRIM(bl.DISTRICT)) >= 4
+                                                          )
+                                                      )
+                                    WHERE TRIM(al.DISTRICT) IS NOT NULL
+                                      AND TRIM(al.DISTRICT) <> '') district_lkp
+                                   ON district_lkp.AGENT_ID = al.AGENT_ID
+                                       AND district_lkp.rn = 1
+                         LEFT JOIN (SELECT al.AGENT_ID,
+                                           bl.WARD AS BOT_WARD,
+                                           ROW_NUMBER() OVER (
+                                               PARTITION BY al.AGENT_ID
+                                               ORDER BY
+                                                   CASE
+                                                       -- 1️⃣ Exact match
+                                                       WHEN UPPER(TRIM(al.LOCATION)) = UPPER(TRIM(bl.WARD)) THEN 1
+
+                                                       -- 2️⃣ Starts-with match (safe)
+                                                       WHEN UPPER(TRIM(al.LOCATION)) LIKE UPPER(TRIM(bl.WARD)) || '%'
+                                                           AND LENGTH(TRIM(bl.WARD)) >= 4 THEN 2
+
+                                                       -- 3️⃣ No fallback
+                                                       ELSE 99
+                                                       END,
+                                                   LENGTH(TRIM(bl.WARD)) DESC
+                                               )   AS rn
+                                    FROM AGENTS_LIST al
+                                             JOIN BANK_LOCATION_LOOKUP_V2 bl
+                                                  ON (
+                                                      UPPER(TRIM(al.LOCATION)) = UPPER(TRIM(bl.WARD))
+                                                          OR (
+                                                          UPPER(TRIM(al.LOCATION)) LIKE UPPER(TRIM(bl.WARD)) || '%'
+                                                              AND LENGTH(TRIM(bl.WARD)) >= 4
+                                                          )
+                                                      )
+                                    WHERE TRIM(al.LOCATION) IS NOT NULL
+                                      AND TRIM(al.LOCATION) <> '') ward_lkp
+                                   ON ward_lkp.AGENT_ID = al.AGENT_ID
+                                       AND ward_lkp.rn = 1
+
+                WHERE be.STAFF_NO IS NOT NULL
+                  AND be.STAFF_NO = TRIM(be.STAFF_NO)
+                  AND be.EMPL_STATUS = 1
+                  AND be.STAFF_NO NOT LIKE 'ATMUSER%'
+                  AND be.STAFF_NO NOT LIKE '993%'
+                  AND be.STAFF_NO NOT LIKE '999%'
+                  AND be.STAFF_NO NOT LIKE '900%'
+                  AND be.STAFF_NO NOT LIKE 'IAP%'
+                  AND be.STAFF_NO NOT LIKE 'MCB%'
+                  AND be.STAFF_NO NOT LIKE 'MIP%'
+                  AND be.STAFF_NO NOT LIKE 'MOB%'
+                  AND be.STAFF_NO NOT LIKE 'MWL%'
+                  AND be.STAFF_NO NOT LIKE 'OWP%'
+                  AND be.STAFF_NO NOT LIKE 'PI0%'
+                  AND be.STAFF_NO NOT LIKE 'POS%'
+                  AND be.STAFF_NO NOT LIKE 'STP%'
+                  AND be.STAFF_NO NOT LIKE 'TER%'
+                  AND be.STAFF_NO NOT LIKE 'EIC%'
+                  AND be.STAFF_NO NOT LIKE 'GEP%'
+                  AND be.STAFF_NO NOT LIKE 'EYU%'
+                  AND be.STAFF_NO NOT LIKE 'GLA%'
+                  AND be.STAFF_NO NOT LIKE 'SYS%'
+                  AND be.STAFF_NO NOT LIKE 'MLN%'
+                  AND be.STAFF_NO NOT LIKE 'PET%'
+                  AND be.STAFF_NO NOT LIKE 'VRT%'
+                ORDER BY be.TMSTAMP, al.AGENT_ID
+                FETCH FIRST 1000 ROWS ONLY
                 """,
                 timestamp_column='lastModified',
                 target_table='agents',
