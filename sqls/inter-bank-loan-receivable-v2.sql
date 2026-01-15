@@ -3,10 +3,15 @@ select CURRENT_TIMESTAMP                                                       A
        CASE
            WHEN cl.COUNTRY_CODE = 'TZ' THEN 'TANZANIA, UNITED REPUBLIC OF' END as borrowerCountry,
        'Domestic banks unrelated'                                              as relationshipType,
-       null                                                                    as ratingStatus,
-       null                                                                    as externalRatingCorrespondentBorrower,
-       null                                                                    as gradesUnratedBorrower,
-       gte.ACCOUNT_NUMBER                                                      as loanNumber,
+       CAST(0 AS SMALLINT)                                                                   as ratingStatus,
+       CASE
+           WHEN la.ACC_EXP_DT IS NULL THEN 'UNRATED'
+           WHEN DAYS(la.ACC_EXP_DT) - DAYS(CURRENT_DATE) <= 90
+               THEN 'SHORT_TERM_UNRATED'
+           ELSE 'UNRATED'
+           END                                                                 AS externalRatingCorrespondentBorrower,
+       'Grade B'                                                               AS gradesUnratedBorrower,
+       gte.PRF_ACCOUNT_NUMBER                                                      as loanNumber,
        'Interbank call loans in Tanzania'                                      AS loanType,
        la.ACC_OPEN_DT                                                          as issueDate,
        la.ACC_EXP_DT                                                           AS loanMaturityDate,
@@ -26,7 +31,7 @@ select CURRENT_TIMESTAMP                                                       A
        la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL      AS orgAccruedInterestAmount,
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL
-           ELSE NULL
+           ELSE CAST(ROUND((la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)/ 2500, 2) AS DECIMAL(15, 2))
            END                                                                 AS usdAccruedInterestAmount,
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN
@@ -37,7 +42,7 @@ select CURRENT_TIMESTAMP                                                       A
        (la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)                         AS orgSuspendedInterest,
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
-           ELSE NULL
+           ELSE CAST(ROUND((la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)/ 2500, 2) AS DECIMAL(15, 2))
            END                                                                 AS usdSuspendedInterest,
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) * 2500
@@ -53,7 +58,7 @@ select CURRENT_TIMESTAMP                                                       A
 
 from GLI_TRX_EXTRACT as gte
          LEFT JOIN LOAN_ACCOUNT la
-                       ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
+                   ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
                        and la.CUST_ID = gte.CUST_ID
                        AND TRIM(CHAR(la.UNIT)) = TRIM(CHAR(gte.FK_UNITCODETRXUNIT))
          LEFT JOIN CUSTOMER as c ON la.CUST_ID = c.CUST_ID
