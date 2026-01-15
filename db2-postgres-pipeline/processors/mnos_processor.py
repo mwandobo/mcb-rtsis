@@ -10,8 +10,8 @@ from .base import BaseProcessor, BaseRecord
 @dataclass
 class MnosRecord(BaseRecord):
     """Balances with MNOs record structure"""
-    reporting_date: str
-    float_balance_date: str
+    reporting_date: any  # Can be datetime or string
+    float_balance_date: any  # Can be datetime or string
     mno_code: str
     till_number: str
     currency: str
@@ -27,14 +27,24 @@ class MnosProcessor(BaseProcessor):
     
     def process_record(self, raw_data: Tuple, table_name: str) -> MnosRecord:
         """Convert raw DB2 data to MnosRecord"""
+        # Handle datetime objects - keep them as datetime for PostgreSQL TIMESTAMP columns
+        reporting_date = raw_data[0]
+        float_balance_date = raw_data[1]
+        
+        # For timestamp_column_value, convert to string for logging/tracking
+        if hasattr(reporting_date, 'strftime'):
+            timestamp_str = reporting_date.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            timestamp_str = str(reporting_date)
+        
         return MnosRecord(
             source_table=table_name,
-            timestamp_column_value=str(raw_data[0]),  # reportingDate
-            reporting_date=str(raw_data[0]),
-            float_balance_date=str(raw_data[1]),
-            mno_code=str(raw_data[2]),
-            till_number=str(raw_data[3]),
-            currency=str(raw_data[4]),
+            timestamp_column_value=timestamp_str,
+            reporting_date=reporting_date,  # Keep as datetime object
+            float_balance_date=float_balance_date,  # Keep as datetime object
+            mno_code=str(raw_data[2]).strip(),
+            till_number=str(raw_data[3]).strip(),
+            currency=str(raw_data[4]).strip(),
             allowance_probable_loss=float(raw_data[5]),
             bot_provision=float(raw_data[6]),
             org_float_amount=float(raw_data[7]),
@@ -61,7 +71,7 @@ class MnosProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get upsert query for balances with MNOs using mnoCode as unique constraint"""
+        """Get upsert query for balances with MNOs using composite key (mnoCode + tillNumber)"""
         return """
         INSERT INTO "balanceWithMnos" (
             "reportingDate", "floatBalanceDate", "mnoCode", "tillNumber", "currency",
@@ -69,10 +79,9 @@ class MnosProcessor(BaseProcessor):
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
-        ON CONFLICT ("mnoCode") DO UPDATE SET
+        ON CONFLICT ("mnoCode", "tillNumber") DO UPDATE SET
             "reportingDate" = EXCLUDED."reportingDate",
             "floatBalanceDate" = EXCLUDED."floatBalanceDate",
-            "tillNumber" = EXCLUDED."tillNumber",
             "currency" = EXCLUDED."currency",
             "allowanceProbableLoss" = EXCLUDED."allowanceProbableLoss",
             "botProvision" = EXCLUDED."botProvision",

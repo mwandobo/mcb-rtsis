@@ -226,56 +226,57 @@ class Config:
             'balanceWithMnos': TableConfig(
                 name='balanceWithMnos',
                 query="""
-                SELECT 
-                    latest.reportingDate,
-                    latest.floatBalanceDate,
-                    latest.mnoCode,
-                    latest.tillNumber,
-                    latest.currency,
-                    latest.allowanceProbableLoss,
-                    latest.botProvision,
-                    latest.orgFloatAmount,
-                    latest.usdFloatAmount,
-                    latest.tzsFloatAmount
-                FROM (
-                    SELECT
-                        gte.TRN_DATE AS reportingDate,
-                        gte.TRN_DATE AS floatBalanceDate,
-                        CASE gl.EXTERNAL_GLACCOUNT
-                            WHEN '504080001' THEN 'Super Agent Commission'
-                            WHEN '144000051' THEN 'AIRTEL Money Super Agent Float'
-                            WHEN '144000058' THEN 'TIGO PESA Super Agent Float'
-                            WHEN '144000061' THEN 'HALOPESA Super Agent Float'
-                            WHEN '144000062' THEN 'MPESA Super Agent Float'
-                            ELSE ''
-                        END AS mnoCode,
-                        gte.FK_GLG_ACCOUNTACCO AS tillNumber,
-                        gte.CURRENCY_SHORT_DES AS currency,
-                        0 AS allowanceProbableLoss,
-                        0 AS botProvision,
-                        gte.DC_AMOUNT AS orgFloatAmount,
-                        CASE
-                            WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                                THEN gte.DC_AMOUNT
-                            ELSE NULL
-                        END AS usdFloatAmount,
-                        CASE
-                            WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                                THEN gte.DC_AMOUNT * 2500
-                            ELSE
-                                gte.DC_AMOUNT
-                        END AS tzsFloatAmount,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY gl.EXTERNAL_GLACCOUNT 
-                            ORDER BY gte.TRN_DATE DESC, gte.DC_AMOUNT DESC
-                        ) AS rn
-                    FROM GLI_TRX_EXTRACT gte
-                    JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
-                    WHERE gl.EXTERNAL_GLACCOUNT IN ('504080001','144000051','144000058','144000061','144000062')
-                        AND gte.TRN_DATE >= '2024-01-01'
-                ) latest
-                WHERE latest.rn = 1
-                ORDER BY latest.reportingDate DESC
+                SELECT
+                    CURRENT_TIMESTAMP AS reportingDate,
+                    CURRENT_TIMESTAMP AS floatBalanceDate,
+
+                    -- mnoCode based on EXTERNAL_GLACCOUNT
+                    CASE gl.EXTERNAL_GLACCOUNT
+                        WHEN '504080001' THEN 'Jumo'
+                        WHEN '144000051' THEN 'Airtel Money'
+                        WHEN '144000058' THEN 'Tigo Pesa'
+                        WHEN '144000061' THEN 'Halopesa'
+                        WHEN '144000062' THEN 'M-Pesa'
+                        ELSE 'None'
+                    END AS mnoCode,
+
+                    pa.ACCOUNT_NUMBER AS tillNumber,
+                    gte.CURRENCY_SHORT_DES AS currency,
+                    0 AS allowanceProbableLoss,
+                    0 AS botProvision,
+
+                    -- orgAmount: always original DC_AMOUNT
+                    gte.DC_AMOUNT AS orgFloatAmount,
+
+                    -- USD Amount: only if currency is USD, otherwise null
+                    CASE
+                         WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                               THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+                           WHEN gte.CURRENCY_SHORT_DES IN ('TZ', 'TZS')
+                               THEN DECIMAL(gte.DC_AMOUNT / 2500.00, 18, 2) -- <<< TZS → USD
+                           ELSE
+                               NULL
+                    END AS usdFloatAmount,
+
+                    -- TZS Amount: convert only if USD, otherwise use as is
+                    CASE
+                        WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                               THEN DECIMAL(gte.DC_AMOUNT * 2500.00, 18, 2)
+                           WHEN gte.CURRENCY_SHORT_DES IN ('TZ', 'TZS')
+                               THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+                           ELSE
+                               NULL
+                    END AS tzsFloatAmount
+
+                FROM GLI_TRX_EXTRACT gte
+                JOIN GLG_ACCOUNT gl
+                    ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
+                WHERE gl.EXTERNAL_GLACCOUNT IN (
+                    '504080001','144000051','144000058','144000061','144000062'
+                )
+                AND pa.ACCOUNT_NUMBER IS NOT NULL 
+                AND pa.ACCOUNT_NUMBER NOT LIKE 'DUMMY%'
                 """,
                 timestamp_column='TRN_DATE',
                 target_table='balanceWithMnos',
@@ -735,8 +736,8 @@ class Config:
                            END                                                                                      AS agentStatus,
                        'super agent'                                                                                AS agentType,
                        null                                                                                         AS accountNumber,
-                       COALESCE(region_lkp.BOT_REGION, al.REGION)                                                   AS region,
-                       COALESCE(district_lkp.BOT_DISTRICT, al.DISTRICT)                                             AS district,
+                       COALESCE(region_lkp.BOT_REGION, al.REGION, 'N/A')                                            AS region,
+                       COALESCE(district_lkp.BOT_DISTRICT, al.DISTRICT, 'N/A')                                      AS district,
                        COALESCE(ward_lkp.BOT_WARD, al.LOCATION, 'N/A')                                              AS ward,
                        'N/A'                                                                                        AS street,
                        'N/A'                                                                                        AS houseNumber,
@@ -779,11 +780,10 @@ class Config:
                                )
                            -- 3️⃣ Last resort: use whole string
                            ELSE TRIM(al.BUSINESS_LICENCE_ISSUER_AND_DATE)
-                           END                                                                                      AS businessLicense,
-                       COALESCE(be.TMSTAMP, CURRENT_TIMESTAMP)                                                      AS lastModified
+                           END                                                                                      AS businessLicense
                 FROM AGENTS_LIST al
-                         RIGHT JOIN BANKEMPLOYEE be
-                                    ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(be.STAFF_NO)
+                         LEFT JOIN BANKEMPLOYEE be
+                                   ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(be.STAFF_NO)
                          LEFT JOIN (SELECT al.AGENT_ID,
                                            bl.REGION AS BOT_REGION,
                                            ROW_NUMBER() OVER (
@@ -867,36 +867,8 @@ class Config:
                                       AND TRIM(al.LOCATION) <> '') ward_lkp
                                    ON ward_lkp.AGENT_ID = al.AGENT_ID
                                        AND ward_lkp.rn = 1
-
-                WHERE be.STAFF_NO IS NOT NULL
-                  AND be.STAFF_NO = TRIM(be.STAFF_NO)
-                  AND be.EMPL_STATUS = 1
-                  AND be.STAFF_NO NOT LIKE 'ATMUSER%'
-                  AND be.STAFF_NO NOT LIKE '993%'
-                  AND be.STAFF_NO NOT LIKE '999%'
-                  AND be.STAFF_NO NOT LIKE '900%'
-                  AND be.STAFF_NO NOT LIKE 'IAP%'
-                  AND be.STAFF_NO NOT LIKE 'MCB%'
-                  AND be.STAFF_NO NOT LIKE 'MIP%'
-                  AND be.STAFF_NO NOT LIKE 'MOB%'
-                  AND be.STAFF_NO NOT LIKE 'MWL%'
-                  AND be.STAFF_NO NOT LIKE 'OWP%'
-                  AND be.STAFF_NO NOT LIKE 'PI0%'
-                  AND be.STAFF_NO NOT LIKE 'POS%'
-                  AND be.STAFF_NO NOT LIKE 'STP%'
-                  AND be.STAFF_NO NOT LIKE 'TER%'
-                  AND be.STAFF_NO NOT LIKE 'EIC%'
-                  AND be.STAFF_NO NOT LIKE 'GEP%'
-                  AND be.STAFF_NO NOT LIKE 'EYU%'
-                  AND be.STAFF_NO NOT LIKE 'GLA%'
-                  AND be.STAFF_NO NOT LIKE 'SYS%'
-                  AND be.STAFF_NO NOT LIKE 'MLN%'
-                  AND be.STAFF_NO NOT LIKE 'PET%'
-                  AND be.STAFF_NO NOT LIKE 'VRT%'
-                ORDER BY be.TMSTAMP, al.AGENT_ID
-                FETCH FIRST 1000 ROWS ONLY
                 """,
-                timestamp_column='lastModified',
+                timestamp_column='reportingDate',
                 target_table='agents',
                 queue_name='agents_queue',
                 processor_class='AgentProcessor',

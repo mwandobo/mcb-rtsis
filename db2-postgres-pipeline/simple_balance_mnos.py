@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
 """
-Simple Agents Pipeline with improved error handling
+Simple Balance with MNOs Pipeline
 """
 
 import psycopg2
 import logging
 from config import Config
 from db2_connection import DB2Connection
-from processors.agent_processor import AgentProcessor
+from processors.mnos_processor import MnosProcessor
 
-def run_simple_agents():
-    """Run simple agents pipeline with improved error handling"""
+def run_simple_mnos():
+    """Run simple balance with MNOs pipeline"""
     config = Config()
     
     # Setup logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
     
-    logger.info("👥 SIMPLE AGENTS PIPELINE")
+    logger.info("📱 SIMPLE BALANCE WITH MNOS PIPELINE")
     logger.info("=" * 60)
     
     try:
         # Initialize connections
         db2_conn = DB2Connection()
-        processor = AgentProcessor()
+        processor = MnosProcessor()
         
         # Get table configuration
-        table_config = config.tables['agents']
+        table_config = config.tables['balanceWithMnos']
         
         # Connect to PostgreSQL
         pg_conn = psycopg2.connect(
@@ -63,28 +63,27 @@ def run_simple_agents():
                     
                     # Validate record
                     if processor.validate_record(record):
-                        # Insert directly to PostgreSQL with upsert
+                        # Insert directly to PostgreSQL
                         processor.insert_to_postgres(record, pg_cursor)
                         processed_count += 1
                         
                         if processed_count % 50 == 0:
-                            logger.info(f"✅ Processed {processed_count} agent records")
-                            pg_conn.commit()  # Commit every 50 records
+                            logger.info(f"✅ Processed {processed_count} MNO records")
+                            pg_conn.commit()
                     else:
                         skipped_count += 1
-                        logger.warning(f"⚠️ Invalid record skipped: {record.agent_id if hasattr(record, 'agent_id') else 'Unknown'}")
+                        logger.warning(f"⚠️ Invalid record skipped: {record.mno_code if hasattr(record, 'mno_code') else 'Unknown'}")
                         
                 except Exception as e:
                     error_count += 1
                     logger.error(f"❌ Error processing record: {e}")
-                    # Continue processing other records instead of stopping
                     continue
         
         # Final commit
         pg_conn.commit()
         
         # Check final count
-        pg_cursor.execute('SELECT COUNT(*) FROM "agents"')
+        pg_cursor.execute('SELECT COUNT(*) FROM "balanceWithMnos"')
         total_count = pg_cursor.fetchone()[0]
         
         logger.info("=" * 60)
@@ -96,58 +95,58 @@ def run_simple_agents():
         
         # Show sample records
         pg_cursor.execute("""
-            SELECT "agentName", "agentId", "businessForm", "region", "district"
-            FROM "agents" 
-            ORDER BY "registrationDate" DESC 
+            SELECT "mnoCode", "tillNumber", "currency", "orgFloatAmount", "tzsFloatAmount"
+            FROM "balanceWithMnos" 
+            ORDER BY "reportingDate" DESC 
             LIMIT 5
         """)
         
         sample_records = pg_cursor.fetchall()
         logger.info("📋 Sample records:")
         for record in sample_records:
-            agent_name, agent_id, business_form, region, district = record
-            logger.info(f"  - {agent_name[:30]:<30} ({agent_id}) {business_form} - {region}, {district}")
+            mno_code, till_number, currency, org_amount, tzs_amount = record
+            logger.info(f"  - {mno_code:<15} Till: {till_number} {currency} Org: {org_amount} TZS: {tzs_amount}")
         
-        # Show statistics
+        # Show MNO distribution
         pg_cursor.execute("""
             SELECT 
-                "businessForm", 
-                COUNT(*) as count
-            FROM "agents" 
-            GROUP BY "businessForm" 
+                "mnoCode", 
+                COUNT(*) as count,
+                SUM("tzsFloatAmount") as total_tzs
+            FROM "balanceWithMnos" 
+            GROUP BY "mnoCode" 
             ORDER BY COUNT(*) DESC
         """)
         
-        business_forms = pg_cursor.fetchall()
-        logger.info("📊 Business Forms Distribution:")
-        for form, count in business_forms:
-            logger.info(f"  - {form}: {count} agents")
+        mno_stats = pg_cursor.fetchall()
+        logger.info("📊 MNO Distribution:")
+        for mno_code, count, total_tzs in mno_stats:
+            logger.info(f"  - {mno_code}: {count} records, Total TZS: {total_tzs:,.2f}")
         
-        # Show region distribution
+        # Show currency distribution
         pg_cursor.execute("""
             SELECT 
-                "region", 
+                "currency", 
                 COUNT(*) as count
-            FROM "agents" 
-            GROUP BY "region" 
+            FROM "balanceWithMnos" 
+            GROUP BY "currency" 
             ORDER BY COUNT(*) DESC
-            LIMIT 10
         """)
         
-        regions = pg_cursor.fetchall()
-        logger.info("📊 Top 10 Regions:")
-        for region, count in regions:
-            logger.info(f"  - {region}: {count} agents")
+        currencies = pg_cursor.fetchall()
+        logger.info("📊 Currency Distribution:")
+        for currency, count in currencies:
+            logger.info(f"  - {currency}: {count} records")
         
         # Close connections
         pg_cursor.close()
         pg_conn.close()
         
-        logger.info("✅ Agents pipeline completed successfully!")
+        logger.info("✅ Balance with MNOs pipeline completed successfully!")
         
     except Exception as e:
-        logger.error(f"❌ Error in agents pipeline: {e}")
+        logger.error(f"❌ Error in MNOs pipeline: {e}")
         raise
 
 if __name__ == "__main__":
-    run_simple_agents()
+    run_simple_mnos()

@@ -1,4 +1,4 @@
---CHeque
+
 SELECT
     CURRENT_TIMESTAMP as reportingDate,
     cfc.CHEQUE_NUMBER AS chequeNumber,
@@ -8,13 +8,14 @@ SELECT
         COALESCE(ic.SURNAME, '')
     )
 ) AS issuerName,
-    COALESCE(bic.BIC, 'UNKNOWN') AS issuerBankerCode,
+    bic.BIC AS issuerBankerCode,
         RTRIM( LTRIM(
         COALESCE(pc.FIRST_NAME, '') || ' ' ||
         COALESCE(pc.MIDDLE_NAME, '') || ' ' ||
         COALESCE(pc.SURNAME, '')
     )
 ) AS payeeName,
+
     ppa.ACCOUNT_NUMBER as payeeAccountNumber,
     cfc.ISSUE_DATE as chequeDate,
     cfc.TRX_DATE as transactionDate,
@@ -45,4 +46,5 @@ SELECT
     LEFT JOIN BANK_BIC_LOOKUP bic
        ON UPPER(TRIM(cfc.DRAWN_BANK)) = UPPER(TRIM(bic.BANK_NAME))
     JOIN
-        PROFITS_ACCOUNT ppa ON ppa.CUST_ID = pc.CUST_ID;
+        PROFITS_ACCOUNT ppa ON ppa.CUST_ID = pc.CUST_ID
+where bic.BIC is not null;
