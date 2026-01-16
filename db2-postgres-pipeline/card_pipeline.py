@@ -79,9 +79,9 @@ class CardPipeline2016:
         """Get card query starting from specified year with cursor-based pagination"""
         
         # Build WHERE clause for pagination
-        pagination_filter = ""
+        pagination_filter = f"WHERE YEAR(CA.TUN_DATE) >= {self.start_year}"
         if last_processed_timestamp and last_processed_customer_id:
-            pagination_filter = f"""
+            pagination_filter += f"""
             AND (CA.TUN_DATE > DATE('{last_processed_timestamp}') 
                  OR (CA.TUN_DATE = DATE('{last_processed_timestamp}') AND CA.FK_CUST_ID > '{last_processed_customer_id}'))
             """
@@ -89,27 +89,26 @@ class CardPipeline2016:
         return f"""
         SELECT
             CURRENT_TIMESTAMP AS reportingDate,
-            ca.TUN_UNIT AS bankCode,
+            'MWCOTZTZ' AS bankCode,
             CA.FULL_CARD_NO AS cardNumber,
             RIGHT(TRIM(CA.FULL_CARD_NO), 10) AS binNumber,
             CA.FK_CUST_ID AS customerIdentificationNumber,
-            'Debit' AS cardType,  
-            NULL AS cardTypeSubCategory,  
-            CA.TUN_DATE AS cardIssueDate, 
-            'Mwalimu Commercial Bank' AS cardIssuer,  
-            'Domestic' AS cardIssuerCategory,  
-            'Tanzania' AS cardIssuerCountry,  
-            CA.CARD_NAME_LATIN AS cardHolderName,  
+            'Debit' AS cardType,
+            NULL AS cardTypeSubCategory,
+            CA.TUN_DATE AS cardIssueDate,
+            'Mwalimu Commercial Bank Plc' AS cardIssuer,
+            'Domestic' AS cardIssuerCategory,
+            'TANZANIA, UNITED REPUBLIC OF' AS cardIssuerCountry,
+            CA.CARD_NAME_LATIN AS cardHolderName,
             CASE
                 WHEN CURRENT_DATE > CA.CARD_EXPIRY_DATE then 'Active'
                 ELSE 'Inactive'
-            END AS cardStatus, 
-            'VISA' AS cardScheme,  
-            'UBX Tanzania Limited' AS acquiringPartner,  
+            END AS cardStatus,
+            'VISA' AS cardScheme,
+            'UBX Tanzania Limited' AS acquiringPartner,
             CA.CARD_EXPIRY_DATE AS cardExpireDate,
             CA.TUN_DATE AS rawTimestamp
         FROM CMS_CARD CA
-        WHERE YEAR(CA.TUN_DATE) >= {self.start_year}
         {pagination_filter}
         ORDER BY CA.TUN_DATE ASC, CA.FK_CUST_ID ASC
         FETCH FIRST {self.limit} ROWS ONLY

@@ -9,7 +9,6 @@ select
         WHEN atx.PROCESSING_CODE = '219610' THEN 'Reversal/Cancellation'
         ELSE NULL
     END as transactionType,
-    atx.PROCESSING_CODE,
     'TZS' as currency,
     atx.TRANSACTION_AMOUNT as orgTransactionAmount,
     atx.TRANSACTION_AMOUNT as tzsTransactionAmount,

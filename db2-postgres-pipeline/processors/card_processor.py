@@ -45,7 +45,7 @@ class CardProcessor(BaseProcessor):
             bin_number=str(raw_data[2]),
             customer_identification_number=str(raw_data[3]),
             card_type=str(raw_data[4]),
-            card_type_sub_category=str(raw_data[5]) if raw_data[5] else None,
+            card_type_sub_category=str(raw_data[5]) if raw_data[5] and str(raw_data[5]).strip() not in ('None', 'NULL', '') else None,
             card_issue_date=str(raw_data[6]),
             card_issuer=str(raw_data[7]),
             card_issuer_category=str(raw_data[8]),

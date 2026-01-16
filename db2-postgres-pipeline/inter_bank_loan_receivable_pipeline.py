@@ -11,7 +11,7 @@ from datetime import datetime
 from contextlib import contextmanager
 
 from config import Config
-from processors.inter_bank_loan_receivable_processor import InterBankLoanReceivableProcessor
+from processors.inter_bank_loan_receivable_processor_v2 import InterBankLoanReceivableProcessor
 
 class InterBankLoanReceivablePipeline:
     def __init__(self, limit=None, start_date=None, resume=False):
@@ -93,21 +93,22 @@ class InterBankLoanReceivablePipeline:
                 
                 count_query = """
                 SELECT COUNT(*) 
-                FROM W_EOM_LOAN_ACCOUNT as wela
-                LEFT JOIN CUSTOMER as c ON wela.CUST_ID = c.CUST_ID
-                LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = wela.CUST_ID
-                LEFT JOIN other_id id ON (CASE WHEN (id.serial_no IS NULL) THEN '1' ELSE id.main_flag END = '1' AND id.fk_customercust_id = c.cust_id)
-                LEFT JOIN LNS_CRD_CUST_DATA lccd on lccd.CUST_ID = wela.CUST_ID
-                LEFT JOIN generic_detail id_country ON (id.fkgh_has_been_issu = id_country.fk_generic_headpar AND id.fkgd_has_been_issu = id_country.serial_num)
-                LEFT JOIN CUSTOMER_TYPES_LOOKUP ctl ON ctl.CUSTOMER_TYPE_CODE = c.CUST_TYPE
+                FROM GLI_TRX_EXTRACT as gte
+                LEFT JOIN LOAN_ACCOUNT la
+                          ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
+                              and la.CUST_ID = gte.CUST_ID
+                              AND TRIM(CHAR(la.UNIT)) = TRIM(CHAR(gte.FK_UNITCODETRXUNIT))
+                LEFT JOIN CUSTOMER as c ON la.CUST_ID = c.CUST_ID
+                LEFT JOIN other_id id ON (CASE WHEN (id.serial_no IS NULL) THEN '1' ELSE id.main_flag END = '1' AND
+                                          id.fk_customercust_id = c.cust_id)
+                LEFT JOIN generic_detail id_country ON (id.fkgh_has_been_issu = id_country.fk_generic_headpar AND
+                                                        id.fkgd_has_been_issu = id_country.serial_num)
                 LEFT JOIN COUNTRIES_LOOKUP cl ON cl.COUNTRY_NAME = id_country.description
-                LEFT JOIN GENERIC_DETAIL GG ON GG.FK_GENERIC_HEADPAR = wela.FKGH_HAS_AS_LOAN_P AND GG.SERIAL_NUM = wela.FKGD_HAS_AS_LOAN_P
-                LEFT JOIN LOAN_ACCOUNT L ON wela.FK_UNITCODE = L.FK_UNITCODE AND wela.ACC_TYPE = L.ACC_TYPE AND wela.ACC_SN = L.ACC_SN
-                LEFT JOIN LOAN_ADD_INFO N ON N.ROW_ID = 1 AND wela.FK_UNITCODE = N.ACC_UNIT AND wela.ACC_TYPE = N.ACC_TYPE AND wela.ACC_SN = N.ACC_SN
+                WHERE gte.FK_GLG_ACCOUNTACCO IN ('7.0.5.19.0001', '7.0.5.19.0002', '7.0.5.19.0003')
                 """
                 
                 if self.start_date:
-                    count_query += f" WHERE wela.ACC_OPEN_DT >= DATE('{self.start_date}')"
+                    count_query += f" AND la.ACC_OPEN_DT >= DATE('{self.start_date}')"
                 
                 cursor.execute(count_query)
                 total = cursor.fetchone()[0]
@@ -145,10 +146,10 @@ class InterBankLoanReceivablePipeline:
                 # Use the query from config with date filter
                 query = self.table_config.query
                 if self.start_date:
-                    # Add date filter to the existing query
+                    # Add date filter to the existing WHERE clause
                     query = query.replace(
-                        "ORDER BY wela.ACC_OPEN_DT DESC",
-                        f"WHERE wela.ACC_OPEN_DT >= DATE('{self.start_date}') ORDER BY wela.ACC_OPEN_DT DESC"
+                        "WHERE gte.FK_GLG_ACCOUNTACCO IN ('7.0.5.19.0001', '7.0.5.19.0002', '7.0.5.19.0003')",
+                        f"WHERE gte.FK_GLG_ACCOUNTACCO IN ('7.0.5.19.0001', '7.0.5.19.0002', '7.0.5.19.0003') AND la.ACC_OPEN_DT >= DATE('{self.start_date}')"
                     )
                 
                 cursor.execute(query)
@@ -163,7 +164,7 @@ class InterBankLoanReceivablePipeline:
                 # Show sample data
                 self.logger.info("Sample inter-bank loan receivable records:")
                 for i, row in enumerate(rows[:min(3, len(rows))], 1):
-                    self.logger.info(f"  {i}. Customer: {row[1]} | Client: {row[3]} | Loan: {row[16]} | Amount: {row[34]} {row[32]}")
+                    self.logger.info(f"  {i}. Institution: {row[1]} | Country: {row[2]} | Loan: {row[7]} | Amount: {row[11]} {row[10]}")
             
             # Step 4: Process records
             processed_count = 0
@@ -185,7 +186,7 @@ class InterBankLoanReceivablePipeline:
                             if processed_count % 100 == 0:
                                 self.logger.info(f"Processed {processed_count}/{len(rows)} records...")
                         else:
-                            self.logger.warning(f"Invalid inter-bank loan receivable record skipped: {record.customer_identification_number}")
+                            self.logger.warning(f"Invalid inter-bank loan receivable record skipped: {record.borrowers_institution_code}")
                             skipped_count += 1
                             
                     except Exception as e:

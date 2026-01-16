@@ -14,7 +14,7 @@ class AtmTransactionRecord(BaseRecord):
     atm_code: str
     transaction_date: str
     transaction_id: str
-    transaction_nature: str
+    transaction_type: str
     currency: str
     org_transaction_amount: Optional[float]
     tzs_transaction_amount: Optional[float]
@@ -46,7 +46,7 @@ class AtmTransactionProcessor(BaseProcessor):
             atm_code=safe_str(raw_data[1]),
             transaction_date=safe_str(raw_data[2]),
             transaction_id=safe_str(raw_data[3]),
-            transaction_nature=safe_str(raw_data[4]),
+            transaction_type=safe_str(raw_data[4]),
             currency=safe_str(raw_data[5]),
             org_transaction_amount=safe_float(raw_data[6]),
             tzs_transaction_amount=safe_float(raw_data[7]),
@@ -66,7 +66,7 @@ class AtmTransactionProcessor(BaseProcessor):
             record.atm_code,
             record.transaction_date,
             record.transaction_id,
-            record.transaction_nature,
+            record.transaction_type,
             record.currency,
             record.org_transaction_amount,
             record.tzs_transaction_amount,
@@ -80,7 +80,7 @@ class AtmTransactionProcessor(BaseProcessor):
         """Get upsert query for ATM transaction with duplicate handling"""
         return """
         INSERT INTO "atmTransaction" (
-            "reportingDate", "atmCode", "transactionDate", "transactionId", "transactionNature",
+            "reportingDate", "atmCode", "transactionDate", "transactionId", "transactionType",
             "currency", "orgTransactionAmount", "tzsTransactionAmount", "atmChannel",
             "valueAddedTaxAmount", "exciseDutyAmount", "electronicLevyAmount"
         ) VALUES (
@@ -90,7 +90,7 @@ class AtmTransactionProcessor(BaseProcessor):
             "reportingDate" = EXCLUDED."reportingDate",
             "atmCode" = EXCLUDED."atmCode",
             "transactionDate" = EXCLUDED."transactionDate",
-            "transactionNature" = EXCLUDED."transactionNature",
+            "transactionType" = EXCLUDED."transactionType",
             "currency" = EXCLUDED."currency",
             "orgTransactionAmount" = EXCLUDED."orgTransactionAmount",
             "tzsTransactionAmount" = EXCLUDED."tzsTransactionAmount",
@@ -112,7 +112,7 @@ class AtmTransactionProcessor(BaseProcessor):
             return False
         if not record.transaction_date:
             return False
-        if not record.transaction_nature:
+        if not record.transaction_type:
             return False
         if not record.currency:
             return False

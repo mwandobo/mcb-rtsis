@@ -934,24 +934,24 @@ class Config:
                 query="""
                 SELECT
                     CURRENT_TIMESTAMP AS reportingDate,
-                    ca.TUN_UNIT AS bankCode,
+                    'MWCOTZTZ' AS bankCode,
                     CA.FULL_CARD_NO AS cardNumber,
-                    RIGHT(LPAD(TRIM(CHAR(CA.CARD_NUMBER)), 10, '0'),10) AS binNumber,
+                    RIGHT(TRIM(CA.FULL_CARD_NO), 10) AS binNumber,
                     CA.FK_CUST_ID AS customerIdentificationNumber,
-                    'Debit' AS cardType,  
-                    NULL AS cardTypeSubCategory,  
-                    CA.TUN_DATE AS cardIssueDate, 
-                    'Mwalimu Commercial Bank' AS cardIssuer,  
-                    'Domestic' AS cardIssuerCategory,  
-                    'Tanzania' AS cardIssuerCountry,  
-                    CA.CARD_NAME_LATIN AS cardHolderName,  
+                    'Debit' AS cardType,
+                    NULL AS cardTypeSubCategory,
+                    CA.TUN_DATE AS cardIssueDate,
+                    'Mwalimu Commercial Bank Plc' AS cardIssuer,
+                    'Domestic' AS cardIssuerCategory,
+                    'TANZANIA, UNITED REPUBLIC OF' AS cardIssuerCountry,
+                    CA.CARD_NAME_LATIN AS cardHolderName,
                     CASE
                         WHEN CURRENT_DATE > CA.CARD_EXPIRY_DATE then 'Active'
                         ELSE 'Inactive'
-                    END AS cardStatus, 
-                    'VISA' AS cardScheme,  
-                    'UBX Tanzania Limited' AS acquiringPartner,  
-                    CA.CARD_EXPIRY_DATE AS cardExpireDate  
+                    END AS cardStatus,
+                    'VISA' AS cardScheme,
+                    'UBX Tanzania Limited' AS acquiringPartner,
+                    CA.CARD_EXPIRY_DATE AS cardExpireDate
                 FROM CMS_CARD CA
                 WHERE CA.TUN_DATE >= DATE('2016-01-01')
                 ORDER BY CA.TUN_DATE ASC, CA.FK_CUST_ID ASC
@@ -1018,22 +1018,17 @@ class Config:
                     CURRENT_TIMESTAMP AS reportingDate,
                     ca.FULL_CARD_NO as cardNumber,
                     LPAD(CHAR(ca.CARD_NUMBER), 10, '0') AS binNumber,
-                    'Mwalimu Commercial Bank' as transactingBankName,
+                    'Mwalimu Commercial Bank Plc' as transactingBankName,
                     ce.ISO_REF_NUM as transactionId,
                     ce.TUN_DATE as transactionDate,
-                    CASE
-                        WHEN PROCESS_CD IN ('001000','002000','011000','011096','012000') THEN 'Cash Withdrawal'
-                        WHEN PROCESS_CD = '219610' THEN 'Purchase / Payment'
-                        WHEN PROCESS_CD IN ('311000','312000','381000','382000') THEN 'Non-Financial'
-                        ELSE 'Other Financial Transaction'
-                    END as transactionNature,
+                    'Local Transactions by Locally Issued Cards' as transactionNature,
                     null as atmCode,
                     null as posNumber,
                     pc.DESCRIPTION as transactionDescription,
                     ca.CARD_NAME_LATIN as beneficiaryName,
                     null as beneficiaryTradeName,
-                    'Tanzania' as beneficiaryCountry,
-                    'Tanzania' as transactionPlace,
+                    'TANZANIA, UNITED REPUBLIC OF' as beneficaryCountry,
+                    'TANZANIA, UNITED REPUBLIC OF' as transactionPlace,
                     null as qtyItemsPurchased,
                     null as unitPrice,
                     null as orgFacilitatorCommissionAmount,
@@ -1600,11 +1595,11 @@ class Config:
                     atx.TUN_DATE as transactionDate,
                     atx.REFERENCE_NUMBER as transactionId,
                     CASE
-                        WHEN atx.PROCESSING_CODE IN ('001000','002000','011000','011096','012000') THEN 'Cash Withdrawal'
-                        WHEN atx.PROCESSING_CODE = '219610' THEN 'Purchase / Payment'
-                        WHEN atx.PROCESSING_CODE IN ('311000','312000','381000','382000') THEN 'Non-Financial'
-                        ELSE 'Others'
-                    END as transactionNature,
+                        WHEN atx.PROCESSING_CODE IN ('010000','011000','011096','012000') THEN 'Cash Withdrawal'
+                        WHEN atx.PROCESSING_CODE IN ('001000','002000','311000','312000') THEN 'Account balance enquiries'
+                        WHEN atx.PROCESSING_CODE = '219610' THEN 'Reversal/Cancellation'
+                        ELSE NULL
+                    END as transactionType,
                     'TZS' as currency,
                     atx.TRANSACTION_AMOUNT as orgTransactionAmount,
                     atx.TRANSACTION_AMOUNT as tzsTransactionAmount,
@@ -1637,7 +1632,7 @@ class Config:
                         COALESCE(ic.SURNAME, '')
                     )
                 ) AS issuerName,
-                    COALESCE(bic.BIC, 'UNKNOWN') AS issuerBankerCode,
+                    bic.BIC AS issuerBankerCode,
                         RTRIM( LTRIM(
                         COALESCE(pc.FIRST_NAME, '') || ' ' ||
                         COALESCE(pc.MIDDLE_NAME, '') || ' ' ||
@@ -1652,14 +1647,15 @@ class Config:
                     0 as botProvision,
                     cu.SHORT_DESCR as currency,
                     CAST(da.OPENING_BALANCE AS DECFLOAT) AS orgAmountOpening,
+                    CAST(da.OPENING_BALANCE  AS DECFLOAT)   AS orgAmountOpening,
                     0 as usdAmountOpening,
-                    CAST(da.OPENING_BALANCE AS DECFLOAT) AS tzsAmountOpening,
-                    CAST(cfc.CHEQUE_AMOUNT AS DECFLOAT) AS orgAmountPayment,
+                    CAST(da.OPENING_BALANCE AS DECFLOAT)   AS tzsAmountOpening,
+                    CAST(cfc.CHEQUE_AMOUNT  AS DECFLOAT)    AS orgAmountPayment,
                     0 as usdAmountPayment,
-                    CAST(cfc.CHEQUE_AMOUNT AS DECFLOAT) AS tzsAmountPayment,
-                    CAST(da.BOOK_BALANCE AS DECFLOAT) AS orgAmountBalance,
+                    CAST(cfc.CHEQUE_AMOUNT AS DECFLOAT)    AS tzsAmountPayment,
+                    CAST(da.BOOK_BALANCE AS DECFLOAT)      AS orgAmountBalance,
                     0 as usdAmountBalance,
-                    CAST(da.BOOK_BALANCE AS DECFLOAT) AS tzsAmountBalance
+                    CAST(da.BOOK_BALANCE AS DECFLOAT)      AS tzsAmountBalance
                     FROM
                         CHEQUES_FOR_COLLEC AS cfc
                     JOIN DEPOSIT_ACCOUNT da
@@ -1674,8 +1670,8 @@ class Config:
                        ON UPPER(TRIM(cfc.DRAWN_BANK)) = UPPER(TRIM(bic.BANK_NAME))
                     JOIN
                         PROFITS_ACCOUNT ppa ON ppa.CUST_ID = pc.CUST_ID
+                WHERE bic.BIC is not null
                 ORDER BY cfc.TRX_DATE DESC
-                FETCH FIRST 1000 ROWS ONLY
                 """,
                 timestamp_column='TRX_DATE',
                 target_table='chequeClearing',
@@ -1815,204 +1811,75 @@ class Config:
                 name='interBankLoanReceivable',
                 query="""
                 select CURRENT_TIMESTAMP AS reportingDate,
-                       LTRIM(RTRIM(id.ID_NO)) AS customerIdentificationNumber,
-                       LTRIM(RTRIM(pa.ACCOUNT_NUMBER)) AS accountNumber,
-                       LTRIM(RTRIM(wela.CUSTOMER_NAME)) AS clientName,
-                       cl.COUNTRY_CODE as borrowerCountry,
-                       null as ratingStatus,
-                       null as crRatingBorrower,
-                       null as gradesUnratedBanks,
-                       lccd.GENDER as gender,
-                       lccd.GENDER as disability,
-                       ctl.CUSTOMER_TYPE as clientType,
-                       null as clientSubType,
-                       null as groupName,
-                       null as groupCode,
-                       'No relation' as relatedParty,
-                       'Direct' as relationshipCategory,
-                       wela.ACCOUNT_NUMBER as loanNumber,
+                       LTRIM(RTRIM(id.ID_NO)) AS borrowersInstitutionCode,
                        CASE
-                           WHEN PRODUCT_DESC LIKE '%PERSONAL%' AND PRODUCT_DESC LIKE '%LOAN%'
-                               THEN 'Personal Loan'
-                           WHEN PRODUCT_DESC LIKE '%BUSINESS%' AND PRODUCT_DESC LIKE '%LOAN%'
-                               THEN 'Business Loan'
-                           WHEN PRODUCT_DESC LIKE '%MORTAGE%' AND PRODUCT_DESC LIKE '%LOAN%'
-                               THEN 'Mortage Loan'
-                           ELSE 'Unknown'
-                           END AS loanType,
-                       'OtherServices' as loanEconomicActivity,
-                       'Existing' as loanPhase,
-                       'NotSpecified' as transferStatus,
+                           WHEN cl.COUNTRY_CODE = 'TZ' THEN 'TANZANIA, UNITED REPUBLIC OF' END as borrowerCountry,
+                       'Domestic banks unrelated' as relationshipType,
+                       CAST(0 AS SMALLINT) as ratingStatus,
                        CASE
-                           WHEN wela.PRODUCT_DESC LIKE '%MORTGAGE%' AND wela.PRODUCT_DESC LIKE '%LOAN%'
-                               THEN
-                               CASE
-                                   WHEN GG.DESCRIPTION LIKE '%Development%' THEN 'Improvement'
-                                   WHEN GG.DESCRIPTION LIKE '%Purchase%' THEN 'Acquisition'
-                                   WHEN GG.DESCRIPTION LIKE '%Construct%' THEN 'Construction'
-                                   WHEN GG.DESCRIPTION LIKE '%Others%' THEN 'Others'
-                                   ELSE 'Unknown'
-                                   END
-                           END AS purposeMortgage,
-                       GG.DESCRIPTION as purposeOtherLoans,
-                       'Others' as sourceFundMortgage,
-                       'Reducing Method' as amortizationType,
-                       wela.FK_UNITCODE as branchCode,
-                       wela.LOAN_OFFICER_NAME as loanOfficer,
-                       null as loanSupervisor,
-                       null as groupVillageNumber,
-                       null as cycleNumber,
-                       wela.INSTALL_COUNT as loanInstallment,
+                           WHEN la.ACC_EXP_DT IS NULL THEN 'UNRATED'
+                           WHEN DAYS(la.ACC_EXP_DT) - DAYS(CURRENT_DATE) <= 90
+                               THEN 'SHORT_TERM_UNRATED'
+                           ELSE 'UNRATED'
+                           END AS externalRatingCorrespondentBorrower,
+                       'Grade B' AS gradesUnratedBorrower,
+                       gte.PRF_ACCOUNT_NUMBER as loanNumber,
+                       'Interbank call loans in Tanzania' AS loanType,
+                       la.ACC_OPEN_DT as issueDate,
+                       la.ACC_EXP_DT AS loanMaturityDate,
+                       gte.CURRENCY_SHORT_DES as currency,
+                       la.ACC_LIMIT_AMN as orgLoanAmount,
                        CASE
-                           WHEN wela.INSTALL_FREQ = 1 THEN 'Daily'
-                           WHEN wela.INSTALL_FREQ = 7 THEN 'Weekly'
-                           WHEN wela.INSTALL_FREQ = 14 THEN 'Bi-weekly'
-                           WHEN wela.INSTALL_FREQ = 30 THEN 'Monthly'
-                           WHEN wela.INSTALL_FREQ = 90 THEN 'Quarterly'
-                           WHEN wela.INSTALL_FREQ = 180 THEN 'Semi-annually'
-                           WHEN wela.INSTALL_FREQ = 365 THEN 'Annually'
-                           ELSE 'Monthly'
-                           END AS repaymentFrequency,
-                       wela.CURRENCY as currency,
-                       wela.ACC_OPEN_DT as contractDate,
-                       wela.ACC_LIMIT_AMN as orgSanctionedAmount,
+                           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.ACC_LIMIT_AMN
+                           ELSE CAST(ROUND(la.ACC_LIMIT_AMN / 2500, 2) AS DECIMAL(15, 2))
+                           END AS usdLoanAmount,
                        CASE
-                           WHEN wela.CURRENCY = 'USD'
-                               THEN wela.ACC_LIMIT_AMN
-                           ELSE NULL
-                           END AS usdSanctionedAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD'
-                               THEN wela.ACC_LIMIT_AMN * 2500
+                           WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                               THEN la.ACC_LIMIT_AMN * 2500
                            ELSE
-                               wela.ACC_LIMIT_AMN
-                           END AS tzsSanctionedAmount,
-                       wela.TOT_DRAWDOWN_AMN as orgDisbursedAmount,
+                               la.ACC_LIMIT_AMN
+                           END AS tzsLoanAmount,
+                       la.INTER_RATE_SPRD AS interestRate,
+                       la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL AS orgAccruedInterestAmount,
                        CASE
-                           WHEN wela.CURRENCY = 'USD'
-                               THEN wela.TOT_DRAWDOWN_AMN
-                           ELSE NULL
-                           END AS usdDisbursedAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD'
-                               THEN wela.TOT_DRAWDOWN_AMN * 2500
-                           ELSE
-                               wela.TOT_DRAWDOWN_AMN
-                           END AS tzsDisbursedAmount,
-                       wela.DRAWDOWN_FST_DT AS disbursementDate,
-                       wela.ACC_EXP_DT AS maturityDate,
-                       COALESCE(wela.WRITE_OFF_DATE, wela.OV_EXP_DT, wela.ACC_EXP_DT) AS realEndDate,
-                       (wela.NRM_BALANCE + wela.OV_BALANCE) AS orgOutstandingPrincipalAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN (wela.NRM_BALANCE + wela.OV_BALANCE)
-                           ELSE NULL
-                           END AS usdOutstandingPrincipalAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN (wela.NRM_BALANCE + wela.OV_BALANCE) * 2500
-                           ELSE (wela.NRM_BALANCE + wela.OV_BALANCE)
-                           END AS tzsOutstandingPrincipalAmount,
-                       wela.INSTALLMENT_AMOUNT AS orgInstallmentAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.INSTALLMENT_AMOUNT
-                           ELSE NULL
-                           END AS usdInstallmentAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.INSTALLMENT_AMOUNT * 2500
-                           ELSE wela.INSTALLMENT_AMOUNT
-                           END AS tzsInstallmentAmount,
-                       wela.INSTA_PAID as loanInstallmentPaid,
-                       null as gracePeriodPaymentPrincipal,
-                       wela.SELECTED_BANK_RATE AS primeLendingRate,
-                       null AS interestPricingMethod,
-                       wela.FINAL_INTEREST AS annualInterestRate,
-                       null AS effectiveAnnualInterestRate,
-                       null AS loanFlagType,
-                       null AS restructuringDate,
-                       wela.OVERDUE_DAYS AS pastDueDays,
-                       wela.OV_BALANCE AS pastDueAmount,
-                       null AS internalRiskGroup,
-                       wela.NRM_ACR_INT_BAL + wela.OV_ACR_NRM_INT_BAL + wela.OV_ACR_PNL_INT_BAL AS orgAccruedInterestAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.NRM_ACR_INT_BAL + wela.OV_ACR_NRM_INT_BAL + wela.OV_ACR_PNL_INT_BAL
-                           ELSE NULL
+                           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL
+                           ELSE CAST(ROUND((la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)/ 2500, 2) AS DECIMAL(15, 2))
                            END AS usdAccruedInterestAmount,
                        CASE
-                           WHEN wela.CURRENCY = 'USD' THEN (wela.NRM_ACR_INT_BAL + wela.OV_ACR_NRM_INT_BAL + wela.OV_ACR_PNL_INT_BAL) * 2500
-                           ELSE wela.NRM_ACR_INT_BAL + wela.OV_ACR_NRM_INT_BAL + wela.OV_ACR_PNL_INT_BAL
+                           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN
+                               (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) *
+                               2500
+                           ELSE la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL
                            END AS tzsAccruedInterestAmount,
-                       wela.OV_RL_PNL_INT_BAL + wela.OV_URL_PNL_INT_BAL AS orgPenaltyChargedAmount,
+                       (la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) AS orgSuspendedInterest,
                        CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.OV_RL_PNL_INT_BAL + wela.OV_URL_PNL_INT_BAL
-                           ELSE NULL
-                           END AS usdPenaltyChargedAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN (wela.OV_RL_PNL_INT_BAL + wela.OV_URL_PNL_INT_BAL) * 2500
-                           ELSE wela.OV_RL_PNL_INT_BAL + wela.OV_URL_PNL_INT_BAL
-                           END AS tzsPenaltyChargedAmount,
-                       COALESCE(wela.TOT_PNL_INT_AMN, 0) AS orgPenaltyPaidAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN COALESCE(wela.TOT_PNL_INT_AMN, 0)
-                           ELSE NULL
-                           END AS usdPenaltyPaidAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN COALESCE(wela.TOT_PNL_INT_AMN, 0) * 2500
-                           ELSE COALESCE(wela.TOT_PNL_INT_AMN, 0)
-                           END AS tzsPenaltyPaidAmount,
-                       wela.TOT_COMMISSION_AMN AS orgLoanFeesChargedAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.TOT_COMMISSION_AMN
-                           ELSE NULL
-                           END AS usdLoanFeesChargedAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.TOT_COMMISSION_AMN * 2500
-                           ELSE wela.TOT_COMMISSION_AMN
-                           END AS tzsLoanFeesChargedAmount,
-                       wela.TOT_EXPENSE_AMN AS orgLoanFeesPaidAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.TOT_EXPENSE_AMN
-                           ELSE NULL
-                           END AS usdLoanFeesPaidAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.TOT_EXPENSE_AMN * 2500
-                           ELSE wela.TOT_EXPENSE_AMN
-                           END AS tzsLoanFeesPaidAmount,
-                       wela.INSTALL_FIXED_AMN AS orgTotMonthlyPaymentAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.INSTALL_FIXED_AMN
-                           ELSE NULL
-                           END AS usdTotMonthlyPaymentAmount,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.INSTALL_FIXED_AMN * 2500
-                           ELSE wela.INSTALL_FIXED_AMN
-                           END AS tzsTotMonthlyPaymentAmount,
-                       wela.CLOAN_CATEGORY_DESCRIPTION AS sectorSnaClassification,
-                       'Current' AS assetClassificationCategory,
-                       wela.ACC_STATUS AS negStatusContract,
-                       wela.CUST_TYPE AS customerRole,
-                       wela.PROVISION_AMOUNT AS allowanceProbableLoss,
-                       wela.PROVISION_AMN AS botProvision,
-                       null AS tradingIntent,
-                       wela.INTEREST_IN_SUSPENSE AS orgSuspendedInterest,
-                       CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.INTEREST_IN_SUSPENSE
-                           ELSE NULL
+                           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
+                           ELSE CAST(ROUND((la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)/ 2500, 2) AS DECIMAL(15, 2))
                            END AS usdSuspendedInterest,
                        CASE
-                           WHEN wela.CURRENCY = 'USD' THEN wela.INTEREST_IN_SUSPENSE * 2500
-                           ELSE wela.INTEREST_IN_SUSPENSE
-                           END AS tzsSuspendedInterest
-                from W_EOM_LOAN_ACCOUNT as wela
-                         LEFT JOIN CUSTOMER as c ON wela.CUST_ID = c.CUST_ID
-                         LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = wela.CUST_ID
-                         LEFT JOIN other_id id ON (CASE WHEN (id.serial_no IS NULL) THEN '1' ELSE id.main_flag END = '1' AND id.fk_customercust_id = c.cust_id)
-                         LEFT JOIN LNS_CRD_CUST_DATA lccd on lccd.CUST_ID = wela.CUST_ID
-                         LEFT JOIN generic_detail id_country ON (id.fkgh_has_been_issu = id_country.fk_generic_headpar AND id.fkgd_has_been_issu = id_country.serial_num)
-                         LEFT JOIN CUSTOMER_TYPES_LOOKUP ctl ON ctl.CUSTOMER_TYPE_CODE = c.CUST_TYPE
+                           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) * 2500
+                           ELSE (la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
+                           END AS tzsSuspendedInterest,
+                       CASE
+                           WHEN CURRENT_DATE > la.OV_EXP_DT THEN DAYS(CURRENT_DATE) - DAYS(la.OV_EXP_DT)
+                           ELSE 0
+                           END AS pastDueDays,
+                       0 AS allowanceProbableLoss,
+                       0 AS botProvision,
+                       'Current' AS assetClassificationCategory
+                from GLI_TRX_EXTRACT as gte
+                         LEFT JOIN LOAN_ACCOUNT la
+                                   ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
+                                       and la.CUST_ID = gte.CUST_ID
+                                       AND TRIM(CHAR(la.UNIT)) = TRIM(CHAR(gte.FK_UNITCODETRXUNIT))
+                         LEFT JOIN CUSTOMER as c ON la.CUST_ID = c.CUST_ID
+                         LEFT JOIN other_id id ON (CASE WHEN (id.serial_no IS NULL) THEN '1' ELSE id.main_flag END = '1' AND
+                                                   id.fk_customercust_id = c.cust_id)
+                         LEFT JOIN generic_detail id_country ON (id.fkgh_has_been_issu = id_country.fk_generic_headpar AND
+                                                                 id.fkgd_has_been_issu = id_country.serial_num)
                          LEFT JOIN COUNTRIES_LOOKUP cl ON cl.COUNTRY_NAME = id_country.description
-                         LEFT JOIN GENERIC_DETAIL GG ON GG.FK_GENERIC_HEADPAR = wela.FKGH_HAS_AS_LOAN_P AND GG.SERIAL_NUM = wela.FKGD_HAS_AS_LOAN_P
-                         LEFT JOIN LOAN_ACCOUNT L ON wela.FK_UNITCODE = L.FK_UNITCODE AND wela.ACC_TYPE = L.ACC_TYPE AND wela.ACC_SN = L.ACC_SN
-                         LEFT JOIN LOAN_ADD_INFO N ON N.ROW_ID = 1 AND wela.FK_UNITCODE = N.ACC_UNIT AND wela.ACC_TYPE = N.ACC_TYPE AND wela.ACC_SN = N.ACC_SN
-                ORDER BY wela.ACC_OPEN_DT DESC
+                WHERE gte.FK_GLG_ACCOUNTACCO IN ('7.0.5.19.0001', '7.0.5.19.0002', '7.0.5.19.0003')
+                ORDER BY la.ACC_OPEN_DT DESC
                 FETCH FIRST 1000 ROWS ONLY
                 """,
                 timestamp_column='ACC_OPEN_DT',
@@ -2440,6 +2307,137 @@ class Config:
                 queue_name='investment_debt_securities_queue',
                 processor_class='InvestmentDebtSecuritiesProcessor',
                 batch_size=1000,
+                poll_interval=10
+            ),
+            'incomeStatement': TableConfig(
+                name='incomeStatement',
+                query="""
+                -- Income Statement with Lookup Table (No Date Filter)
+                WITH all_transactions AS (
+                    SELECT 
+                        gl.EXTERNAL_GLACCOUNT,
+                        COALESCE(gte.DC_AMOUNT, 0) as amount
+                    FROM GLI_TRX_EXTRACT gte
+                    INNER JOIN GLG_ACCOUNT gl ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
+                    WHERE (
+                        gl.EXTERNAL_GLACCOUNT IN (
+                            SELECT GL_ACCOUNT FROM INCOME_STATEMENT_GL_LOOKUP
+                        )
+                        OR gl.EXTERNAL_GLACCOUNT LIKE '401%' 
+                        OR gl.EXTERNAL_GLACCOUNT LIKE '402%' 
+                        OR gl.EXTERNAL_GLACCOUNT LIKE '403%'
+                    )
+                ),
+                categorized_amounts AS (
+                    SELECT 
+                        lookup.CATEGORY,
+                        lookup.ITEM_CODE,
+                        SUM(t.amount) as total_amount
+                    FROM all_transactions t
+                    INNER JOIN INCOME_STATEMENT_GL_LOOKUP lookup ON t.EXTERNAL_GLACCOUNT = lookup.GL_ACCOUNT
+                    GROUP BY lookup.CATEGORY, lookup.ITEM_CODE
+                    
+                    UNION ALL
+                    
+                    SELECT 
+                        'INTEREST_INCOME' as CATEGORY,
+                        11 as ITEM_CODE,
+                        SUM(t.amount) as total_amount
+                    FROM all_transactions t
+                    WHERE t.EXTERNAL_GLACCOUNT LIKE '401%' 
+                        OR t.EXTERNAL_GLACCOUNT LIKE '402%' 
+                        OR t.EXTERNAL_GLACCOUNT LIKE '403%'
+                )
+                SELECT 
+                    TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') as reportingDate,
+                    RTRIM(
+                        MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 1 AND total_amount > 0
+                            THEN '1:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 2 AND total_amount > 0
+                            THEN '2:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 3 AND total_amount > 0
+                            THEN '3:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 6 AND total_amount > 0
+                            THEN '6:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 11 AND total_amount > 0
+                            THEN '11:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END),
+                        ','
+                    ) as interestIncome,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'INTEREST_INCOME' THEN total_amount ELSE 0 END), 0) as interestIncomeValue,
+                    RTRIM(
+                        MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 1 AND total_amount > 0
+                            THEN '1:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 5 AND total_amount > 0
+                            THEN '5:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 11 AND total_amount > 0
+                            THEN '11:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END),
+                        ','
+                    ) as interestExpenses,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' THEN total_amount ELSE 0 END), 0) as interestExpensesValue,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'BAD_DEBTS' THEN total_amount ELSE 0 END), 0) as badDebtsWrittenOffNotProvided,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'PROVISION' THEN total_amount ELSE 0 END), 0) as provisionBadDoubtfulDebts,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'IMPAIRMENT' THEN total_amount ELSE 0 END), 0) as impairmentsInvestments,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'TAX' THEN total_amount ELSE 0 END), 0) as incomeTaxProvision,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'EXTRAORDINARY' THEN total_amount ELSE 0 END), 0) as extraordinaryCreditsCharge,
+                    RTRIM(
+                        MAX(CASE WHEN CATEGORY = 'NON_CORE_CREDITS' AND ITEM_CODE = 1 AND total_amount > 0
+                            THEN '1:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_CORE_CREDITS' AND ITEM_CODE = 3 AND total_amount > 0
+                            THEN '3:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END),
+                        ','
+                    ) as nonCoreCreditsCharges,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'NON_CORE_CREDITS' THEN total_amount ELSE 0 END), 0) as nonCoreCreditsChargesValue,
+                    RTRIM(
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 1 AND total_amount > 0
+                            THEN '1:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 4 AND total_amount > 0
+                            THEN '4:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 5 AND total_amount > 0
+                            THEN '5:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 20 AND total_amount > 0
+                            THEN '20:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END),
+                        ','
+                    ) as nonInterestIncome,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' THEN total_amount ELSE 0 END), 0) as nonInterestIncomeValue,
+                    RTRIM(
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 1 AND total_amount > 0
+                            THEN '1:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 5 AND total_amount > 0
+                            THEN '5:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 7 AND total_amount > 0
+                            THEN '7:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 8 AND total_amount > 0
+                            THEN '8:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 9 AND total_amount > 0
+                            THEN '9:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 12 AND total_amount > 0
+                            THEN '12:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 13 AND total_amount > 0
+                            THEN '13:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 23 AND total_amount > 0
+                            THEN '23:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 24 AND total_amount > 0
+                            THEN '24:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 25 AND total_amount > 0
+                            THEN '25:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 36 AND total_amount > 0
+                            THEN '36:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 37 AND total_amount > 0
+                            THEN '37:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 39 AND total_amount > 0
+                            THEN '39:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END) ||
+                        MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 40 AND total_amount > 0
+                            THEN '40:' || CAST(total_amount AS VARCHAR(50)) || ',' ELSE '' END),
+                        ','
+                    ) as nonInterestExpenses,
+                    COALESCE(SUM(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' THEN total_amount ELSE 0 END), 0) as nonInterestExpensesValue
+                FROM categorized_amounts
+                """,
+                timestamp_column='reportingDate',
+                target_table='incomeStatement',
+                queue_name='income_statement_queue',
+                processor_class='IncomeStatementProcessor',
+                batch_size=1,
                 poll_interval=10
             )
         }

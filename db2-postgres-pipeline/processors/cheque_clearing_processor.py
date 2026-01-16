@@ -104,7 +104,7 @@ class ChequeClearingProcessor(BaseProcessor):
         ))
     
     def get_upsert_query(self) -> str:
-        """Get upsert query for cheque clearing with duplicate handling"""
+        """Get insert query for cheque clearing"""
         return """
         INSERT INTO "chequeClearing" (
             "reportingDate", "chequeNumber", "issuerName", "issuerBankerCode", "payeeName",
@@ -115,27 +115,6 @@ class ChequeClearingProcessor(BaseProcessor):
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
-        ON CONFLICT ("chequeNumber") DO UPDATE SET
-            "reportingDate" = EXCLUDED."reportingDate",
-            "issuerName" = EXCLUDED."issuerName",
-            "issuerBankerCode" = EXCLUDED."issuerBankerCode",
-            "payeeName" = EXCLUDED."payeeName",
-            "payeeAccountNumber" = EXCLUDED."payeeAccountNumber",
-            "chequeDate" = EXCLUDED."chequeDate",
-            "transactionDate" = EXCLUDED."transactionDate",
-            "settlementDate" = EXCLUDED."settlementDate",
-            "allowanceProbableLoss" = EXCLUDED."allowanceProbableLoss",
-            "botProvision" = EXCLUDED."botProvision",
-            "currency" = EXCLUDED."currency",
-            "orgAmountOpening" = EXCLUDED."orgAmountOpening",
-            "usdAmountOpening" = EXCLUDED."usdAmountOpening",
-            "tzsAmountOpening" = EXCLUDED."tzsAmountOpening",
-            "orgAmountPayment" = EXCLUDED."orgAmountPayment",
-            "usdAmountPayment" = EXCLUDED."usdAmountPayment",
-            "tzsAmountPayment" = EXCLUDED."tzsAmountPayment",
-            "orgAmountBalance" = EXCLUDED."orgAmountBalance",
-            "usdAmountBalance" = EXCLUDED."usdAmountBalance",
-            "tzsAmountBalance" = EXCLUDED."tzsAmountBalance"
         """
     
     def validate_record(self, record: ChequeClearingRecord) -> bool:

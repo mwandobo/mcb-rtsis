@@ -177,8 +177,10 @@ class IncomeStatementPipeline:
                 # Show sample data
                 self.logger.info("Income statement data:")
                 for i, row in enumerate(rows, 1):
-                    self.logger.info(f"  {i}. Interest Income: {row[1]:,.2f} | Interest Expense: {row[2]:,.2f}")
-                    self.logger.info(f"     Non-Interest Income: {row[6]:,.2f} | Non-Interest Expenses: {row[7]:,.2f}")
+                    self.logger.info(f"  {i}. Interest Income: {row[1]} | Interest Expense: {row[3]}")
+                    self.logger.info(f"     Interest Income Value: {row[2]:,.2f} | Interest Expense Value: {row[4]:,.2f}")
+                    self.logger.info(f"     Non-Interest Income: {row[12]} | Non-Interest Expenses: {row[14]}")
+                    self.logger.info(f"     Non-Interest Income Value: {row[13]:,.2f} | Non-Interest Expenses Value: {row[15]:,.2f}")
             
             # Step 4: Process records
             processed_count = 0
@@ -230,7 +232,7 @@ class IncomeStatementPipeline:
                 
                 # Show sample of final data
                 cursor.execute(f"""
-                    SELECT "reportingDate", "interestIncome", "interestExpense", "nonInterestIncome", "nonInterestExpenses"
+                    SELECT "reportingDate", "interestIncomeValue", "interestExpensesValue", "nonInterestIncomeValue", "nonInterestExpensesValue"
                     FROM "{self.table_config.target_table}" 
                     ORDER BY "reportingDate" DESC
                     LIMIT 5;
@@ -239,9 +241,9 @@ class IncomeStatementPipeline:
                 sample_records = cursor.fetchall()
                 self.logger.info("Sample of processed records:")
                 for record in sample_records:
-                    reporting_date, interest_income, interest_expense, non_interest_income, non_interest_expenses = record
-                    net_interest = (interest_income or 0) - (interest_expense or 0)
-                    self.logger.info(f"  Date: {reporting_date} | Net Interest: {net_interest:,.2f} | Non-Interest Income: {non_interest_income:,.2f}")
+                    reporting_date, interest_income_val, interest_expense_val, non_interest_income_val, non_interest_expenses_val = record
+                    net_interest = (interest_income_val or 0) - (interest_expense_val or 0)
+                    self.logger.info(f"  Date: {reporting_date} | Net Interest: {net_interest:,.2f} | Non-Interest Income: {non_interest_income_val:,.2f}")
             
         except Exception as e:
             self.logger.error(f"Pipeline failed: {e}")

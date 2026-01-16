@@ -36,22 +36,22 @@ def create_income_statement_table():
         create_table_sql = """
         CREATE TABLE "incomeStatement" (
             "id" SERIAL PRIMARY KEY,
-            "reportingDate" TIMESTAMP,
-            "interestIncome" DECIMAL(31,2),
-            "interestExpense" DECIMAL(31,2),
+            "reportingDate" VARCHAR(20),
+            "interestIncome" JSONB,
+            "interestIncomeValue" DECIMAL(31,2),
+            "interestExpenses" JSONB,
+            "interestExpensesValue" DECIMAL(31,2),
             "badDebtsWrittenOffNotProvided" DECIMAL(31,2),
             "provisionBadDoubtfulDebts" DECIMAL(31,2),
             "impairmentsInvestments" DECIMAL(31,2),
-            "nonInterestIncome" DECIMAL(31,2),
-            "nonInterestExpenses" DECIMAL(31,2),
             "incomeTaxProvision" DECIMAL(31,2),
             "extraordinaryCreditsCharge" DECIMAL(31,2),
-            "nonCoreCreditsCharges" DECIMAL(31,2),
-            "amountInterestIncome" DECIMAL(31,2),
-            "amountInterestExpenses" DECIMAL(31,2),
-            "amountNonInterestIncome" DECIMAL(31,2),
-            "amountNonInterestExpenses" DECIMAL(31,2),
-            "amountnonCoreCreditsCharges" DECIMAL(31,2)
+            "nonCoreCreditsCharges" JSONB,
+            "nonCoreCreditsChargesValue" DECIMAL(31,2),
+            "nonInterestIncome" JSONB,
+            "nonInterestIncomeValue" DECIMAL(31,2),
+            "nonInterestExpenses" JSONB,
+            "nonInterestExpensesValue" DECIMAL(31,2)
         );
         """
         cursor.execute(create_table_sql)
@@ -59,11 +59,16 @@ def create_income_statement_table():
         # Create indexes
         logger.info("📊 Creating indexes...")
         indexes = [
-            'CREATE INDEX IF NOT EXISTS idx_income_statement_reporting_date ON "incomeStatement"("reportingDate");',
-            'CREATE INDEX IF NOT EXISTS idx_income_statement_interest_income ON "incomeStatement"("interestIncome");',
-            'CREATE INDEX IF NOT EXISTS idx_income_statement_interest_expense ON "incomeStatement"("interestExpense");',
-            'CREATE INDEX IF NOT EXISTS idx_income_statement_non_interest_income ON "incomeStatement"("nonInterestIncome");',
-            'CREATE INDEX IF NOT EXISTS idx_income_statement_non_interest_expenses ON "incomeStatement"("nonInterestExpenses");'
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_income_statement_reporting_date ON "incomeStatement"("reportingDate");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_interest_income_value ON "incomeStatement"("interestIncomeValue");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_interest_expenses_value ON "incomeStatement"("interestExpensesValue");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_non_interest_income_value ON "incomeStatement"("nonInterestIncomeValue");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_non_interest_expenses_value ON "incomeStatement"("nonInterestExpensesValue");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_interest_income_gin ON "incomeStatement" USING GIN ("interestIncome");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_interest_expenses_gin ON "incomeStatement" USING GIN ("interestExpenses");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_non_interest_income_gin ON "incomeStatement" USING GIN ("nonInterestIncome");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_non_interest_expenses_gin ON "incomeStatement" USING GIN ("nonInterestExpenses");',
+            'CREATE INDEX IF NOT EXISTS idx_income_statement_non_core_credits_gin ON "incomeStatement" USING GIN ("nonCoreCreditsCharges");'
         ]
         
         for index_sql in indexes:

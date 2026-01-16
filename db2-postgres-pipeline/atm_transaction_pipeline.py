@@ -74,7 +74,80 @@ class AtmTransactionPipeline:
             if conn:
                 conn.close()
     
+    def get_last_processed_record(self):
+        """Get the last processed record from PostgreSQL to resume from"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(f"""
+                    SELECT "transactionDate", "transactionId"
+                    FROM "{self.table_config.target_table}"
+                    ORDER BY "transactionDate" DESC, "transactionId" DESC
+                    LIMIT 1;
+                """)
+                
+                result = cursor.fetchone()
+                if result:
+                    return str(result[0]), str(result[1])
+                return None, None
+                
+        except Exception as e:
+            self.logger.error(f"Failed to get last processed record: {e}")
+            return None, None
+    
     def get_existing_count(self):
+        """Get count of existing records in PostgreSQL"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(f'SELECT COUNT(*) FROM "{self.table_config.target_table}";')
+                return cursor.fetchone()[0]
+        except Exception as e:
+            self.logger.error(f"Failed to get existing count: {e}")
+            return 0
+    
+    def get_atm_transaction_query(self, last_processed_date=None, last_processed_id=None):
+        """Get ATM transaction query with cursor-based pagination"""
+        
+        # Build WHERE clause for pagination and date filtering
+        where_conditions = ["TERMINAL in('MWL01001','MWL01002')"]
+        
+        if self.start_date:
+            where_conditions.append(f"atx.TUN_DATE >= DATE('{self.start_date}')")
+        
+        if last_processed_date and last_processed_id:
+            where_conditions.append(f"""
+            (atx.TUN_DATE > DATE('{last_processed_date}') 
+             OR (atx.TUN_DATE = DATE('{last_processed_date}') AND atx.REFERENCE_NUMBER > '{last_processed_id}'))
+            """)
+        
+        where_clause = "WHERE " + " AND ".join(where_conditions)
+        
+        return f"""
+        select
+            CURRENT_TIMESTAMP as reportingDate,
+            atx.TERMINAL as atmCode,
+            atx.TUN_DATE as transactionDate,
+            atx.REFERENCE_NUMBER as transactionId,
+            CASE
+                WHEN atx.PROCESSING_CODE IN ('010000','011000','011096','012000') THEN 'Cash Withdrawal'
+                WHEN atx.PROCESSING_CODE IN ('001000','002000','311000','312000') THEN 'Account balance enquiries'
+                WHEN atx.PROCESSING_CODE = '219610' THEN 'Reversal/Cancellation'
+                ELSE NULL
+            END as transactionType,
+            'TZS' as currency,
+            atx.TRANSACTION_AMOUNT as orgTransactionAmount,
+            atx.TRANSACTION_AMOUNT as tzsTransactionAmount,
+            'Card and Mobile Based' as atmChannel,
+            DECIMAL(atx.TRANSACTION_AMOUNT * 0.18, 15, 2) AS valueAddedTaxAmount,
+            0 as exciseDutyAmount,
+            0 as electronicLevyAmount
+        FROM ATM_TRX_RECORDING atx
+        LEFT JOIN ATM_PROCESS_CODE pc ON pc.ISO_CODE = atx.PROCESSING_CODE 
+        {where_clause}
+        ORDER BY atx.TUN_DATE ASC, atx.REFERENCE_NUMBER ASC
+        FETCH FIRST {self.limit} ROWS ONLY
+        """
         """Get count of existing records in PostgreSQL"""
         try:
             with self.get_postgres_connection() as conn:
@@ -115,9 +188,18 @@ class AtmTransactionPipeline:
         self.logger.info("=" * 60)
         
         try:
-            # Step 1: Check existing data
+            # Step 1: Check existing data and resume point
             existing_count = self.get_existing_count()
             self.logger.info(f"Existing records in PostgreSQL: {existing_count}")
+            
+            last_processed_date = None
+            last_processed_id = None
+            
+            if self.resume and existing_count > 0:
+                last_processed_date, last_processed_id = self.get_last_processed_record()
+                self.logger.info(f"Resuming from: Date={last_processed_date}, ID={last_processed_id}")
+            elif not self.resume and existing_count > 0:
+                self.logger.warning("Existing data found but resume=False. Use resume=True to continue from last record.")
             
             # Step 2: Get total count
             self.logger.info(f"Getting total ATM transaction records from {self.start_date}...")
@@ -128,73 +210,94 @@ class AtmTransactionPipeline:
                 self.logger.info("No ATM transaction records found")
                 return
             
-            # Step 3: Process using the SQL query from config
-            self.logger.info("Executing ATM transaction query...")
+            # Step 3: Process in batches using cursor-based pagination
+            total_processed = existing_count  # Start count from existing records
+            batch_number = 1
             
-            with self.get_db2_connection() as conn:
-                cursor = conn.cursor()
+            while True:
+                self.logger.info(f"\nBatch {batch_number}: Fetching next batch of records...")
                 
-                # Use the query from config with date filter
-                query = self.table_config.query
-                if self.start_date:
-                    # Add date filter to the existing WHERE clause
-                    query = query.replace("WHERE TERMINAL", f"WHERE atx.TUN_DATE >= DATE('{self.start_date}') AND TERMINAL")
+                # Fetch batch
+                with self.get_db2_connection() as conn:
+                    cursor = conn.cursor()
+                    
+                    atm_query = self.get_atm_transaction_query(last_processed_date, last_processed_id)
+                    self.logger.info("Executing ATM transaction query...")
+                    
+                    cursor.execute(atm_query)
+                    rows = cursor.fetchall()
+                    
+                    self.logger.info(f"Fetched {len(rows)} ATM transaction records in batch {batch_number}")
+                    
+                    if not rows:
+                        self.logger.info("No more records found - processing complete!")
+                        break
+                    
+                    # Show sample data for first batch
+                    if batch_number == 1:
+                        self.logger.info("Sample ATM transaction records:")
+                        for i, row in enumerate(rows[:min(3, len(rows))], 1):
+                            self.logger.info(f"  {i}. ATM: {row[1]} | Date: {row[2]} | ID: {row[3]} | Type: {row[4]} | Amount: {row[6]}")
                 
-                cursor.execute(query)
-                rows = cursor.fetchall()
+                # Process batch
+                batch_processed = 0
+                batch_skipped = 0
                 
-                self.logger.info(f"Fetched {len(rows)} ATM transaction records")
-                
-                if not rows:
-                    self.logger.info("No records found matching criteria")
-                    return
-                
-                # Show sample data
-                self.logger.info("Sample ATM transaction records:")
-                for i, row in enumerate(rows[:min(3, len(rows))], 1):
-                    self.logger.info(f"  {i}. ATM: {row[1]} | Date: {row[2]} | ID: {row[3]} | Nature: {row[4]} | Amount: {row[6]}")
-            
-            # Step 4: Process records
-            processed_count = 0
-            skipped_count = 0
-            
-            with self.get_postgres_connection() as conn:
-                pg_cursor = conn.cursor()
-                
-                for i, row in enumerate(rows, 1):
+                with self.get_postgres_connection() as conn:
+                    pg_cursor = conn.cursor()
+                    
+                    for row in rows:
+                        try:
+                            # Process the record using the processor
+                            record = self.atm_transaction_processor.process_record(row, self.table_config.name)
+                            
+                            if self.atm_transaction_processor.validate_record(record):
+                                # Use upsert which handles duplicates automatically
+                                self.atm_transaction_processor.insert_to_postgres(record, pg_cursor)
+                                batch_processed += 1
+                                
+                                if batch_processed % 100 == 0:
+                                    self.logger.info(f"Processed {batch_processed} records in batch {batch_number}...")
+                            else:
+                                self.logger.warning(f"Invalid ATM transaction record skipped: {record.transaction_id}")
+                                batch_skipped += 1
+                                
+                        except Exception as e:
+                            self.logger.error(f"Error processing ATM transaction record: {e}")
+                            batch_skipped += 1
+                            continue
+                    
+                    # Commit the entire batch at once
                     try:
-                        # Process the record using the processor
-                        record = self.atm_transaction_processor.process_record(row, self.table_config.name)
-                        
-                        if self.atm_transaction_processor.validate_record(record):
-                            # Use upsert which handles duplicates automatically
-                            self.atm_transaction_processor.insert_to_postgres(record, pg_cursor)
-                            processed_count += 1
-                            
-                            if processed_count % 100 == 0:
-                                self.logger.info(f"Processed {processed_count}/{len(rows)} records...")
-                        else:
-                            self.logger.warning(f"Invalid ATM transaction record skipped: {record.transaction_id}")
-                            skipped_count += 1
-                            
+                        conn.commit()
+                        self.logger.info(f"Batch {batch_number} committed successfully")
                     except Exception as e:
-                        self.logger.error(f"Error processing record {i}: {e}")
-                        skipped_count += 1
+                        self.logger.error(f"Failed to commit batch {batch_number}: {e}")
+                        conn.rollback()
                         continue
+                    
+                    # Update pagination cursors from last row
+                    if rows:
+                        last_row = rows[-1]
+                        last_processed_date = str(last_row[2])  # transactionDate is at index 2
+                        last_processed_id = str(last_row[3])    # transactionId is at index 3
                 
-                # Commit all changes
-                try:
-                    conn.commit()
-                    self.logger.info(f"All records committed successfully")
-                except Exception as e:
-                    self.logger.error(f"Failed to commit records: {e}")
-                    conn.rollback()
-                    return
+                total_processed += batch_processed
+                self.logger.info(f"Batch {batch_number} completed: {batch_processed} new records, {batch_skipped} duplicates/skipped")
+                self.logger.info(f"Total processed so far: {total_processed}")
+                self.logger.info(f"Last processed: {last_processed_date} | ID: {last_processed_id}")
+                
+                # Move to next batch
+                batch_number += 1
+                
+                # Small delay between batches
+                import time
+                time.sleep(1)
             
-            # Step 5: Final verification
-            self.logger.info(f"ATM TRANSACTION PIPELINE FINISHED!")
-            self.logger.info(f"Total records processed: {processed_count}")
-            self.logger.info(f"Records skipped: {skipped_count}")
+            # Step 4: Final verification
+            self.logger.info(f"\nATM TRANSACTION PIPELINE FINISHED!")
+            self.logger.info(f"Total records processed: {total_processed}")
+            self.logger.info(f"Total batches: {batch_number - 1}")
             
             # Verify final count in PostgreSQL
             with self.get_postgres_connection() as conn:
@@ -203,19 +306,28 @@ class AtmTransactionPipeline:
                 final_count = cursor.fetchone()[0]
                 self.logger.info(f"Final count in PostgreSQL: {final_count}")
                 
-                # Show sample of final data
-                cursor.execute(f"""
-                    SELECT "atmCode", "transactionDate", "transactionNature", "orgTransactionAmount", "currency"
-                    FROM "{self.table_config.target_table}" 
-                    ORDER BY "transactionDate" DESC
-                    LIMIT 5;
-                """)
+                # Show sample of final data (using transactionNature as that's the column name in DB)
+                try:
+                    cursor.execute(f"""
+                        SELECT "atmCode", "transactionDate", "transactionType", "orgTransactionAmount", "currency"
+                        FROM "{self.table_config.target_table}" 
+                        ORDER BY "transactionDate" ASC
+                        LIMIT 5;
+                    """)
+                except Exception:
+                    # Fallback if column name is different
+                    cursor.execute(f"""
+                        SELECT "atmCode", "transactionDate", "orgTransactionAmount", "currency"
+                        FROM "{self.table_config.target_table}" 
+                        ORDER BY "transactionDate" ASC
+                        LIMIT 5;
+                    """)
                 
                 sample_records = cursor.fetchall()
                 self.logger.info("Sample of processed records:")
                 for record in sample_records:
-                    atm_code, transaction_date, nature, amount, currency = record
-                    self.logger.info(f"  {atm_code} | {transaction_date} | {nature} | {amount} {currency}")
+                    atm_code, transaction_date, transaction_type, amount, currency = record
+                    self.logger.info(f"  {atm_code} | {transaction_date} | {transaction_type} | {amount} {currency}")
             
         except Exception as e:
             self.logger.error(f"Pipeline failed: {e}")
