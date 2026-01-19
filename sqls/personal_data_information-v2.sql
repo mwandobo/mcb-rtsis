@@ -1,8 +1,8 @@
-SELECT CURRENT_TIMESTAMP                                 AS reportingDate,
-       TRIM(c.cust_id)                                   AS customerIdentificationNumber,
-       c.first_name                                      AS firstName,
-       c.middle_name                                     AS middleNames,
-       c.surname                                         AS otherNames,
+SELECT CURRENT_TIMESTAMP                                                                                AS reportingDate,
+       TRIM(c.cust_id)                                                                                  AS customerIdentificationNumber,
+       c.first_name                                                                                     AS firstName,
+       c.middle_name                                                                                    AS middleNames,
+       c.surname                                                                                        AS otherNames,
 
        TRIM(
                CASE
@@ -13,16 +13,15 @@ SELECT CURRENT_TIMESTAMP                                 AS reportingDate,
                    WHEN c.cust_type = '2' THEN TRIM(c.surname)
                    ELSE ''
                    END
-       )                                                 AS fullNames,
+       )                                                                                                AS fullNames,
 
-       c.surname                                         AS presentSurname,
-       c.surname                                         AS birthSurname,
-
+       c.surname                                                                                        AS presentSurname,
+       c.surname                                                                                        AS birthSurname,
        CASE
            WHEN c.sex = 'M' THEN 'Male'
            WHEN c.sex = 'F' THEN 'Female'
            ELSE 'Not Applicable'
-           END                                           AS gender,
+           END                                                                                          AS gender,
 
        CASE UPPER(TRIM(gd_family.description))
            WHEN 'MARRIED' THEN 'Married'
@@ -30,102 +29,117 @@ SELECT CURRENT_TIMESTAMP                                 AS reportingDate,
            WHEN 'DIVORCED' THEN 'Divorced'
            WHEN 'WIDOWED' THEN 'Widowed'
            ELSE 'Single'
-           END                                           AS maritalStatus,
-
-       NULL                                              AS numberSpouse,
-       gd_natio.description                              AS nationality,
-       gd_citiz.description                              AS citizenship,
-
+           END                                                                                          AS maritalStatus,
+       NULL                                                                                             AS numberSpouse,
+       CASE UPPER(TRIM(gd_natio.description)) WHEN 'TANZANIAN' THEN 'TANZANIA, UNITED REPUBLIC OF' END  AS nationality,
+       CASE UPPER(TRIM(gd_natio.description)) WHEN 'TANZANIAN' THEN 'TANZANIA, UNITED REPUBLIC OF' END  AS citizenship,
        CASE
            WHEN c.non_resident = '0' THEN 'Resident'
            ELSE 'Non-Resident'
-           END                                           AS residency,
+           END                                                                                          AS residency,
 
-       gd_proff.description                              AS profession,
-       'Households'                                      AS sectorSnaClassification,
-       'No Fate'                                         AS fateStatus,
-       'N/A'                                             AS socialStatus,
-
+       gd_proff.description                                                                             AS profession,
+       'Households'                                                                                     AS sectorSnaClassification,
+       CASE c.CUST_STATUS
+           WHEN '5' THEN 'Disappeared'
+           ELSE 'No Fate'
+           END                                                                                          AS fateStatus,
+       'N/A'                                                                                            AS socialStatus,
        CASE UPPER(TRIM(gd_employment.description))
            WHEN 'EMPLOYED' THEN 'Employed'
            WHEN 'SALARIED' THEN 'Employed'
            WHEN 'CUSTOMER SERVICE' THEN 'Self-employed'
            ELSE 'Unemployed'
-           END                                           AS employmentStatus,
+           END                                                                                          AS employmentStatus,
+       c.salary_amn                                                                                     AS monthlyIncome,
+       (c.num_of_children + c.children_above18)                                                         AS numberDependants,
+       gd_edulevel.description                                                                          AS educationLevel,
+       0.00                                                                                             AS averageMonthlyExpenditure,
+       c.blacklisted_ind                                                                                AS negativeClientStatus,
+       c.spouse_name                                                                                    AS spousesFullName,
+       NULL                                                                                             AS spouseIdentificationType,
+       NULL                                                                                             AS spouseIdentificationNumber,
+       NULL                                                                                             AS maidenName,
+       NULL                                                                                             AS monthlyExpenses,
+       c.date_of_birth                                                                                  AS birthDate,
+       id_country.description                                                                           AS birthCountry,
+       CASE UPPER(TRIM(id_country.description)) WHEN 'TANZANIA' THEN 'TANZANIA, UNITED REPUBLIC OF' END AS birthCountry,
+       NULL                                                                                             AS birthPostalCode,
+       NULL                                                                                             AS birthHouseNumber,
+       'N/A'                                                                                            AS birthRegion,
+       'N/A'                                                                                            AS birthDistrict,
+       NULL                                                                                             AS birthWard,
+       NULL                                                                                             AS birthStreet,
+       CASE UPPER(TRIM(idt.description))
+           WHEN 'COMPANYS REGISTRY NUMBER' THEN 'Certificate of Registration'
+           WHEN 'DRIVING LICENCE' THEN 'DrivingLicense'
+           WHEN 'NATIONAL IDENTITY CARD' THEN 'NationalIdentityCard'
+           WHEN 'PASSPORT' THEN 'Passport'
+           WHEN 'STUDENT ID' THEN 'Student ID'
+           WHEN 'VOTERS ID' THEN 'VotersRegistrationCard'
+           ELSE 'N/A'
+           END                                                                                          AS identificationType,
 
-       c.salary_amn                                      AS monthlyIncome,
-       (c.num_of_children + c.children_above18)          AS numberDependants,
-       gd_edulevel.description                           AS educationLevel,
+       id.id_no                                                                                         AS identificationNumber,
+       CASE
+           WHEN id.issue_date = DATE '0001-01-01'
+               THEN 'N/A'
+           ELSE TO_CHAR(id.issue_date, 'YYYY-MM-DD')
+           END                                                                                          AS issuance_date,
+       CASE
+           WHEN id.expiry_date = DATE '0001-01-01'
+               THEN 'N/A'
+           ELSE TO_CHAR(id.expiry_date, 'YYYY-MM-DD')
+           END                                                                                          AS expirationDate,
+       'N/A'                                                                                            AS issuancePlace,
 
-       NULL                                              AS averageMonthlyExpenditure,
-       NULL                                              AS monthlyExpenses,
+       CASE UPPER(TRIM(idt.description))
+           WHEN 'COMPANYS REGISTRY NUMBER' THEN 'Business Registrations and Licensing Agency (BRELA)'
+           WHEN 'DRIVING LICENCE' THEN 'Tanzania Revenue Authority (TRA)'
+           WHEN 'NATIONAL IDENTITY CARD' THEN 'National Identification Authority (NIDA)'
+           WHEN 'PASSPORT' THEN 'Immigration Services Department'
+           WHEN 'STUDENT ID' THEN 'Recognized Education Institution'
+           WHEN 'VOTERS ID' THEN 'Independent National Electoral Commission (INEC)'
+           END                                                                                          AS issuingAuthority,
+       NULL                                                                                             AS businessName,
+       NULL                                                                                             AS establishmentDate,
+       NULL                                                                                             AS businessRegistrationNumber,
+       NULL                                                                                             AS businessRegistrationDate,
+       NULL                                                                                             AS businessLicenseNumber,
+       NULL                                                                                             AS taxIdentificationNumber,
 
-       c.blacklisted_ind                                 AS negativeClientStatus,
-       c.spouse_name                                     AS spousesFullName,
+       NULL                                                                                             AS employerName,
+       NULL                                                                                             AS employerRegion,
+       NULL                                                                                             AS employerDistrict,
+       NULL                                                                                             AS employerWard,
+       NULL                                                                                             AS employerStreet,
+       NULL                                                                                             AS employerHouseNumber,
+       NULL                                                                                             AS employerPostalCode,
+       NULL                                                                                             AS businessNature,
+       c.mobile_tel                                                                                     AS mobileNumber,
+       c.mobile_tel2                                                                                    AS alternativeMobileNumber,
+       c.telephone_1                                                                                    AS fixedLineNumber,
+       c_address.fax_no                                                                                 AS faxNumber,
+       c.e_mail                                                                                         AS emailAddress,
+       c.internet_address                                                                               AS socialMedia,
 
-       NULL                                              AS spouseIdentificationType,
-       NULL                                              AS spouseIdentificationNumber,
-       NULL                                              AS maidenName,
-
-       c.date_of_birth                                   AS birthDate,
-       id_country.description                            AS birthCountry,
-
-       NULL                                              AS birthPostalCode,
-       NULL                                              AS birthHouseNumber,
-       NULL                                              AS birthRegion,
-       NULL                                              AS birthDistrict,
-       NULL                                              AS birthWard,
-       NULL                                              AS birthStreet,
-
-       idt.description                                   AS identificationType,
-       id.id_no                                          AS identificationNumber,
-       id.issue_date                                     AS issuanceDate,
-       id.expiry_date                                    AS expirationDate,
-       NULL                                              AS issuancePlace,
-       'NIDA'                                            AS issuingAuthority,
-
-       NULL                                              AS businessName,
-       NULL                                              AS establishmentDate,
-       NULL                                              AS businessRegistrationNumber,
-       NULL                                              AS businessRegistrationDate,
-       NULL                                              AS businessLicenseNumber,
-       NULL                                              AS taxIdentificationNumber,
-
-       NULL                                              AS employerName,
-       NULL                                              AS employerRegion,
-       NULL                                              AS employerDistrict,
-       NULL                                              AS employerWard,
-       NULL                                              AS employerStreet,
-       NULL                                              AS employerHouseNumber,
-       NULL                                              AS employerPostalCode,
-       NULL                                              AS businessNature,
-
-       c.mobile_tel                                      AS mobileNumber,
-       c.mobile_tel2                                     AS alternativeMobileNumber,
-       c.telephone_1                                     AS fixedLineNumber,
-       c_address.fax_no                                  AS faxNumber,
-       c.e_mail                                          AS emailAddress,
-       c.internet_address                                AS socialMedia,
-
-       c_address.address_1 || ' ' || c_address.address_2 AS mainAddress,
-       NULL                                              AS street,
-       NULL                                              AS houseNumber,
-       c_address.zip_code                                AS postalCode,
-       c_address.region                                  AS region,
-       NULL                                              AS district,
-       NULL                                              AS ward,
-       c_country.description                             AS country,
-
-       NULL                                              AS sstreet,
-       NULL                                              AS shouseNumber,
-       NULL                                              AS spostalCode,
-       NULL                                              AS sregion,
-       NULL                                              AS sdistrict,
-       NULL                                              AS sward,
-       NULL                                              AS scountry
+       c_address.address_1 || ' ' || c_address.address_2                                                AS mainAddress,
+       NULL                                                                                             AS street,
+       NULL                                                                                             AS houseNumber,
+       c_address.zip_code                                                                               AS postalCode,
+       c_address.CITY                                                                                   AS region,
+       c_address.REGION                                                                                 AS district,
+       c_address.ADDRESS_1                                                                              AS ward,
+       c_country.description                                                                            AS country,
+       NULL                                                                                             AS sstreet,
+       NULL                                                                                             AS shouseNumber,
+       NULL                                                                                             AS spostalCode,
+       NULL                                                                                             AS sregion,
+       NULL                                                                                             AS sdistrict,
+       NULL                                                                                             AS sward,
+       NULL                                                                                             AS scountry
 
 FROM customer c
-
          LEFT JOIN cust_address c_address
                    ON c_address.fk_customercust_id = c.cust_id
                        AND c_address.communication_addr = '1'
@@ -199,4 +213,6 @@ FROM customer c
 
          LEFT JOIN generic_detail gd_edulevel
                    ON gd_edulevel.fk_generic_headpar = cc_edulevel.fk_generic_detafk
-                       AND gd_edulevel.serial_num = cc_edulevel.fk_generic_detaser;
+                       AND gd_edulevel.serial_num = cc_edulevel.fk_generic_detaser
+
+WHERE UPPER(TRIM(idt.description)) NOT IN ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE');
