@@ -210,4 +210,4 @@ FROM customer c
          LEFT JOIN generic_detail gd_edulevel
                    ON gd_edulevel.fk_generic_headpar = cc_edulevel.fk_generic_detafk
                        AND gd_edulevel.serial_num = cc_edulevel.fk_generic_detaser
-WHERE UPPER(TRIM(idt.description)) NOT IN ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE') ;
+WHERE UPPER(TRIM(idt.description)) NOT IN ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE') and c.CUST_TYPE = '1' ;
