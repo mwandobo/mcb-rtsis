@@ -79,7 +79,6 @@ SELECT CURRENT_TIMESTAMP                                                        
            WHEN 'VOTERS ID' THEN 'VotersRegistrationCard'
            ELSE 'N/A'
            END                                                                                          AS identificationType,
-
        id.id_no                                                                                         AS identificationNumber,
        CASE
            WHEN id.issue_date = DATE '0001-01-01'
@@ -107,7 +106,6 @@ SELECT CURRENT_TIMESTAMP                                                        
        NULL                                                                                             AS businessRegistrationDate,
        NULL                                                                                             AS businessLicenseNumber,
        NULL                                                                                             AS taxIdentificationNumber,
-
        NULL                                                                                             AS employerName,
        NULL                                                                                             AS employerRegion,
        NULL                                                                                             AS employerDistrict,
@@ -122,7 +120,6 @@ SELECT CURRENT_TIMESTAMP                                                        
        c_address.fax_no                                                                                 AS faxNumber,
        c.e_mail                                                                                         AS emailAddress,
        c.internet_address                                                                               AS socialMedia,
-
        c_address.address_1 || ' ' || c_address.address_2                                                AS mainAddress,
        NULL                                                                                             AS street,
        NULL                                                                                             AS houseNumber,
@@ -138,7 +135,6 @@ SELECT CURRENT_TIMESTAMP                                                        
        NULL                                                                                             AS sdistrict,
        NULL                                                                                             AS sward,
        NULL                                                                                             AS scountry
-
 FROM customer c
          LEFT JOIN cust_address c_address
                    ON c_address.fk_customercust_id = c.cust_id
@@ -214,5 +210,4 @@ FROM customer c
          LEFT JOIN generic_detail gd_edulevel
                    ON gd_edulevel.fk_generic_headpar = cc_edulevel.fk_generic_detafk
                        AND gd_edulevel.serial_num = cc_edulevel.fk_generic_detaser
-
-WHERE UPPER(TRIM(idt.description)) NOT IN ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE');
+WHERE UPPER(TRIM(idt.description)) NOT IN ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE') ;
