@@ -1,15 +1,15 @@
-SELECT VARCHAR_FORMAT(CURRENT TIMESTAMP, 'DDMMYYYYHH24MI') AS reportingDate,
-       g.CUST_ID                                           AS clientIdentificationNumber,
+SELECT CURRENT_TIMESTAMP AS reportingDate,
+       gte.CUST_ID                                         AS clientIdentificationNumber,
        PA.ACCOUNT_NUMBER                                   AS accountNumber,
        wdc.NAME_STANDARD                                   AS accountName,
        wdc.CUST_TYPE_IND                                   AS customerCategory,
-       'Tanzania'                                          AS customerCountry,
+       'TANZANIA, UNITED REPUBLIC OF'                      AS customerCountry,
        pa.MONOTORING_UNIT                                  AS branchCode,
        CASE
            WHEN pa.PRFT_SYSTEM = 4 THEN 'Staff'
            WHEN pa.PRFT_SYSTEM = 3 THEN 'Individual'
            END                                             AS clientType,
-       null                                                AS relationshipType,
+       'Domestic banks unrelated'                          AS relationshipType,
        wdc.CITY                                            AS district,
        'DAR ES SALAAM'                                     AS region,
        p.DESCRIPTION                                       AS accountProductName,
@@ -21,30 +21,29 @@ SELECT VARCHAR_FORMAT(CURRENT TIMESTAMP, 'DDMMYYYYHH24MI') AS reportingDate,
            WHEN pa.ACC_STATUS = 3 THEN 'closed'
            ELSE 'inactive'
            END                                             AS depositAccountStatus,
-       g.TRN_SNUM                                          AS transactionUniqueRef,
-       g.TMSTAMP                                           AS timeStamp,
+       VARCHAR(gte.FK_UNITCODETRXUNIT) || '-' ||
+       TRIM(gte.FK_USRCODE) || '-' ||
+       VARCHAR(gte.LINE_NUM) || '-' ||
+       VARCHAR(gte.TRN_DATE) || '-' ||
+       VARCHAR(gte.TRN_SNUM)                               AS transactionUniqueRef,
+       gte.TMSTAMP                                         AS timeStamp,
        'Branch'                                            AS serviceChannel,
-       g.CURRENCY_SHORT_DES                                AS currency,
+       gte.CURRENCY_SHORT_DES                              AS currency,
        'Deposit'                                           AS transactionType,
-       -- Fixed: Handle non-numeric values in DC_AMOUNT safely
+       gte.DC_AMOUNT                                       AS orgTransactionAmount,
        CASE
-           WHEN g.DC_AMOUNT IS NULL OR TRIM(CAST(g.DC_AMOUNT AS VARCHAR(50))) = '' THEN 0
-           ELSE COALESCE(g.DC_AMOUNT, 0)
-       END                                                 AS orgTransactionAmount,
-
-       CASE
-           WHEN g.CURRENCY_SHORT_DES = 'USD' AND g.DC_AMOUNT IS NOT NULL
-               THEN COALESCE(g.DC_AMOUNT, 0)
+           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN gte.DC_AMOUNT
            ELSE NULL
            END                                             AS usdTransactionAmount,
 
-       -- TZS Amount: convert only if USD, otherwise use as is (with null safety)
+       -- TZS Amount: convert only if USD, otherwise use as is
        CASE
-           WHEN g.CURRENCY_SHORT_DES = 'USD' AND g.DC_AMOUNT IS NOT NULL
-               THEN COALESCE(g.DC_AMOUNT, 0) * 2500
-           ELSE COALESCE(g.DC_AMOUNT, 0)
+           WHEN gte.CURRENCY_SHORT_DES = 'USD'
+               THEN gte.DC_AMOUNT * 2500
+           ELSE
+               gte.DC_AMOUNT
            END                                             AS tzsTransactionAmount,
-       null                                                AS transactionPurposes,
+       gte.JUSTIFIC_DESCR                                  AS transactionPurposes,
        null                                                AS sectorSnaClassification,
        null                                                AS lienNumber,
        null                                                AS orgAmountLien,
@@ -54,32 +53,24 @@ SELECT VARCHAR_FORMAT(CURRENT TIMESTAMP, 'DDMMYYYYHH24MI') AS reportingDate,
        null                                                AS maturityDate,
        null                                                AS annualInterestRate,
        null                                                AS interestRateType,
-       -- Fixed: Handle non-numeric values for interest amounts safely
-       CASE
-           WHEN g.DC_AMOUNT IS NULL OR TRIM(CAST(g.DC_AMOUNT AS VARCHAR(50))) = '' THEN 0
-           ELSE COALESCE(g.DC_AMOUNT, 0)
-       END                                                 AS orgInterestAmount,
+       0                                                   AS orgInterestAmount,
+       0                                                   AS usdInterestAmount,
 
-       CASE
-           WHEN g.CURRENCY_SHORT_DES = 'USD' AND g.DC_AMOUNT IS NOT NULL
-               THEN COALESCE(g.DC_AMOUNT, 0)
-           ELSE NULL
-           END                                             AS usdInterestAmount,
+       -- TZS Amount: convert only if USD, otherwise use as is
+       0                                                   AS tzsInterestAmount
+FROM GLI_TRX_EXTRACT gte
 
-       -- TZS Amount: convert only if USD, otherwise use as is (with null safety)
-       CASE
-           WHEN g.CURRENCY_SHORT_DES = 'USD' AND g.DC_AMOUNT IS NOT NULL
-               THEN COALESCE(g.DC_AMOUNT, 0) * 2500
-           ELSE COALESCE(g.DC_AMOUNT, 0)
-           END                                             AS tzsInterestAmount
-FROM GLI_TRX_EXTRACT g
-         LEFT JOIN CUSTOMER c
-                   ON c.CUST_ID = g.CUST_ID
-         LEFT JOIN W_DIM_CUSTOMER wdc ON wdc.CUST_ID = g.CUST_ID
-         LEFT JOIN PRODUCT p ON p.ID_PRODUCT = g.ID_PRODUCT
-         -- FIXED: Join on both CUST_ID and ACCOUNT_NUMBER to avoid duplicates
-         -- Use string comparison to avoid DECIMAL conversion errors
-         LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = g.CUST_ID
+         LEFT JOIN (SELECT *
+                    FROM (SELECT wdc.*,
+                                 ROW_NUMBER() OVER (PARTITION BY CUST_ID ORDER BY CUSTOMER_BEGIN_DAT DESC) rn
+                          FROM W_DIM_CUSTOMER wdc)
+                    WHERE rn = 1) wdc ON wdc.CUST_ID = gte.CUST_ID
+         LEFT JOIN PRODUCT p ON p.ID_PRODUCT = gte.ID_PRODUCT
+         LEFT JOIN (SELECT *
+                    FROM (SELECT pa.*,
+                                 ROW_NUMBER() OVER (PARTITION BY CUST_ID ORDER BY ACCOUNT_NUMBER) rn
+                          FROM PROFITS_ACCOUNT pa
+                          WHERE PRFT_SYSTEM = 3)
+                    WHERE rn = 1) pa ON pa.CUST_ID = gte.CUST_ID
+WHERE gte.JUSTIFIC_DESCR = 'JOURNAL CREDIT';
 
-                                     AND pa.PRFT_SYSTEM = 3
-WHERE g.JUSTIFIC_DESCR = 'JOURNAL CREDIT';
