@@ -1,0 +1,4 @@
+1. Make sure The ID tpe is correct during registration ... and insure the correct id number is inserted
+        we have id types like
+        Birth Certificate
+        Other Type of Identification which should be checked.
