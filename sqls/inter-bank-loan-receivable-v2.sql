@@ -3,7 +3,7 @@ select CURRENT_TIMESTAMP                                                       A
        CASE
            WHEN cl.COUNTRY_CODE = 'TZ' THEN 'TANZANIA, UNITED REPUBLIC OF' END as borrowerCountry,
        'Domestic banks unrelated'                                              as relationshipType,
-       CAST(0 AS SMALLINT)                                                                   as ratingStatus,
+       CAST(0 AS SMALLINT)                                                     as ratingStatus,
        CASE
            WHEN la.ACC_EXP_DT IS NULL THEN 'UNRATED'
            WHEN DAYS(la.ACC_EXP_DT) - DAYS(CURRENT_DATE) <= 90
@@ -11,7 +11,7 @@ select CURRENT_TIMESTAMP                                                       A
            ELSE 'UNRATED'
            END                                                                 AS externalRatingCorrespondentBorrower,
        'Grade B'                                                               AS gradesUnratedBorrower,
-       gte.PRF_ACCOUNT_NUMBER                                                      as loanNumber,
+       gte.PRF_ACCOUNT_NUMBER                                                  as loanNumber,
        'Interbank call loans in Tanzania'                                      AS loanType,
        la.ACC_OPEN_DT                                                          as issueDate,
        la.ACC_EXP_DT                                                           AS loanMaturityDate,
