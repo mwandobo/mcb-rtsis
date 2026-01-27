@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 """
-Create Personal Data Information Table in PostgreSQL
+Create personalData table with camelCase naming
 """
 
 import psycopg2
-import logging
 from config import Config
 
 def create_personal_data_table():
-    """Create the personal data information table in PostgreSQL"""
-    config = Config()
+    """Create personalData table in PostgreSQL with camelCase naming"""
     
-    # Setup logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    logger = logging.getLogger(__name__)
+    config = Config()
     
     try:
         # Connect to PostgreSQL
@@ -28,16 +24,14 @@ def create_personal_data_table():
         cursor = conn.cursor()
         
         # Drop table if exists
-        logger.info("🗑️ Dropping existing personalDataInformation table if it exists...")
-        cursor.execute('DROP TABLE IF EXISTS "personalDataInformation" CASCADE;')
+        cursor.execute('DROP TABLE IF EXISTS "personalData"')
         
-        # Create Personal Data Information table
-        logger.info("🏗️ Creating personalDataInformation table...")
+        # Create personalData table with camelCase fields
         create_table_sql = """
-        CREATE TABLE "personalDataInformation" (
-            "id" SERIAL PRIMARY KEY,
+        CREATE TABLE "personalData" (
+            id SERIAL PRIMARY KEY,
             "reportingDate" TIMESTAMP,
-            "customerIdentificationNumber" VARCHAR(50) NOT NULL,
+            "customerIdentificationNumber" VARCHAR(50),
             "firstName" VARCHAR(100),
             "middleNames" VARCHAR(100),
             "otherNames" VARCHAR(100),
@@ -45,26 +39,26 @@ def create_personal_data_table():
             "presentSurname" VARCHAR(100),
             "birthSurname" VARCHAR(100),
             "gender" VARCHAR(20),
-            "maritalStatus" VARCHAR(50),
+            "maritalStatus" VARCHAR(20),
             "numberSpouse" VARCHAR(10),
-            "spousesFullName" VARCHAR(200),
             "nationality" VARCHAR(100),
             "citizenship" VARCHAR(100),
-            "residency" VARCHAR(50),
-            "profession" VARCHAR(200),
-            "sectorSnaClassification" VARCHAR(200),
+            "residency" VARCHAR(20),
+            "profession" VARCHAR(100),
+            "sectorSnaClassification" VARCHAR(100),
             "fateStatus" VARCHAR(50),
             "socialStatus" VARCHAR(50),
-            "employmentStatus" VARCHAR(100),
-            "monthlyIncome" VARCHAR(50),
-            "numberDependants" VARCHAR(10),
+            "employmentStatus" VARCHAR(50),
+            "monthlyIncome" DECIMAL(18,2),
+            "numberDependants" INTEGER,
             "educationLevel" VARCHAR(100),
-            "averageMonthlyExpenditure" VARCHAR(50),
-            "monthlyExpenses" VARCHAR(50),
-            "negativeClientStatus" VARCHAR(50),
-            "spouseIdentificationType" VARCHAR(100),
+            "averageMonthlyExpenditure" DECIMAL(18,2),
+            "negativeClientStatus" VARCHAR(10),
+            "spousesFullName" VARCHAR(200),
+            "spouseIdentificationType" VARCHAR(50),
             "spouseIdentificationNumber" VARCHAR(50),
             "maidenName" VARCHAR(100),
+            "monthlyExpenses" DECIMAL(18,2),
             "birthDate" DATE,
             "birthCountry" VARCHAR(100),
             "birthPostalCode" VARCHAR(20),
@@ -73,12 +67,12 @@ def create_personal_data_table():
             "birthDistrict" VARCHAR(100),
             "birthWard" VARCHAR(100),
             "birthStreet" VARCHAR(200),
-            "identificationType" VARCHAR(100),
+            "identificationType" VARCHAR(50),
             "identificationNumber" VARCHAR(50),
-            "issuanceDate" DATE,
-            "expirationDate" DATE,
+            "issuanceDate" VARCHAR(20),
+            "expirationDate" VARCHAR(20),
             "issuancePlace" VARCHAR(100),
-            "issuingAuthority" VARCHAR(100),
+            "issuingAuthority" VARCHAR(200),
             "businessName" VARCHAR(200),
             "establishmentDate" DATE,
             "businessRegistrationNumber" VARCHAR(50),
@@ -107,68 +101,36 @@ def create_personal_data_table():
             "district" VARCHAR(100),
             "ward" VARCHAR(100),
             "country" VARCHAR(100),
-            "workStreet" VARCHAR(200),
-            "workHouseNumber" VARCHAR(20),
-            "workPostalCode" VARCHAR(20),
-            "workRegion" VARCHAR(100),
-            "workDistrict" VARCHAR(100),
-            "workWard" VARCHAR(100),
-            "workCountry" VARCHAR(100)
-        );
+            "sstreet" VARCHAR(200),
+            "shouseNumber" VARCHAR(20),
+            "spostalCode" VARCHAR(20),
+            "sregion" VARCHAR(100),
+            "sdistrict" VARCHAR(100),
+            "sward" VARCHAR(100),
+            "scountry" VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
         """
+        
         cursor.execute(create_table_sql)
         
-        # Create indexes
-        logger.info("📊 Creating indexes...")
-        indexes = [
-            'CREATE UNIQUE INDEX IF NOT EXISTS idx_personal_data_unique ON "personalDataInformation"("customerIdentificationNumber");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_name ON "personalDataInformation"("fullNames");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_first_name ON "personalDataInformation"("firstName");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_surname ON "personalDataInformation"("presentSurname");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_gender ON "personalDataInformation"("gender");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_nationality ON "personalDataInformation"("nationality");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_citizenship ON "personalDataInformation"("citizenship");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_residency ON "personalDataInformation"("residency");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_profession ON "personalDataInformation"("profession");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_employment ON "personalDataInformation"("employmentStatus");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_education ON "personalDataInformation"("educationLevel");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_birth_date ON "personalDataInformation"("birthDate");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_identification ON "personalDataInformation"("identificationNumber");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_mobile ON "personalDataInformation"("mobileNumber");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_email ON "personalDataInformation"("emailAddress");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_region ON "personalDataInformation"("region");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_district ON "personalDataInformation"("district");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_country ON "personalDataInformation"("country");',
-            'CREATE INDEX IF NOT EXISTS idx_personal_data_reporting_date ON "personalDataInformation"("reportingDate");'
-        ]
+        # Create indexes for better performance
+        cursor.execute('CREATE INDEX IF NOT EXISTS "idx_personalData_customerIdentificationNumber" ON "personalData" ("customerIdentificationNumber")')
+        cursor.execute('CREATE INDEX IF NOT EXISTS "idx_personalData_reportingDate" ON "personalData" ("reportingDate")')
+        cursor.execute('CREATE INDEX IF NOT EXISTS "idx_personalData_identificationNumber" ON "personalData" ("identificationNumber")')
         
-        for index_sql in indexes:
-            cursor.execute(index_sql)
-        
-        # Commit changes
         conn.commit()
-        
-        logger.info("✅ Personal data information table and indexes created successfully!")
-        
-        # Show table info
-        cursor.execute("""
-            SELECT column_name, data_type, character_maximum_length 
-            FROM information_schema.columns 
-            WHERE table_name = 'personalDataInformation' 
-            ORDER BY ordinal_position;
-        """)
-        
-        columns = cursor.fetchall()
-        logger.info("📋 Table structure:")
-        for col_name, data_type, max_length in columns:
-            length_info = f"({max_length})" if max_length else ""
-            logger.info(f"  {col_name}: {data_type}{length_info}")
-        
         cursor.close()
         conn.close()
         
+        print("✅ personalData table created successfully with camelCase naming")
+        print("📋 Table structure:")
+        print("   - Table name: personalData (camelCase)")
+        print("   - 73 fields with camelCase naming")
+        print("   - Indexes on customerIdentificationNumber, reportingDate, identificationNumber")
+        
     except Exception as e:
-        logger.error(f"❌ Failed to create personal data information table: {e}")
+        print(f"❌ Error creating personalData table: {e}")
         raise
 
 if __name__ == "__main__":

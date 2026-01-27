@@ -3,7 +3,6 @@ SELECT CURRENT_TIMESTAMP                                                        
        c.first_name                                                                                     AS firstName,
        c.middle_name                                                                                    AS middleNames,
        c.surname                                                                                        AS otherNames,
-
        TRIM(
                CASE
                    WHEN c.cust_type = '1' THEN

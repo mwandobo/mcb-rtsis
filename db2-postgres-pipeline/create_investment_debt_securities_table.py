@@ -25,17 +25,18 @@ def create_investment_debt_securities_table():
             # Drop table if exists
             cursor.execute('DROP TABLE IF EXISTS "investmentDebtSecurities" CASCADE')
             
-            # Create table with camelCase naming
+            # Create table with ALL fields from SQL query (29 fields) - No primary key to allow duplicates
             create_table_sql = '''
             CREATE TABLE "investmentDebtSecurities" (
                 "reportingDate" TIMESTAMP NOT NULL,
                 "securityNumber" VARCHAR(100) NOT NULL,
                 "securityType" VARCHAR(100),
                 "securityIssuerName" VARCHAR(200),
+                "ratingStatus" VARCHAR(50),
                 "externalIssuerRatting" VARCHAR(50),
                 "gradesUnratedBanks" VARCHAR(50),
                 "securityIssuerCountry" VARCHAR(100),
-                "snaIssuerSector" VARCHAR(100),
+                "sectorSnaClassification" VARCHAR(100),
                 "currency" VARCHAR(10),
                 "orgCostValueAmount" DECIMAL(15,2),
                 "tzsCostValueAmount" DECIMAL(15,2),
@@ -54,9 +55,9 @@ def create_investment_debt_securities_table():
                 "securityEncumbaranceStatus" VARCHAR(50),
                 "pastDueDays" INTEGER,
                 "allowanceProbableLoss" DECIMAL(15,2),
-                "assetClassificationCategory" INTEGER,
-                "originalTimestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY ("securityNumber")
+                "botProvision" DECIMAL(15,2),
+                "assetClassificationCategory" VARCHAR(50),
+                "originalTimestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             '''
             
