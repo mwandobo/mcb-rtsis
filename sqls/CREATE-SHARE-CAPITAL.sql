@@ -1,0 +1,20 @@
+create table SHARE_CAPITAL
+(
+    CAPITAL_CATEGORY     CHAR(100)    null,
+    CAPITAL_SUBCATEGORY     CHAR(100)     null,
+    TRANSACTION_DATE  CHAR(100)     null,
+    TRANSACTION_TYPE  CHAR(100)     null,
+    AGENT_BUSINESS  CHAR(100)     null,
+    SHAREHOLDER_NAME   CHAR(100) NOT null,
+    CLIENT_TYPE   CHAR(100)  null,
+    SHAREHOLDER_COUNTRY   CHAR(100)  null,
+    NUMBER_OF_SHARES   CHAR(100)  null,
+    SHARE_PRICE_BOOK_VALUE   CHAR(100)  null,
+    CURRENCY   CHAR(100)  null,
+    ORG_AMOUNT   CHAR(100)  null,
+    TZS_AMOUNT   CHAR(200)  null,
+    SECTOR_SNA_CLASSIFICATION   CHAR(200)  null,
+    constraint SHARE_CAPITAL_PK
+        primary key (SHAREHOLDER_NAME)
+);
+

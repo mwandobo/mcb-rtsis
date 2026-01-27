@@ -1,0 +1,17 @@
+
+SELECT
+    TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') as reportingDate,
+    sc.CAPITAL_CATEGORY                                          AS CAPITAL_CATEGORY,
+    sc.CAPITAL_SUBCATEGORY                                          AS CAPITAL_SUBCATEGORY,
+    sc.TRANSACTION_DATE                                          AS TRANSACTION_DATE,
+    sc.TRANSACTION_TYPE                                          AS TRANSACTION_TYPE,
+    sc.SHAREHOLDER_NAME                                          AS SHAREHOLDER_NAME,
+    sc.CLIENT_TYPE                                          AS CLIENT_TYPE,
+    sc.SHAREHOLDER_COUNTRY                                          AS SHAREHOLDER_COUNTRY,
+    sc.NUMBER_OF_SHARES                                          AS NUMBER_OF_SHARES,
+    sc.SHARE_PRICE_BOOK_VALUE                                          AS SHARE_PRICE_BOOK_VALUE,
+    sc.CURRENCY                                          AS CURRENCY,
+    sc.ORG_AMOUNT                                          AS ORG_AMOUNT,
+    sc.TZS_AMOUNT                                          AS TZS_AMOUNT,
+    sc.SECTOR_SNA_CLASSIFICATION                                          AS SECTOR_SNA_CLASSIFICATION
+FROM SHARE_CAPITAL sc ;
