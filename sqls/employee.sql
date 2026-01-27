@@ -28,7 +28,8 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
        'TANZANIA, UNITED REPUBLIC OF'                                                               AS empNationality,
        VARCHAR_FORMAT(be.TMSTAMP, 'DDMMYYYYHHMM')                                                   AS lastPromotionDate,
        c.SALARY_AMN                                                                                 AS basicSalary,
-       null                                                                                         AS empBenefits
+       null                                                                                         AS benefitType,
+       null                                                                                         AS benefitAmount
 FROM BANKEMPLOYEE be
          LEFT JOIN (SELECT *
                     FROM (SELECT c.*,
@@ -48,7 +49,9 @@ FROM BANKEMPLOYEE be
                                                     be.FKGD_WORKS_IN_POSI = position_data.serial_num)
          LEFT JOIN generic_detail department_data ON (be.FKGH_HAS_AS_GRADE = department_data.fk_generic_headpar AND
                                                       be.FKGD_HAS_AS_GRADE = department_data.serial_num)
-WHERE STAFF_NO IS NOT NULL
-  AND STAFF_NO = TRIM(STAFF_NO)
-  AND EMPL_STATUS = 1
-  AND STAFF_NO LIKE 'EIC%';
+WHERE be.STAFF_NO IS NOT NULL
+  AND be.STAFF_NO = TRIM(be.STAFF_NO)
+  AND be.EMPL_STATUS = 1
+  AND be.STAFF_NO LIKE 'EIC%'
+  AND LENGTH(TRIM(id.ID_NO)) = 20
+;
