@@ -128,8 +128,19 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                      
            ELSE (la.NRM_CAP_BAL + la.OV_CAP_BAL)
                + (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
            END                                                                    AS tzsOutstandingAmount,
-
-
+       (
+           la.NRM_CAP_BAL + la.OV_CAP_BAL
+           )                                                                      AS orgOutstandingPrincipalAmount,
+       CASE
+           WHEN gte.CURRENCY_SHORT_DES = 'USD'
+               THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
+           ELSE NULL
+           END                                                                    AS usdOutstandingPrincipalAmount,
+       CASE
+           WHEN gte.CURRENCY_SHORT_DES = 'USD'
+               THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL) * 2500
+           ELSE (la.NRM_CAP_BAL + la.OV_CAP_BAL)
+           END                                                                    AS tzsOutstandingPrincipalAmount,
        la.DRAWDOWN_FST_DT                                                         AS latestCustomerCreditDate,
        la.DRAWDOWN_FST_AMN                                                        AS latestCreditAmount,
        la.INTER_RATE_SPRD                                                         AS primeLendingRate,
@@ -138,7 +149,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                      
        null                                                                       AS orgCollateralValue,
        null                                                                       AS usdCollateralValue,
        null                                                                       AS tzsCollateralValue,
-       0                      AS restructuredLoans,
+       0                                                                          AS restructuredLoans,
 --        la.OVERDUE_DAYS                                                            AS pastDueDays,
 --        la.OV_BALANCE                                                              AS pastDueAmount,
        la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL         AS orgAccruedInterestAmount,
@@ -162,6 +173,16 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                      
            WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.OV_RL_PNL_INT_BAL + la.OV_URL_PNL_INT_BAL) * 2500
            ELSE la.OV_RL_PNL_INT_BAL + la.OV_URL_PNL_INT_BAL
            END                                                                    AS tzsPenaltyChargedAmount,
+       COALESCE(la.OV_RL_PNL_INT_BAL, 0)                                          AS orgPenaltyPaidAmount,
+       CASE
+           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN COALESCE(la.OV_RL_PNL_INT_BAL, 0)
+           ELSE NULL
+           END                                                                    AS usdPenaltyPaidAmount,
+       CASE
+           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN COALESCE(la.OV_RL_PNL_INT_BAL, 0) * 2500
+           ELSE COALESCE(la.OV_RL_PNL_INT_BAL, 0)
+           END                                                                    AS tzsPenaltyPaidAmount,
+
 
        la.TOT_COMMISSION_AMN                                                      AS orgLoanFeesChargedAmount,
        CASE
@@ -183,15 +204,9 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                      
            ELSE la.TOT_EXPENSE_AMN
            END                                                                    AS tzsLoanFeesPaidAmount,
 
-
-       CAST(NULL AS DECIMAL(15, 2))                                               AS orgTotMonthlyPaymentAmount,
-
-       CASE
-           WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN NULL
-           END                                                                    AS usdTotMonthlyPaymentAmount,
-
-       CAST(NULL AS DECIMAL(15, 2))                                               AS tzsTotMonthlyPaymentAmount,
-
+       0.00                                                                       AS orgTotMonthlyPaymentAmount,
+       0.00                                                                       AS usdTotMonthlyPaymentAmount,
+       0.00                                                                       AS tzsTotMonthlyPaymentAmount,
 
        la.TOT_NRM_INT_AMN + la.TOT_PNL_INT_AMN                                    AS orgInterestPaidTotal,
        CASE
