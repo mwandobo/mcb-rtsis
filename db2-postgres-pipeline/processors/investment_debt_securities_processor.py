@@ -1,270 +1,165 @@
 #!/usr/bin/env python3
 """
-Investment Debt Securities processor for RTSIS reporting
+Investment Debt Securities processor with streaming architecture
 """
 
-import logging
-from typing import Dict, Any, Optional
-from decimal import Decimal
+from dataclasses import dataclass
+from typing import Tuple, Optional
 from datetime import datetime, date
+from decimal import Decimal
+from .base import BaseProcessor, BaseRecord
 
-class InvestmentDebtSecuritiesProcessor:
-    """Processor for investment debt securities data"""
+@dataclass
+class InvestmentDebtSecuritiesRecord(BaseRecord):
+    """Investment Debt Securities record structure"""
+    reportingDate: str
+    securityNumber: Optional[str]
+    securityType: Optional[str]
+    securityIssuerName: Optional[str]
+    ratingStatus: Optional[str]
+    externalIssuerRatting: Optional[str]
+    gradesUnratedBanks: Optional[str]
+    securityIssuerCountry: Optional[str]
+    sectorSnaClassification: Optional[str]
+    currency: Optional[str]
+    orgCostValueAmount: Optional[Decimal]
+    tzsCostValueAmount: Optional[Decimal]
+    usdCostValueAmount: Optional[Decimal]
+    orgFaceValueAmount: Optional[Decimal]
+    tzsgFaceValueAmount: Optional[Decimal]
+    usdgFaceValueAmount: Optional[Decimal]
+    orgFairValueAmount: Optional[Decimal]
+    tzsgFairValueAmount: Optional[Decimal]
+    usdgFairValueAmount: Optional[Decimal]
+    interestRate: Optional[Decimal]
+    purchaseDate: Optional[date]
+    valueDate: Optional[date]
+    maturityDate: Optional[date]
+    tradingIntent: Optional[str]
+    securityEncumbaranceStatus: Optional[str]
+    pastDueDays: Optional[int]
+    allowanceProbableLoss: Optional[Decimal]
+    botProvision: Optional[Decimal]
+    assetClassificationCategory: Optional[str]
+    retry_count: int = 0
+
+class InvestmentDebtSecuritiesProcessor(BaseProcessor):
+    """Processor for investment debt securities with streaming architecture"""
     
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
+    def process_record(self, raw_data: Tuple, table_name: str) -> InvestmentDebtSecuritiesRecord:
+        """Convert raw DB2 data to InvestmentDebtSecuritiesRecord"""
+        return InvestmentDebtSecuritiesRecord(
+            source_table=table_name,
+            timestamp_column_value=str(raw_data[0]) if raw_data[0] else '',  # reportingDate
+            reportingDate=str(raw_data[0]) if raw_data[0] else '',
+            securityNumber=str(raw_data[1]).strip() if raw_data[1] else None,
+            securityType=str(raw_data[2]).strip() if raw_data[2] else None,
+            securityIssuerName=str(raw_data[3]).strip() if raw_data[3] else None,
+            ratingStatus=str(raw_data[4]).strip() if raw_data[4] else None,
+            externalIssuerRatting=str(raw_data[5]).strip() if raw_data[5] else None,
+            gradesUnratedBanks=str(raw_data[6]).strip() if raw_data[6] else None,
+            securityIssuerCountry=str(raw_data[7]).strip() if raw_data[7] else None,
+            sectorSnaClassification=str(raw_data[8]).strip() if raw_data[8] else None,
+            currency=str(raw_data[9]).strip() if raw_data[9] else None,
+            orgCostValueAmount=Decimal(str(raw_data[10])) if raw_data[10] is not None else None,
+            tzsCostValueAmount=Decimal(str(raw_data[11])) if raw_data[11] is not None else None,
+            usdCostValueAmount=Decimal(str(raw_data[12])) if raw_data[12] is not None else None,
+            orgFaceValueAmount=Decimal(str(raw_data[13])) if raw_data[13] is not None else None,
+            tzsgFaceValueAmount=Decimal(str(raw_data[14])) if raw_data[14] is not None else None,
+            usdgFaceValueAmount=Decimal(str(raw_data[15])) if raw_data[15] is not None else None,
+            orgFairValueAmount=Decimal(str(raw_data[16])) if raw_data[16] is not None else None,
+            tzsgFairValueAmount=Decimal(str(raw_data[17])) if raw_data[17] is not None else None,
+            usdgFairValueAmount=Decimal(str(raw_data[18])) if raw_data[18] is not None else None,
+            interestRate=Decimal(str(raw_data[19])) if raw_data[19] is not None else None,
+            purchaseDate=raw_data[20] if isinstance(raw_data[20], date) else None,
+            valueDate=raw_data[21] if isinstance(raw_data[21], date) else None,
+            maturityDate=raw_data[22] if isinstance(raw_data[22], date) else None,
+            tradingIntent=str(raw_data[23]).strip() if raw_data[23] else None,
+            securityEncumbaranceStatus=str(raw_data[24]).strip() if raw_data[24] else None,
+            pastDueDays=int(raw_data[25]) if raw_data[25] is not None else None,
+            allowanceProbableLoss=Decimal(str(raw_data[26])) if raw_data[26] is not None else None,
+            botProvision=Decimal(str(raw_data[27])) if raw_data[27] is not None else None,
+            assetClassificationCategory=str(raw_data[28]).strip() if raw_data[28] else None,
+            original_timestamp=datetime.now().isoformat()
+        )
     
-    def process_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def create_record_from_dict(self, record_data: dict) -> InvestmentDebtSecuritiesRecord:
+        """Create InvestmentDebtSecuritiesRecord from dictionary (for RabbitMQ consumption)"""
+        return InvestmentDebtSecuritiesRecord(
+            source_table='investmentDebtSecurities',
+            timestamp_column_value=record_data.get('reportingDate', ''),
+            reportingDate=record_data.get('reportingDate', ''),
+            securityNumber=record_data.get('securityNumber'),
+            securityType=record_data.get('securityType'),
+            securityIssuerName=record_data.get('securityIssuerName'),
+            ratingStatus=record_data.get('ratingStatus'),
+            externalIssuerRatting=record_data.get('externalIssuerRatting'),
+            gradesUnratedBanks=record_data.get('gradesUnratedBanks'),
+            securityIssuerCountry=record_data.get('securityIssuerCountry'),
+            sectorSnaClassification=record_data.get('sectorSnaClassification'),
+            currency=record_data.get('currency'),
+            orgCostValueAmount=Decimal(str(record_data.get('orgCostValueAmount'))) if record_data.get('orgCostValueAmount') is not None else None,
+            tzsCostValueAmount=Decimal(str(record_data.get('tzsCostValueAmount'))) if record_data.get('tzsCostValueAmount') is not None else None,
+            usdCostValueAmount=Decimal(str(record_data.get('usdCostValueAmount'))) if record_data.get('usdCostValueAmount') is not None else None,
+            orgFaceValueAmount=Decimal(str(record_data.get('orgFaceValueAmount'))) if record_data.get('orgFaceValueAmount') is not None else None,
+            tzsgFaceValueAmount=Decimal(str(record_data.get('tzsgFaceValueAmount'))) if record_data.get('tzsgFaceValueAmount') is not None else None,
+            usdgFaceValueAmount=Decimal(str(record_data.get('usdgFaceValueAmount'))) if record_data.get('usdgFaceValueAmount') is not None else None,
+            orgFairValueAmount=Decimal(str(record_data.get('orgFairValueAmount'))) if record_data.get('orgFairValueAmount') is not None else None,
+            tzsgFairValueAmount=Decimal(str(record_data.get('tzsgFairValueAmount'))) if record_data.get('tzsgFairValueAmount') is not None else None,
+            usdgFairValueAmount=Decimal(str(record_data.get('usdgFairValueAmount'))) if record_data.get('usdgFairValueAmount') is not None else None,
+            interestRate=Decimal(str(record_data.get('interestRate'))) if record_data.get('interestRate') is not None else None,
+            purchaseDate=datetime.fromisoformat(record_data.get('purchaseDate')).date() if record_data.get('purchaseDate') else None,
+            valueDate=datetime.fromisoformat(record_data.get('valueDate')).date() if record_data.get('valueDate') else None,
+            maturityDate=datetime.fromisoformat(record_data.get('maturityDate')).date() if record_data.get('maturityDate') else None,
+            tradingIntent=record_data.get('tradingIntent'),
+            securityEncumbaranceStatus=record_data.get('securityEncumbaranceStatus'),
+            pastDueDays=int(record_data.get('pastDueDays')) if record_data.get('pastDueDays') is not None else None,
+            allowanceProbableLoss=Decimal(str(record_data.get('allowanceProbableLoss'))) if record_data.get('allowanceProbableLoss') is not None else None,
+            botProvision=Decimal(str(record_data.get('botProvision'))) if record_data.get('botProvision') is not None else None,
+            assetClassificationCategory=record_data.get('assetClassificationCategory'),
+            original_timestamp=datetime.now().isoformat()
+        )
+    
+    def insert_to_postgres(self, record: InvestmentDebtSecuritiesRecord, pg_cursor) -> None:
+        """Insert Investment Debt Securities record to PostgreSQL"""
+        query = """
+        INSERT INTO "investmentDebtSecurities" (
+            "reportingDate", "securityNumber", "securityType", "securityIssuerName", "ratingStatus",
+            "externalIssuerRatting", "gradesUnratedBanks", "securityIssuerCountry", "sectorSnaClassification",
+            "currency", "orgCostValueAmount", "tzsCostValueAmount", "usdCostValueAmount",
+            "orgFaceValueAmount", "tzsgFaceValueAmount", "usdgFaceValueAmount", "orgFairValueAmount",
+            "tzsgFairValueAmount", "usdgFairValueAmount", "interestRate", "purchaseDate", "valueDate",
+            "maturityDate", "tradingIntent", "securityEncumbaranceStatus", "pastDueDays",
+            "allowanceProbableLoss", "botProvision", "assetClassificationCategory"
+        ) VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, %s, %s, %s
+        )
         """
-        Process a single investment debt securities record
         
-        Args:
-            record: Raw record from DB2 (with lowercase column names)
-            
-        Returns:
-            Processed record ready for PostgreSQL insertion
-        """
-        try:
-            processed = {}
-            
-            # Timestamp fields
-            processed['reportingDate'] = self._process_timestamp(record.get('reportingdate'))
-            processed['originalTimestamp'] = datetime.now()
-            
-            # Security identification
-            processed['securityNumber'] = self._clean_string(record.get('securitynumber'))
-            processed['securityType'] = self._clean_string(record.get('securitytype'))
-            processed['securityIssuerName'] = self._clean_string(record.get('securityissuername'))
-            
-            # Rating information
-            processed['externalIssuerRatting'] = self._clean_string(record.get('externalissuerratting'))
-            processed['gradesUnratedBanks'] = self._clean_string(record.get('gradesunratedbanks'))
-            
-            # Geographic and sector information
-            processed['securityIssuerCountry'] = self._clean_string(record.get('securityissuercountry'))
-            processed['snaIssuerSector'] = self._clean_string(record.get('snaissuersector'))
-            
-            # Currency
-            processed['currency'] = self._clean_string(record.get('currency'))
-            
-            # Cost value amounts
-            processed['orgCostValueAmount'] = self._process_decimal(record.get('orgcostvalueamount'))
-            processed['tzsCostValueAmount'] = self._process_decimal(record.get('tzscostvalueamount'))
-            processed['usdCostValueAmount'] = self._process_decimal(record.get('usdcostvalueamount'))
-            
-            # Face value amounts
-            processed['orgFaceValueAmount'] = self._process_decimal(record.get('orgfacevalueamount'))
-            processed['tzsgFaceValueAmount'] = self._process_decimal(record.get('tzsgfacevalueamount'))
-            processed['usdgFaceValueAmount'] = self._process_decimal(record.get('usdgfacevalueamount'))
-            
-            # Fair value amounts
-            processed['orgFairValueAmount'] = self._process_decimal(record.get('orgfairvalueamount'))
-            processed['tzsgFairValueAmount'] = self._process_decimal(record.get('tzsgfairvalueamount'))
-            processed['usdgFairValueAmount'] = self._process_decimal(record.get('usdgfairvalueamount'))
-            
-            # Interest rate
-            processed['interestRate'] = self._process_decimal(record.get('interestrate'), precision=6)
-            
-            # Date fields
-            processed['purchaseDate'] = self._process_date(record.get('purchasedate'))
-            processed['valueDate'] = self._process_date(record.get('valuedate'))
-            processed['maturityDate'] = self._process_date(record.get('maturitydate'))
-            
-            # Trading and encumbrance information
-            processed['tradingIntent'] = self._clean_string(record.get('tradingintent'))
-            processed['securityEncumbaranceStatus'] = self._clean_string(record.get('securityencumbarancestatus'))
-            
-            # Risk and classification
-            processed['pastDueDays'] = self._process_integer(record.get('pastduedays'))
-            processed['allowanceProbableLoss'] = self._process_decimal(record.get('allowanceprobableloss'))
-            processed['assetClassificationCategory'] = self._process_integer(record.get('assetclassificationcategory'))
-            
-            return processed
-            
-        except Exception as e:
-            self.logger.error(f"Error processing investment debt securities record: {e}")
-            self.logger.error(f"Record data: {record}")
-            raise
-    
-    def _clean_string(self, value: Any) -> Optional[str]:
-        """Clean and validate string values"""
-        if value is None:
-            return None
-        
-        # Convert to string and strip whitespace
-        cleaned = str(value).strip()
-        
-        # Return None for empty strings
-        if not cleaned:
-            return None
-            
-        return cleaned
-    
-    def _process_decimal(self, value: Any, precision: int = 2) -> Optional[Decimal]:
-        """Process decimal values with proper precision"""
-        if value is None:
-            return None
-        
-        try:
-            # Handle string values
-            if isinstance(value, str):
-                value = value.strip()
-                if not value or value.lower() in ('null', 'none', ''):
-                    return None
-            
-            # Convert to Decimal with specified precision
-            decimal_value = Decimal(str(value))
-            return decimal_value.quantize(Decimal('0.' + '0' * precision))
-            
-        except (ValueError, TypeError, Exception) as e:
-            self.logger.warning(f"Could not convert '{value}' to decimal: {e}")
-            return None
-    
-    def _process_integer(self, value: Any) -> Optional[int]:
-        """Process integer values"""
-        if value is None:
-            return None
-        
-        try:
-            # Handle string values
-            if isinstance(value, str):
-                value = value.strip()
-                if not value or value.lower() in ('null', 'none', ''):
-                    return None
-            
-            return int(float(value))  # Convert via float to handle decimal strings
-            
-        except (ValueError, TypeError) as e:
-            self.logger.warning(f"Could not convert '{value}' to integer: {e}")
-            return None
-    
-    def _process_date(self, value: Any) -> Optional[date]:
-        """Process date values"""
-        if value is None:
-            return None
-        
-        try:
-            if isinstance(value, date):
-                return value
-            elif isinstance(value, datetime):
-                return value.date()
-            elif isinstance(value, str):
-                value = value.strip()
-                if not value or value.lower() in ('null', 'none', ''):
-                    return None
-                # Try parsing common date formats
-                for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%Y-%m-%d %H:%M:%S']:
-                    try:
-                        return datetime.strptime(value, fmt).date()
-                    except ValueError:
-                        continue
-                        
-        except Exception as e:
-            self.logger.warning(f"Could not convert '{value}' to date: {e}")
-        
-        return None
-    
-    def _process_timestamp(self, value: Any) -> Optional[datetime]:
-        """Process timestamp values"""
-        if value is None:
-            return datetime.now()
-        
-        try:
-            if isinstance(value, datetime):
-                return value
-            elif isinstance(value, date):
-                return datetime.combine(value, datetime.min.time())
-            elif isinstance(value, str):
-                value = value.strip()
-                if not value or value.lower() in ('null', 'none', ''):
-                    return datetime.now()
-                # Try parsing common timestamp formats
-                for fmt in ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d', '%d/%m/%Y %H:%M:%S', '%d/%m/%Y']:
-                    try:
-                        return datetime.strptime(value, fmt)
-                    except ValueError:
-                        continue
-                        
-        except Exception as e:
-            self.logger.warning(f"Could not convert '{value}' to timestamp: {e}")
-        
-        return datetime.now()
+        pg_cursor.execute(query, (
+            record.reportingDate, record.securityNumber, record.securityType, record.securityIssuerName,
+            record.ratingStatus, record.externalIssuerRatting, record.gradesUnratedBanks,
+            record.securityIssuerCountry, record.sectorSnaClassification, record.currency,
+            record.orgCostValueAmount, record.tzsCostValueAmount, record.usdCostValueAmount,
+            record.orgFaceValueAmount, record.tzsgFaceValueAmount, record.usdgFaceValueAmount,
+            record.orgFairValueAmount, record.tzsgFairValueAmount, record.usdgFairValueAmount,
+            record.interestRate, record.purchaseDate, record.valueDate, record.maturityDate,
+            record.tradingIntent, record.securityEncumbaranceStatus, record.pastDueDays,
+            record.allowanceProbableLoss, record.botProvision, record.assetClassificationCategory
+        ))
     
     def get_upsert_query(self) -> str:
-        """Get the upsert query for investment debt securities"""
-        return '''
-        INSERT INTO "investmentDebtSecurities" (
-            "reportingDate", "securityNumber", "securityType", "securityIssuerName",
-            "externalIssuerRatting", "gradesUnratedBanks", "securityIssuerCountry", "snaIssuerSector",
-            "currency", "orgCostValueAmount", "tzsCostValueAmount", "usdCostValueAmount",
-            "orgFaceValueAmount", "tzsgFaceValueAmount", "usdgFaceValueAmount",
-            "orgFairValueAmount", "tzsgFairValueAmount", "usdgFairValueAmount",
-            "interestRate", "purchaseDate", "valueDate", "maturityDate",
-            "tradingIntent", "securityEncumbaranceStatus", "pastDueDays",
-            "allowanceProbableLoss", "assetClassificationCategory", "originalTimestamp"
-        ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-        )
-        ON CONFLICT ("securityNumber") 
-        DO UPDATE SET
-            "reportingDate" = EXCLUDED."reportingDate",
-            "securityType" = EXCLUDED."securityType",
-            "securityIssuerName" = EXCLUDED."securityIssuerName",
-            "externalIssuerRatting" = EXCLUDED."externalIssuerRatting",
-            "gradesUnratedBanks" = EXCLUDED."gradesUnratedBanks",
-            "securityIssuerCountry" = EXCLUDED."securityIssuerCountry",
-            "snaIssuerSector" = EXCLUDED."snaIssuerSector",
-            "currency" = EXCLUDED."currency",
-            "orgCostValueAmount" = EXCLUDED."orgCostValueAmount",
-            "tzsCostValueAmount" = EXCLUDED."tzsCostValueAmount",
-            "usdCostValueAmount" = EXCLUDED."usdCostValueAmount",
-            "orgFaceValueAmount" = EXCLUDED."orgFaceValueAmount",
-            "tzsgFaceValueAmount" = EXCLUDED."tzsgFaceValueAmount",
-            "usdgFaceValueAmount" = EXCLUDED."usdgFaceValueAmount",
-            "orgFairValueAmount" = EXCLUDED."orgFairValueAmount",
-            "tzsgFairValueAmount" = EXCLUDED."tzsgFairValueAmount",
-            "usdgFairValueAmount" = EXCLUDED."usdgFairValueAmount",
-            "interestRate" = EXCLUDED."interestRate",
-            "purchaseDate" = EXCLUDED."purchaseDate",
-            "valueDate" = EXCLUDED."valueDate",
-            "maturityDate" = EXCLUDED."maturityDate",
-            "tradingIntent" = EXCLUDED."tradingIntent",
-            "securityEncumbaranceStatus" = EXCLUDED."securityEncumbaranceStatus",
-            "pastDueDays" = EXCLUDED."pastDueDays",
-            "allowanceProbableLoss" = EXCLUDED."allowanceProbableLoss",
-            "assetClassificationCategory" = EXCLUDED."assetClassificationCategory",
-            "originalTimestamp" = EXCLUDED."originalTimestamp"
-        '''
+        """Get upsert query for investment debt securities"""
+        return self.insert_to_postgres.__doc__  # Same as insert for now
     
-    def get_insert_params(self, processed_record: Dict[str, Any]) -> tuple:
-        """Get parameters for the insert query"""
-        return (
-            processed_record.get('reportingDate'),
-            processed_record.get('securityNumber'),
-            processed_record.get('securityType'),
-            processed_record.get('securityIssuerName'),
-            processed_record.get('externalIssuerRatting'),
-            processed_record.get('gradesUnratedBanks'),
-            processed_record.get('securityIssuerCountry'),
-            processed_record.get('snaIssuerSector'),
-            processed_record.get('currency'),
-            processed_record.get('orgCostValueAmount'),
-            processed_record.get('tzsCostValueAmount'),
-            processed_record.get('usdCostValueAmount'),
-            processed_record.get('orgFaceValueAmount'),
-            processed_record.get('tzsgFaceValueAmount'),
-            processed_record.get('usdgFaceValueAmount'),
-            processed_record.get('orgFairValueAmount'),
-            processed_record.get('tzsgFairValueAmount'),
-            processed_record.get('usdgFairValueAmount'),
-            processed_record.get('interestRate'),
-            processed_record.get('purchaseDate'),
-            processed_record.get('valueDate'),
-            processed_record.get('maturityDate'),
-            processed_record.get('tradingIntent'),
-            processed_record.get('securityEncumbaranceStatus'),
-            processed_record.get('pastDueDays'),
-            processed_record.get('allowanceProbableLoss'),
-            processed_record.get('assetClassificationCategory'),
-            processed_record.get('originalTimestamp')
-        )
+    def validate_record(self, record: InvestmentDebtSecuritiesRecord) -> bool:
+        """Validate Investment Debt Securities record"""
+        if not super().validate_record(record):
+            return False
+        
+        # Basic validations
+        if not record.securityNumber:
+            return False
+            
+        return True

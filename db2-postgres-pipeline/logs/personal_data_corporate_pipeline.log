@@ -1,0 +1,217 @@
+2026-01-20 16:49:50,467 - INFO - Starting Personal Data Corporate pipeline...
+2026-01-20 16:49:50,556 - INFO - Pika version 1.3.2 connecting to ('::1', 5672, 0, 0)
+2026-01-20 16:49:50,559 - INFO - Socket connected: <socket.socket fd=912, family=23, type=1, proto=6, laddr=('::1', 65329, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:49:50,561 - INFO - Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x0000021382A846E0>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x0000021382A846E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>).
+2026-01-20 16:49:50,571 - INFO - AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x0000021382A846E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:49:50,571 - INFO - AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x0000021382A846E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:49:50,572 - INFO - Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x0000021382A846E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:49:50,573 - INFO - Created channel=1
+2026-01-20 16:49:52,537 - INFO - Pika version 1.3.2 connecting to ('::1', 5672, 0, 0)
+2026-01-20 16:49:52,538 - INFO - Socket connected: <socket.socket fd=760, family=23, type=1, proto=6, laddr=('::1', 65333, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:49:52,539 - INFO - Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000213829AFC50>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000213829AFC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>).
+2026-01-20 16:49:52,549 - INFO - AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000213829AFC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:49:52,549 - INFO - AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000213829AFC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:49:52,550 - INFO - Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000213829AFC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:49:52,551 - INFO - Created channel=1
+2026-01-20 16:49:52,726 - INFO - [OK] Connected to DB2
+2026-01-20 16:49:52,729 - INFO - Executing query with limit: 100
+2026-01-20 16:49:52,730 - INFO - Query: 
+            SELECT * FROM (
+                SELECT CURRENT_TIMESTAMP                               AS reportingDate,
+       c.SURNAME                                       AS companyName,
+       TRIM...
+2026-01-20 16:49:52,730 - ERROR - Producer error: The cursor's connection has been closed.
+2026-01-20 16:49:52,731 - INFO - Closing connection (200): Normal shutdown
+2026-01-20 16:49:52,731 - INFO - Closing channel (200): 'Normal shutdown' on <Channel number=1 OPEN conn=<SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000213829AFC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>>
+2026-01-20 16:49:52,733 - INFO - Received <Channel.CloseOk> on <Channel number=1 CLOSING conn=<SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000213829AFC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>>
+2026-01-20 16:49:52,733 - INFO - Closing connection (200): 'Normal shutdown'
+2026-01-20 16:49:52,734 - INFO - Aborting transport connection: state=1; <socket.socket fd=760, family=23, type=1, proto=6, laddr=('::1', 65333, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:49:52,735 - INFO - _AsyncTransportBase._initate_abort(): Initiating abrupt asynchronous transport shutdown: state=1; error=None; <socket.socket fd=760, family=23, type=1, proto=6, laddr=('::1', 65333, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:49:52,735 - INFO - Deactivating transport: state=1; <socket.socket fd=760, family=23, type=1, proto=6, laddr=('::1', 65333, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:49:52,736 - INFO - AMQP stack terminated, failed to connect, or aborted: opened=True, error-arg=None; pending-error=ConnectionClosedByClient: (200) 'Normal shutdown'
+2026-01-20 16:49:52,736 - INFO - Stack terminated due to ConnectionClosedByClient: (200) 'Normal shutdown'
+2026-01-20 16:49:52,736 - INFO - Closing transport socket and unlinking: state=3; <socket.socket fd=760, family=23, type=1, proto=6, laddr=('::1', 65333, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:49:52,772 - INFO - User-initiated close: result=BlockingConnection__OnClosedArgs(connection=<SelectConnection CLOSED transport=None params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>, error=ConnectionClosedByClient: (200) 'Normal shutdown')
+2026-01-20 16:49:52,773 - ERROR - Pipeline error: The cursor's connection has been closed.
+2026-01-20 16:49:52,774 - ERROR - Pipeline error: The cursor's connection has been closed.
+2026-01-20 16:53:50,940 - INFO - Starting Personal Data Corporate pipeline...
+2026-01-20 16:53:50,941 - INFO - Starting Personal Data Corporate Streaming Pipeline...
+2026-01-20 16:53:50,942 - INFO - Starting Personal Data Corporate consumer...
+2026-01-20 16:53:50,971 - INFO - Pika version 1.3.2 connecting to ('::1', 5672, 0, 0)
+2026-01-20 16:53:50,977 - INFO - Socket connected: <socket.socket fd=788, family=23, type=1, proto=6, laddr=('::1', 51017, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:53:50,979 - INFO - Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA05086E0>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA05086E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>).
+2026-01-20 16:53:50,986 - INFO - AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA05086E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:53:50,987 - INFO - AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA05086E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:53:50,987 - INFO - Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA05086E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:53:50,989 - INFO - Created channel=1
+2026-01-20 16:53:51,144 - INFO - Waiting for corporate messages. To exit press CTRL+C
+2026-01-20 16:53:52,942 - INFO - Starting Personal Data Corporate producer...
+2026-01-20 16:53:52,945 - INFO - Pika version 1.3.2 connecting to ('::1', 5672, 0, 0)
+2026-01-20 16:53:52,946 - INFO - Socket connected: <socket.socket fd=1032, family=23, type=1, proto=6, laddr=('::1', 51021, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:53:52,947 - INFO - Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA048BC50>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA048BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>).
+2026-01-20 16:53:52,955 - INFO - AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA048BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:53:52,955 - INFO - AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA048BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:53:52,956 - INFO - Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA048BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:53:52,956 - INFO - Created channel=1
+2026-01-20 16:53:53,530 - INFO - [OK] Connected to DB2
+2026-01-20 16:53:53,537 - INFO - Executing query with limit: 100
+2026-01-20 16:53:53,538 - INFO - Query: 
+            SELECT * FROM (
+                SELECT CURRENT_TIMESTAMP                               AS reportingDate,
+       c.SURNAME                                       AS companyName,
+       TRIM...
+2026-01-20 16:53:53,539 - ERROR - Producer error: The cursor's connection has been closed.
+2026-01-20 16:53:53,539 - INFO - Closing connection (200): Normal shutdown
+2026-01-20 16:53:53,539 - INFO - Closing channel (200): 'Normal shutdown' on <Channel number=1 OPEN conn=<SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA048BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>>
+2026-01-20 16:53:53,540 - INFO - Received <Channel.CloseOk> on <Channel number=1 CLOSING conn=<SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001EDA048BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>>
+2026-01-20 16:53:53,541 - INFO - Closing connection (200): 'Normal shutdown'
+2026-01-20 16:53:53,542 - INFO - Aborting transport connection: state=1; <socket.socket fd=1032, family=23, type=1, proto=6, laddr=('::1', 51021, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:53:53,542 - INFO - _AsyncTransportBase._initate_abort(): Initiating abrupt asynchronous transport shutdown: state=1; error=None; <socket.socket fd=1032, family=23, type=1, proto=6, laddr=('::1', 51021, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:53:53,542 - INFO - Deactivating transport: state=1; <socket.socket fd=1032, family=23, type=1, proto=6, laddr=('::1', 51021, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:53:53,543 - INFO - AMQP stack terminated, failed to connect, or aborted: opened=True, error-arg=None; pending-error=ConnectionClosedByClient: (200) 'Normal shutdown'
+2026-01-20 16:53:53,543 - INFO - Stack terminated due to ConnectionClosedByClient: (200) 'Normal shutdown'
+2026-01-20 16:53:53,543 - INFO - Closing transport socket and unlinking: state=3; <socket.socket fd=1032, family=23, type=1, proto=6, laddr=('::1', 51021, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:53:53,544 - INFO - User-initiated close: result=BlockingConnection__OnClosedArgs(connection=<SelectConnection CLOSED transport=None params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>, error=ConnectionClosedByClient: (200) 'Normal shutdown')
+2026-01-20 16:53:53,545 - ERROR - Pipeline error: The cursor's connection has been closed.
+2026-01-20 16:53:53,545 - ERROR - Pipeline error: The cursor's connection has been closed.
+2026-01-20 16:56:35,999 - INFO - Starting Personal Data Corporate pipeline...
+2026-01-20 16:56:36,000 - INFO - Starting Personal Data Corporate Streaming Pipeline...
+2026-01-20 16:56:36,000 - INFO - Starting Personal Data Corporate consumer...
+2026-01-20 16:56:36,012 - INFO - Pika version 1.3.2 connecting to ('::1', 5672, 0, 0)
+2026-01-20 16:56:36,013 - INFO - Socket connected: <socket.socket fd=844, family=23, type=1, proto=6, laddr=('::1', 60793, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:56:36,014 - INFO - Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E47C86E0>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E47C86E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>).
+2026-01-20 16:56:36,020 - INFO - AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E47C86E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:56:36,020 - INFO - AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E47C86E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:56:36,021 - INFO - Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E47C86E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:56:36,021 - INFO - Created channel=1
+2026-01-20 16:56:36,099 - INFO - Waiting for corporate messages. To exit press CTRL+C
+2026-01-20 16:56:38,001 - INFO - Starting Personal Data Corporate producer...
+2026-01-20 16:56:38,004 - INFO - Pika version 1.3.2 connecting to ('::1', 5672, 0, 0)
+2026-01-20 16:56:38,006 - INFO - Socket connected: <socket.socket fd=960, family=23, type=1, proto=6, laddr=('::1', 60797, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:56:38,006 - INFO - Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E474BC50>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E474BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>).
+2026-01-20 16:56:38,016 - INFO - AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E474BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:56:38,016 - INFO - AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E474BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:56:38,017 - INFO - Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E474BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 16:56:38,018 - INFO - Created channel=1
+2026-01-20 16:56:38,021 - INFO - Executing query with limit: 100
+2026-01-20 16:56:38,022 - INFO - Query: 
+            SELECT * FROM (
+                SELECT CURRENT_TIMESTAMP                               AS reportingDate,
+       c.SURNAME                                       AS companyName,
+       TRIM...
+2026-01-20 16:56:38,525 - INFO - [OK] Connected to DB2
+2026-01-20 16:56:39,491 - INFO - Processed 25 corporate records (Rate: 7.16 records/sec)
+2026-01-20 16:56:39,629 - INFO - Sent 50 corporate records to queue
+2026-01-20 16:56:39,743 - INFO - Processed 50 corporate records (Rate: 13.35 records/sec)
+2026-01-20 16:56:40,058 - INFO - Processed 75 corporate records (Rate: 18.47 records/sec)
+2026-01-20 16:56:40,157 - INFO - Sent 100 corporate records to queue
+2026-01-20 16:56:40,264 - INFO - Producer finished! Sent 100 corporate records to queue
+2026-01-20 16:56:40,268 - INFO - Closing connection (200): Normal shutdown
+2026-01-20 16:56:40,270 - INFO - Closing channel (200): 'Normal shutdown' on <Channel number=1 OPEN conn=<SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E474BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>>
+2026-01-20 16:56:40,271 - INFO - Received <Channel.CloseOk> on <Channel number=1 CLOSING conn=<SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x00000138E474BC50> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>>
+2026-01-20 16:56:40,273 - INFO - Closing connection (200): 'Normal shutdown'
+2026-01-20 16:56:40,276 - INFO - Aborting transport connection: state=1; <socket.socket fd=960, family=23, type=1, proto=6, laddr=('::1', 60797, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:56:40,277 - INFO - _AsyncTransportBase._initate_abort(): Initiating abrupt asynchronous transport shutdown: state=1; error=None; <socket.socket fd=960, family=23, type=1, proto=6, laddr=('::1', 60797, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:56:40,278 - INFO - Deactivating transport: state=1; <socket.socket fd=960, family=23, type=1, proto=6, laddr=('::1', 60797, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:56:40,279 - INFO - AMQP stack terminated, failed to connect, or aborted: opened=True, error-arg=None; pending-error=ConnectionClosedByClient: (200) 'Normal shutdown'
+2026-01-20 16:56:40,280 - INFO - Stack terminated due to ConnectionClosedByClient: (200) 'Normal shutdown'
+2026-01-20 16:56:40,281 - INFO - Closing transport socket and unlinking: state=3; <socket.socket fd=960, family=23, type=1, proto=6, laddr=('::1', 60797, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 16:56:40,282 - INFO - User-initiated close: result=BlockingConnection__OnClosedArgs(connection=<SelectConnection CLOSED transport=None params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>, error=ConnectionClosedByClient: (200) 'Normal shutdown')
+2026-01-20 16:56:40,283 - INFO - Waiting for consumer to finish processing...
+2026-01-20 16:56:40,379 - INFO - Processed 100 corporate records (Rate: 22.83 records/sec)
+2026-01-20 16:56:45,284 - INFO - 
+            Personal Data Corporate Pipeline Summary:
+            Records processed: 100
+            Errors: 0
+            Total time: 0:00:09.285762
+            Average rate: 10.77 records/sec
+            
+2026-01-20 17:00:31,689 - INFO - Starting Personal Data Corporate pipeline...
+2026-01-20 17:00:31,690 - INFO - Starting Personal Data Corporate Streaming Pipeline...
+2026-01-20 17:00:31,690 - INFO - Starting Personal Data Corporate consumer...
+2026-01-20 17:00:31,700 - INFO - Pika version 1.3.2 connecting to ('::1', 5672, 0, 0)
+2026-01-20 17:00:31,701 - INFO - Socket connected: <socket.socket fd=936, family=23, type=1, proto=6, laddr=('::1', 56283, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 17:00:31,702 - INFO - Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57FA586E0>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57FA586E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>).
+2026-01-20 17:00:31,709 - INFO - AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57FA586E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 17:00:31,709 - INFO - AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57FA586E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 17:00:31,710 - INFO - Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57FA586E0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 17:00:31,710 - INFO - Created channel=1
+2026-01-20 17:00:31,791 - INFO - Waiting for corporate messages. To exit press CTRL+C
+2026-01-20 17:00:33,693 - INFO - Starting Personal Data Corporate producer...
+2026-01-20 17:00:33,696 - INFO - Pika version 1.3.2 connecting to ('::1', 5672, 0, 0)
+2026-01-20 17:00:33,698 - INFO - Socket connected: <socket.socket fd=308, family=23, type=1, proto=6, laddr=('::1', 58742, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 17:00:33,699 - INFO - Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57F9D7ED0>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57F9D7ED0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>).
+2026-01-20 17:00:33,733 - INFO - AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57F9D7ED0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 17:00:33,733 - INFO - AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57F9D7ED0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 17:00:33,734 - INFO - Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57F9D7ED0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>
+2026-01-20 17:00:33,735 - INFO - Created channel=1
+2026-01-20 17:00:33,740 - INFO - Executing query with limit: None
+2026-01-20 17:00:33,740 - INFO - Query: 
+            SELECT * FROM (
+                SELECT CURRENT_TIMESTAMP                               AS reportingDate,
+       c.SURNAME                                       AS companyName,
+       TRIM...
+2026-01-20 17:00:33,908 - INFO - [OK] Connected to DB2
+2026-01-20 17:00:34,724 - INFO - Processed 25 corporate records (Rate: 8.24 records/sec)
+2026-01-20 17:00:34,896 - INFO - Sent 50 corporate records to queue
+2026-01-20 17:00:35,070 - INFO - Processed 50 corporate records (Rate: 14.79 records/sec)
+2026-01-20 17:00:35,329 - INFO - Processed 75 corporate records (Rate: 20.60 records/sec)
+2026-01-20 17:00:35,430 - INFO - Sent 100 corporate records to queue
+2026-01-20 17:00:35,532 - INFO - Processed 100 corporate records (Rate: 26.02 records/sec)
+2026-01-20 17:00:35,786 - INFO - Processed 125 corporate records (Rate: 30.51 records/sec)
+2026-01-20 17:00:35,949 - INFO - Sent 150 corporate records to queue
+2026-01-20 17:00:36,038 - INFO - Processed 150 corporate records (Rate: 34.49 records/sec)
+2026-01-20 17:00:36,302 - INFO - Processed 175 corporate records (Rate: 37.93 records/sec)
+2026-01-20 17:00:37,893 - INFO - Sent 200 corporate records to queue
+2026-01-20 17:00:37,975 - INFO - Processed 200 corporate records (Rate: 31.81 records/sec)
+2026-01-20 17:00:38,250 - INFO - Processed 225 corporate records (Rate: 34.29 records/sec)
+2026-01-20 17:00:38,416 - INFO - Sent 250 corporate records to queue
+2026-01-20 17:00:38,497 - INFO - Processed 250 corporate records (Rate: 36.72 records/sec)
+2026-01-20 17:00:38,779 - INFO - Processed 275 corporate records (Rate: 38.78 records/sec)
+2026-01-20 17:00:38,948 - INFO - Sent 300 corporate records to queue
+2026-01-20 17:00:39,034 - INFO - Processed 300 corporate records (Rate: 40.84 records/sec)
+2026-01-20 17:00:39,306 - INFO - Processed 325 corporate records (Rate: 42.66 records/sec)
+2026-01-20 17:00:39,469 - INFO - Sent 350 corporate records to queue
+2026-01-20 17:00:39,566 - INFO - Processed 350 corporate records (Rate: 44.43 records/sec)
+2026-01-20 17:00:39,823 - INFO - Processed 375 corporate records (Rate: 46.10 records/sec)
+2026-01-20 17:00:39,992 - INFO - Sent 400 corporate records to queue
+2026-01-20 17:00:40,081 - INFO - Processed 400 corporate records (Rate: 47.66 records/sec)
+2026-01-20 17:00:40,350 - INFO - Processed 425 corporate records (Rate: 49.06 records/sec)
+2026-01-20 17:00:40,519 - INFO - Sent 450 corporate records to queue
+2026-01-20 17:00:40,600 - INFO - Processed 450 corporate records (Rate: 50.49 records/sec)
+2026-01-20 17:00:40,881 - INFO - Processed 475 corporate records (Rate: 51.67 records/sec)
+2026-01-20 17:00:41,041 - INFO - Sent 500 corporate records to queue
+2026-01-20 17:00:41,139 - INFO - Processed 500 corporate records (Rate: 52.91 records/sec)
+2026-01-20 17:00:41,412 - INFO - Processed 525 corporate records (Rate: 53.99 records/sec)
+2026-01-20 17:00:41,561 - INFO - Sent 550 corporate records to queue
+2026-01-20 17:00:41,648 - INFO - Processed 550 corporate records (Rate: 55.22 records/sec)
+2026-01-20 17:00:41,923 - INFO - Processed 575 corporate records (Rate: 56.18 records/sec)
+2026-01-20 17:00:42,088 - INFO - Sent 600 corporate records to queue
+2026-01-20 17:00:42,172 - INFO - Processed 600 corporate records (Rate: 57.23 records/sec)
+2026-01-20 17:00:42,447 - INFO - Processed 625 corporate records (Rate: 58.09 records/sec)
+2026-01-20 17:00:42,608 - INFO - Sent 650 corporate records to queue
+2026-01-20 17:00:42,689 - INFO - Processed 650 corporate records (Rate: 59.09 records/sec)
+2026-01-20 17:00:42,987 - INFO - Processed 675 corporate records (Rate: 59.74 records/sec)
+2026-01-20 17:00:43,139 - INFO - Sent 700 corporate records to queue
+2026-01-20 17:00:43,221 - INFO - Processed 700 corporate records (Rate: 60.70 records/sec)
+2026-01-20 17:00:43,514 - INFO - Processed 725 corporate records (Rate: 61.31 records/sec)
+2026-01-20 17:00:43,657 - INFO - Producer finished! Sent 736 corporate records to queue
+2026-01-20 17:00:43,661 - INFO - Closing connection (200): Normal shutdown
+2026-01-20 17:00:43,662 - INFO - Closing channel (200): 'Normal shutdown' on <Channel number=1 OPEN conn=<SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57F9D7ED0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>>
+2026-01-20 17:00:43,664 - INFO - Received <Channel.CloseOk> on <Channel number=1 CLOSING conn=<SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x000001F57F9D7ED0> params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>>
+2026-01-20 17:00:43,665 - INFO - Closing connection (200): 'Normal shutdown'
+2026-01-20 17:00:43,666 - INFO - Aborting transport connection: state=1; <socket.socket fd=308, family=23, type=1, proto=6, laddr=('::1', 58742, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 17:00:43,666 - INFO - _AsyncTransportBase._initate_abort(): Initiating abrupt asynchronous transport shutdown: state=1; error=None; <socket.socket fd=308, family=23, type=1, proto=6, laddr=('::1', 58742, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 17:00:43,667 - INFO - Deactivating transport: state=1; <socket.socket fd=308, family=23, type=1, proto=6, laddr=('::1', 58742, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 17:00:43,668 - INFO - AMQP stack terminated, failed to connect, or aborted: opened=True, error-arg=None; pending-error=ConnectionClosedByClient: (200) 'Normal shutdown'
+2026-01-20 17:00:43,668 - INFO - Stack terminated due to ConnectionClosedByClient: (200) 'Normal shutdown'
+2026-01-20 17:00:43,669 - INFO - Closing transport socket and unlinking: state=3; <socket.socket fd=308, family=23, type=1, proto=6, laddr=('::1', 58742, 0, 0), raddr=('::1', 5672, 0, 0)>
+2026-01-20 17:00:43,669 - INFO - User-initiated close: result=BlockingConnection__OnClosedArgs(connection=<SelectConnection CLOSED transport=None params=<ConnectionParameters host=localhost port=5672 virtual_host=/ ssl=False>>, error=ConnectionClosedByClient: (200) 'Normal shutdown')
+2026-01-20 17:00:43,670 - INFO - Waiting for consumer to finish processing...
+2026-01-20 17:00:48,671 - INFO - 
+            Personal Data Corporate Pipeline Summary:
+            Records processed: 736
+            Errors: 0
+            Total time: 0:00:16.982729
+            Average rate: 43.34 records/sec
+            

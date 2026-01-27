@@ -3,12 +3,11 @@ SELECT CURRENT_TIMESTAMP                       AS reportingDate,
        pa.ACCOUNT_NUMBER                       AS securityNumber,
        'Treasury bonds'                        AS securityType,
        'Government of Tanzania'                AS securityIssuerName,
-       False                                   AS ratingStatus,
+       'false'                                 AS ratingStatus,
        'AAA'                                   AS externalIssuerRatting,
        'Grade A'                               AS gradesUnratedBanks,
        'TANZANIA, UNITED REPUBLIC OF'          AS securityIssuerCountry,
-       'Other Depository Corporations'         AS sectorSnaClassification
-        ,
+       'Other Depository Corporations'         AS sectorSnaClassification,
 
        COALESCE(gte.CURRENCY_SHORT_DES, 'TZS') AS currency,
 
@@ -107,6 +106,7 @@ SELECT CURRENT_TIMESTAMP                       AS reportingDate,
            END                                 AS pastDueDays,
 
        DECIMAL(0, 15, 2)                       AS allowanceProbableLoss,
+       DECIMAL(0, 15, 2)                       AS botProvision,
        'Current'                               AS assetClassificationCategory
 
 FROM GLI_TRX_EXTRACT gte
