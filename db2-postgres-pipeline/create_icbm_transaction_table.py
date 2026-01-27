@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 """
-Create ICBM Transaction Table in PostgreSQL
+Create PostgreSQL table for ICBM transaction records
 """
 
 import psycopg2
-import logging
 from config import Config
 
 def create_icbm_transaction_table():
-    """Create the ICBM transaction table in PostgreSQL"""
+    """Create the icbmTransactions table in PostgreSQL"""
     config = Config()
     
-    # Setup logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    logger = logging.getLogger(__name__)
-    
     try:
-        # Connect to PostgreSQL
         conn = psycopg2.connect(
             host=config.database.pg_host,
             port=config.database.pg_port,
@@ -28,64 +22,56 @@ def create_icbm_transaction_table():
         cursor = conn.cursor()
         
         # Drop table if exists
-        logger.info("🗑️ Dropping existing icbmTransaction table if it exists...")
-        cursor.execute('DROP TABLE IF EXISTS "icbmTransaction" CASCADE;')
+        cursor.execute("DROP TABLE IF EXISTS icbmTransactions CASCADE")
         
-        # Create ICBM Transaction table
-        logger.info("🏗️ Creating icbmTransaction table...")
-        create_table_sql = """
-        CREATE TABLE "icbmTransaction" (
-            "id" SERIAL PRIMARY KEY,
-            "reportingDate" TIMESTAMP,
+        # Create ICBM transactions table with all 8 fields using camelCase (quoted identifiers)
+        create_table_query = """
+        CREATE TABLE "icbmTransactions" (
+            id SERIAL PRIMARY KEY,
+            "reportingDate" DATE NOT NULL,
             "transactionDate" DATE,
-            "lenderName" VARCHAR(200),
-            "borrowerName" VARCHAR(200),
-            "transactionType" VARCHAR(50),
-            "tzsAmount" DECIMAL(18,2),
-            "tenure" VARCHAR(50),
-            "interestRate" VARCHAR(50)
-        );
+            "lenderName" VARCHAR(255),
+            "borrowerName" VARCHAR(255),
+            "transactionType" VARCHAR(50) DEFAULT 'market',
+            "tzsAmount" DECIMAL(15,2),
+            tenure INTEGER,
+            "interestRate" DECIMAL(8,4),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
         """
-        cursor.execute(create_table_sql)
         
-        # Create indexes
-        logger.info("📊 Creating indexes...")
-        indexes = [
-            'CREATE INDEX IF NOT EXISTS idx_icbm_transaction_date ON "icbmTransaction"("transactionDate");',
-            'CREATE INDEX IF NOT EXISTS idx_icbm_transaction_type ON "icbmTransaction"("transactionType");',
-            'CREATE INDEX IF NOT EXISTS idx_icbm_transaction_amount ON "icbmTransaction"("tzsAmount");',
-            'CREATE INDEX IF NOT EXISTS idx_icbm_transaction_lender ON "icbmTransaction"("lenderName");',
-            'CREATE INDEX IF NOT EXISTS idx_icbm_transaction_borrower ON "icbmTransaction"("borrowerName");',
-            'CREATE INDEX IF NOT EXISTS idx_icbm_transaction_reporting_date ON "icbmTransaction"("reportingDate");'
-        ]
+        cursor.execute(create_table_query)
         
-        for index_sql in indexes:
-            cursor.execute(index_sql)
+        # Create indexes for better performance using camelCase (quoted identifiers)
+        cursor.execute('CREATE INDEX "idx_icbm_reporting_date" ON "icbmTransactions"("reportingDate")')
+        cursor.execute('CREATE INDEX "idx_icbm_transaction_date" ON "icbmTransactions"("transactionDate")')
+        cursor.execute('CREATE INDEX "idx_icbm_lender_name" ON "icbmTransactions"("lenderName")')
+        cursor.execute('CREATE INDEX "idx_icbm_borrower_name" ON "icbmTransactions"("borrowerName")')
+        cursor.execute('CREATE INDEX "idx_icbm_transaction_type" ON "icbmTransactions"("transactionType")')
+        cursor.execute('CREATE INDEX "idx_icbm_created_at" ON "icbmTransactions"(created_at)')
         
-        # Commit changes
         conn.commit()
-        
-        logger.info("✅ ICBM transaction table and indexes created successfully!")
+        print("ICBM Transactions table created successfully with indexes")
         
         # Show table info
         cursor.execute("""
-            SELECT column_name, data_type, character_maximum_length 
+            SELECT column_name, data_type, is_nullable, column_default
             FROM information_schema.columns 
-            WHERE table_name = 'icbmTransaction' 
-            ORDER BY ordinal_position;
+            WHERE table_name = 'icbmTransactions' 
+            ORDER BY ordinal_position
         """)
         
         columns = cursor.fetchall()
-        logger.info("📋 Table structure:")
-        for col_name, data_type, max_length in columns:
-            length_info = f"({max_length})" if max_length else ""
-            logger.info(f"  {col_name}: {data_type}{length_info}")
+        print(f"\nTable structure ({len(columns)} columns):")
+        for col in columns:
+            nullable = 'NULL' if col[2] == 'YES' else 'NOT NULL'
+            default = f" DEFAULT {col[3]}" if col[3] else ""
+            print(f"  {col[0]}: {col[1]} ({nullable}){default}")
         
-        cursor.close()
         conn.close()
         
     except Exception as e:
-        logger.error(f"❌ Failed to create ICBM transaction table: {e}")
+        print(f"Error creating ICBM transactions table: {e}")
         raise
 
 if __name__ == "__main__":
