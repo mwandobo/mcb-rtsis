@@ -16,9 +16,9 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                      
        'Existing'                                                               as loanPhase,
        'NotSpecified'                                                           as transferStatus,
        CASE wela.PRODUCT_DESC
-           WHEN 'STAFF PERSONAL LOANS' THEN 'STAFF LOAN'
-           WHEN 'OVERDRAFT BUSINESS' THEN 'BUSINESS OVERDRAFT'
-           WHEN 'TRADE FINANCE' THEN 'TRADE FINANCE'
+           WHEN 'STAFF PERSONAL LOANS' THEN 'StaffLoan'
+           WHEN 'OVERDRAFT BUSINESS' THEN 'Business'
+           WHEN 'TRADE FINANCE' THEN 'Business'
            ELSE 'Other'
            END                                                                  AS purposeOtherLoans,
        wela.ACC_OPEN_DT                                                         as contractDate,
