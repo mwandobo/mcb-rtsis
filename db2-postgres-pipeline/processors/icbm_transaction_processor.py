@@ -1,118 +1,98 @@
+#!/usr/bin/env python3
 """
-ICBM transaction processor - Based on icbm_transactions.sql
+ICBM Transaction Record Processor for streaming pipeline
 """
 
 from dataclasses import dataclass
-from typing import Tuple, Optional
-from datetime import datetime
-from .base import BaseProcessor, BaseRecord
+from typing import Optional
+from datetime import datetime, date
+import logging
 
 @dataclass
-class IcbmTransactionRecord(BaseRecord):
-    """ICBM transaction record structure"""
-    reporting_date: str
-    transaction_date: str
-    lender_name: Optional[str]
-    borrower_name: Optional[str]
-    transaction_type: Optional[str]
-    tzs_amount: Optional[float]
-    tenure: Optional[str]
-    interest_rate: Optional[str]
-    retry_count: int = 0
+class IcbmTransactionRecord:
+    """Data class for ICBM transaction records"""
+    reportingDate: date
+    transactionDate: Optional[date]
+    lenderName: Optional[str]
+    borrowerName: Optional[str]
+    transactionType: str
+    tzsAmount: Optional[float]
+    tenure: Optional[int]
+    interestRate: Optional[float]
 
-class IcbmTransactionProcessor(BaseProcessor):
-    """Processor for ICBM transaction data"""
+class IcbmTransactionProcessor:
+    """Processor for ICBM transaction records"""
     
-    def process_record(self, raw_data: Tuple, table_name: str) -> IcbmTransactionRecord:
-        """Convert raw DB2 data to IcbmTransactionRecord"""
-        # Handle None values safely
-        def safe_str(value):
-            return str(value).strip() if value is not None else None
-        
-        def safe_float(value):
-            try:
-                return float(value) if value is not None else None
-            except (ValueError, TypeError):
-                return None
-        
-        return IcbmTransactionRecord(
-            source_table=table_name,
-            timestamp_column_value=safe_str(raw_data[1]),  # transactionDate for tracking
-            reporting_date=safe_str(raw_data[0]),
-            transaction_date=safe_str(raw_data[1]),
-            lender_name=safe_str(raw_data[2]),
-            borrower_name=safe_str(raw_data[3]),
-            transaction_type=safe_str(raw_data[4]),
-            tzs_amount=safe_float(raw_data[5]),
-            tenure=safe_str(raw_data[6]),
-            interest_rate=safe_str(raw_data[7]),
-            original_timestamp=datetime.now().isoformat()
-        )
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
     
-    def insert_to_postgres(self, record: IcbmTransactionRecord, pg_cursor) -> None:
-        """Insert ICBM transaction record to PostgreSQL"""
-        query = self.get_insert_query()
-        
-        pg_cursor.execute(query, (
-            record.reporting_date,
-            record.transaction_date,
-            record.lender_name,
-            record.borrower_name,
-            record.transaction_type,
-            record.tzs_amount,
-            record.tenure,
-            record.interest_rate
-        ))
-    
-    def get_insert_query(self) -> str:
-        """Get insert query for ICBM transaction"""
-        return """
-        INSERT INTO "icbmTransaction" (
-            "reportingDate", "transactionDate", "lenderName", "borrowerName",
-            "transactionType", "tzsAmount", "tenure", "interestRate"
-        ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s
-        )
-        """
-    
-    def get_upsert_query(self) -> str:
-        """Get upsert query for ICBM transaction (use transaction date and amount as unique key)"""
-        return """
-        INSERT INTO "icbmTransaction" (
-            "reportingDate", "transactionDate", "lenderName", "borrowerName",
-            "transactionType", "tzsAmount", "tenure", "interestRate"
-        ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s
-        )
-        ON CONFLICT ("transactionDate", "tzsAmount") DO UPDATE SET
-            "reportingDate" = EXCLUDED."reportingDate",
-            "lenderName" = EXCLUDED."lenderName",
-            "borrowerName" = EXCLUDED."borrowerName",
-            "transactionType" = EXCLUDED."transactionType",
-            "tenure" = EXCLUDED."tenure",
-            "interestRate" = EXCLUDED."interestRate"
-        """
-    
-    def validate_record(self, record: IcbmTransactionRecord) -> bool:
-        """Validate ICBM transaction record"""
-        if not super().validate_record(record):
-            return False
-        
-        # ICBM transaction-specific validations
-        if not record.transaction_date:
-            return False
-        if record.tzs_amount is None or record.tzs_amount <= 0:
-            return False
-        if not record.transaction_type:
-            return False
+    def process_record(self, row, record_type='icbm_transaction'):
+        """Process a single ICBM transaction record from DB2"""
+        try:
+            # Map the 8 fields from the SQL query to the dataclass
+            record = IcbmTransactionRecord(
+                reportingDate=row[0] if row[0] else date.today(),
+                transactionDate=row[1] if row[1] else None,
+                lenderName=str(row[2]).strip() if row[2] else None,
+                borrowerName=str(row[3]).strip() if row[3] else None,
+                transactionType=str(row[4]).strip() if row[4] else 'market',
+                tzsAmount=float(row[5]) if row[5] is not None else None,
+                tenure=int(row[6]) if row[6] is not None else None,
+                interestRate=float(row[7]) if row[7] is not None else None
+            )
             
-        return True
+            return record
+            
+        except Exception as e:
+            self.logger.error(f"Error processing ICBM transaction record: {e}")
+            self.logger.error(f"Row data: {row}")
+            raise
     
-    def transform_data(self, raw_data: Tuple) -> dict:
-        """Transform ICBM transaction data"""
-        # Add any ICBM transaction-specific transformations here
-        return {
-            'transaction_type_normalized': str(raw_data[4]).strip().lower() if raw_data[4] else 'unknown',
-            'amount_millions': (raw_data[5] / 1000000) if raw_data[5] else 0,
-            'is_market_hours': str(raw_data[4]).strip().lower() == 'market' if raw_data[4] else False
-        }
+    def validate_record(self, record):
+        """Validate ICBM transaction record"""
+        try:
+            # Basic validation
+            if not record.reportingDate:
+                self.logger.warning("Missing reporting date")
+                return False
+            
+            if not record.transactionDate:
+                self.logger.warning("Missing transaction date")
+                return False
+            
+            if record.tzsAmount is not None and record.tzsAmount < 0:
+                self.logger.warning("Negative TZS amount")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error validating ICBM transaction record: {e}")
+            return False
+    
+    def insert_to_postgres(self, record, cursor):
+        """Insert ICBM transaction record to PostgreSQL using camelCase columns"""
+        try:
+            insert_query = """
+            INSERT INTO "icbmTransactions" (
+                "reportingDate", "transactionDate", "lenderName", "borrowerName",
+                "transactionType", "tzsAmount", tenure, "interestRate"
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s
+            )
+            """
+            
+            cursor.execute(insert_query, (
+                record.reportingDate,
+                record.transactionDate,
+                record.lenderName,
+                record.borrowerName,
+                record.transactionType,
+                record.tzsAmount,
+                record.tenure,
+                record.interestRate
+            ))
+            
+        except Exception as e:
+            self.logger.error(f"Error inserting ICBM transaction record to PostgreSQL: {e}")
+            raise

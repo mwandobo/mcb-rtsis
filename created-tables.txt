@@ -4,8 +4,12 @@ CUSTOMER_TYPES_LOOKUP
 COUNTRIES_LOOKUP
 BANK_LOCATION_LOOKUP
 BANK_LOCATION_LOOKUP_V2
+<<<<<<< HEAD
+AGENT_LIST
+=======
 AGENTS_WAKALA
 SHARE_CAPITAL
+>>>>>>> f27e2f9d0925848563eb1e1c54a3a464b5954898
 
 below is the query to update employees sex after female employees have been updated
 UPDATE  BANKEMPLOYEE set sex = 'M'
