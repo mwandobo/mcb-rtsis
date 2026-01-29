@@ -23,8 +23,8 @@ SELECT CURRENT_TIMESTAMP              AS reportingDate,
        wdc.NAME_STANDARD              AS recipientName,
        wdc.TELEPHONE                  AS recipientMobileNumber,
        'TANZANIA, UNITED REPUBLIC OF' AS recipientCountry,
-       'MWCOTZTZ'                     AS recipientBankOrFspCode,
-       NULL                           AS recipientAccountOrWalletNumber,
+       'N/A'                          AS recipientBankOrFspCode,
+       'N/A'                          AS recipientAccountOrWalletNumber,
        'Automated Teller Machines'    AS serviceChannel,
        'Internet banking'             AS serviceCategory,
        'Transfer'                     AS serviceSubCategory,
@@ -39,7 +39,7 @@ SELECT CURRENT_TIMESTAMP              AS reportingDate,
            ELSE DECIMAL(gte.DC_AMOUNT * 2500, 18, 0) -- TZS conversion
            END                        AS tzsAmount,
        gte.JUSTIFIC_DESCR             AS purposes,
-       NULL                           AS senderInstruction,
+       'N/A'                          AS senderInstruction,
        'TANZANIA, UNITED REPUBLIC OF' AS transactionPlace
 
 FROM GLI_TRX_EXTRACT gte
