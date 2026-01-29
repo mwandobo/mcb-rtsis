@@ -1,7 +1,14 @@
 UPDATE AGENTS_LIST a
 SET agent_id =
         CHAR(
-                61221428 +
+                (
+                    SELECT MAX(INTEGER(TRIM(AGENT_ID)))
+                    FROM AGENTS_LIST
+                    WHERE AGENT_ID IS NOT NULL
+                      AND TRIM(AGENT_ID) <> ''
+                      AND TRANSLATE(AGENT_ID, '', '0123456789') = ''
+                )
+                    +
                 (
                     SELECT COUNT(*)
                     FROM AGENTS_LIST b
