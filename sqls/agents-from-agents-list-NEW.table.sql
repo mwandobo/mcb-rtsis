@@ -58,7 +58,6 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
            ELSE TRIM(al.BUSINESS_LICENCE_ISSUER_AND_DATE)
            END AS businessLicense
 FROM AGENTS_LIST al
-
          LEFT JOIN (SELECT al.AGENT_ID,
                            bl.REGION AS BOT_REGION,
                            ROW_NUMBER() OVER (
