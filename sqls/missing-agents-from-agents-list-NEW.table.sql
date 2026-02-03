@@ -28,6 +28,8 @@ WITH agent_terminals_enriched AS (SELECT at.*,
                                                      ON be.STAFF_NO = at.USER_CODE)
 
 
+
+
 SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        ate.agentName                                     AS agentName,
        ate.new_agent_id                                  AS agentId,
