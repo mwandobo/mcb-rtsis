@@ -12,6 +12,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
                    ELSE ''
                    END
        )                                                                                            AS agentName,
+       al.TERMINAL_ID                                                                               AS TerminalID,
        al.AGENT_ID                                                                                  AS agentId,
        null                                                                                         AS tillNumber,
        CASE
@@ -36,9 +37,9 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
            END                                                                                      AS agentStatus,
        'super agent'                                                                                AS agentType,
        null                                                                                         AS accountNumber,
-       COALESCE(region_lkp.BOT_REGION, 'N/A')                                            AS region,
-       COALESCE(district_lkp.BOT_DISTRICT,  'N/A')                                      AS district,
-       COALESCE(ward_lkp.BOT_WARD,  'N/A')                                              AS ward,
+       COALESCE(region_lkp.BOT_REGION, 'N/A')                                                       AS region,
+       COALESCE(district_lkp.BOT_DISTRICT, 'N/A')                                                   AS district,
+       COALESCE(ward_lkp.BOT_WARD, 'N/A')                                                           AS ward,
        'N/A'                                                                                        AS street,
        'N/A'                                                                                        AS houseNumber,
        'N/A'                                                                                        AS postalCode,
@@ -81,7 +82,20 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
            -- 3️⃣ Last resort: use whole string
            ELSE TRIM(al.BUSINESS_LICENCE_ISSUER_AND_DATE)
            END                                                                                      AS businessLicense
-FROM AGENTS_LIST al
+FROM AGENT_TERMINAL at
+         JOIN (SELECT *
+               FROM (SELECT al.*,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY RIGHT(TRIM(al.TERMINAL_ID), 8)
+                                ORDER BY al.AGENT_ID
+                                ) AS rn
+                     FROM AGENTS_LIST al) x
+               WHERE rn = 1) al
+              ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(at.USER_CODE)
+    --          JOIN AGENTS_LIST al
+--               ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(at.USER_CODE)
+
+
          LEFT JOIN BANKEMPLOYEE be
                    ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(be.STAFF_NO)
          LEFT JOIN (SELECT al.AGENT_ID,
