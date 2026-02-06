@@ -1,5 +1,5 @@
 -- auto-generated definition
-create table AGENTS_LIST_V1
+create table AGENTS_LIST_V3
 (
     AGENT_NAME  CHAR(100)     null,
     TERMINAL_ID     CHAR(20)     null,
@@ -16,8 +16,11 @@ create table AGENTS_LIST_V1
     AGENT_STATUS  CHAR(50)     null,
     AGENT_TYPE  CHAR(200)     null,
     ACCOUNT_NUMBER  CHAR(50)     null,
+    O_REGION   CHAR(200)  null,
     REGION   CHAR(200)  null,
+    O_DISTRICT   CHAR(200)  null,
     DISTRICT   CHAR(200)  null,
+    O_WARD   CHAR(200)  null,
     WARD   CHAR(200)  null,
     STREET   CHAR(100)  null,
     HOUSE_NUMBER   CHAR(100)  null,
@@ -27,4 +30,3 @@ create table AGENTS_LIST_V1
     AGENT_TAX_IDENTIFICATION_NUMBER   CHAR(100)  null,
     BUSINESS_LICENCE   CHAR(100)  null
 );
-
