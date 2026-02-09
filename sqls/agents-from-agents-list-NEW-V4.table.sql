@@ -14,9 +14,9 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        al.AGENT_STATUS                                   AS agentStatus,
        al.AGENT_TYPE                                     AS agentType,
        al.ACCOUNT_NUMBER                                 AS accountNumber,
-       al.REGION                                         AS oregion,
-       al.DISTRICT                                       AS odistrict,
-       al.WARD                                           AS oward,
+       al.REGION                                         AS region,
+       al.DISTRICT                                       AS district,
+       al.WARD                                           AS ward,
        al.STREET                                         AS street,
        al.HOUSE_NUMBER                                   AS houseNumber,
        al.POSTAL_CODE                                    AS postalCode,
@@ -24,4 +24,4 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        al.GPS_COORDINATES                                AS gpsCoordinates,
        al.AGENT_TAX_IDENTIFICATION_NUMBER                AS agentTaxIdentificationNumber,
        al.BUSINESS_LICENCE                               AS businessLicense
-FROM AGENTS_LIST_V1 al;
+FROM AGENTS_LIST_V3 al;
