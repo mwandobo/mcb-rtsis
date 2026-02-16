@@ -1,35 +1,35 @@
-SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
-       al.AGENT_NAME                                     AS agentName,
-       al.TERMINAL_ID                                    AS TerminalID,
-       al.AGENT_ID                                       AS agentId,
-       al.TILL_NUMBER                                    AS tillNumber,
-       al.BUSINESS_FORM                                  AS businessForm,
-       al.AGENT_PRINCIPAL                                AS agentPrincipal,
-       al.AGENT_PRINCIPAL_NAME                           AS agentPrincipalName,
-       al.GENDER                                         AS gender,
-       VARCHAR_FORMAT(be.TMSTAMP, 'DDMMYYYYHHMM')                           AS registrationDate,
-       al.CLOSED_DATE                                    AS closedDate,
-       al.CERT_INCORPORATION                             AS certIncorporation,
-       al.NATIONALITY                                    AS nationality,
-       al.AGENT_STATUS                                   AS agentStatus,
-       al.AGENT_TYPE                                     AS agentType,
-       al.ACCOUNT_NUMBER                                 AS accountNumber,
-       al.REGION                                         AS region,
-       COALESCE(region_lkp.BOT_REGION, '')               AS region,
-       al.DISTRICT                                       AS district,
-       COALESCE(district_lkp.BOT_DISTRICT, '')           AS district,
-       al.WARD                                           AS ward,
-       COALESCE(ward_lkp.BOT_WARD, '')                   AS ward,
-       al.STREET                                         AS street,
-       al.HOUSE_NUMBER                                   AS houseNumber,
-       al.POSTAL_CODE                                    AS postalCode,
-       al.COUNTRY                                        AS country,
-       al.GPS_COORDINATES                                AS gpsCoordinates,
-       al.AGENT_TAX_IDENTIFICATION_NUMBER                AS agentTaxIdentificationNumber,
-       al.BUSINESS_LICENCE                               AS businessLicense
+SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')           AS reportingDate,
+       al.AGENT_NAME                                               AS agentName,
+       al.TERMINAL_ID                                              AS TerminalID,
+       al.AGENT_ID                                                 AS agentId,
+       al.TILL_NUMBER                                              AS tillNumber,
+       al.BUSINESS_FORM                                            AS businessForm,
+       al.AGENT_PRINCIPAL                                          AS agentPrincipal,
+       al.AGENT_PRINCIPAL_NAME                                     AS agentPrincipalName,
+       al.GENDER                                                   AS gender,
+       VARCHAR_FORMAT(be.TMSTAMP, 'DDMMYYYYHHMM')                  AS registrationDate,
+       al.CLOSED_DATE                                              AS closedDate,
+       al.CERT_INCORPORATION                                       AS certIncorporation,
+       al.NATIONALITY                                              AS nationality,
+       CASE WHEN al.IS_ACTIVE = 1 then 'Active' ELSE 'Dormant' END AS agentStatus,
+       al.AGENT_STATUS                                             AS agentType,
+       al.ACCOUNT_NUMBER                                           AS accountNumber,
+       al.REGION                                                   AS region,
+       COALESCE(region_lkp.BOT_REGION, '')                         AS region,
+       al.DISTRICT                                                 AS district,
+       COALESCE(district_lkp.BOT_DISTRICT, '')                     AS district,
+       al.WARD                                                     AS ward,
+       COALESCE(ward_lkp.BOT_WARD, '')                             AS ward,
+       al.STREET                                                   AS street,
+       al.HOUSE_NUMBER                                             AS houseNumber,
+       al.POSTAL_CODE                                              AS postalCode,
+       al.COUNTRY                                                  AS country,
+       al.GPS_COORDINATES                                          AS gpsCoordinates,
+       al.AGENT_TAX_IDENTIFICATION_NUMBER                          AS agentTaxIdentificationNumber,
+       al.BUSINESS_LICENCE                                         AS businessLicense,
+       al.IS_ACTIVE                                         AS IS_ACTIVE
 FROM AGENTS_LIST_V3 al
-
-         RIGHT JOIN BANKEMPLOYEE be
+         JOIN BANKEMPLOYEE be
                     ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(be.STAFF_NO)
 
          LEFT JOIN (SELECT al.AGENT_ID,
@@ -112,9 +112,9 @@ FROM AGENTS_LIST_V3 al
                                       )
                     WHERE TRIM(al.WARD) IS NOT NULL
                       AND TRIM(al.WARD) <> '') ward_lkp
-
                    ON ward_lkp.AGENT_ID = al.AGENT_ID
                        AND ward_lkp.rn = 1
+
 
 WHERE be.STAFF_NO IS NOT NULL
   AND be.STAFF_NO = TRIM(be.STAFF_NO)
