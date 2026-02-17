@@ -1,5 +1,5 @@
 -- auto-generated definition
-create table AGENTS_LIST_V3
+create table AGENTS_LIST_V4
 (
     AGENT_NAME  CHAR(100)     null,
     TERMINAL_ID     CHAR(20)     null,
