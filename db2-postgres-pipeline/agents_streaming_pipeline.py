@@ -77,13 +77,10 @@ class AgentsStreamingPipeline:
     def get_agents_query(self, last_agent_id=None):
         """Get the agents query with cursor-based pagination"""
         
-        where_clause = """WHERE al.AGENT_TAX_IDENTIFICATION_NUMBER IS NOT NULL
-          AND TRIM(al.AGENT_TAX_IDENTIFICATION_NUMBER) <> ''
-          AND al.BUSINESS_LICENCE IS NOT NULL
-          AND TRIM(al.BUSINESS_LICENCE) <> ''"""
+        where_clause = ""
         
         if last_agent_id:
-            where_clause += f" AND al.AGENT_ID > '{last_agent_id}'"
+            where_clause = f"WHERE al.AGENT_ID > '{last_agent_id}'"
         
         query = f"""
         SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
@@ -126,10 +123,6 @@ class AgentsStreamingPipeline:
         return """
         SELECT COUNT(*) as total_count
         FROM AGENTS_LIST_V3
-        WHERE AGENT_TAX_IDENTIFICATION_NUMBER IS NOT NULL
-          AND TRIM(AGENT_TAX_IDENTIFICATION_NUMBER) <> ''
-          AND BUSINESS_LICENCE IS NOT NULL
-          AND TRIM(BUSINESS_LICENCE) <> ''
         """
     
     @contextmanager
@@ -203,9 +196,20 @@ class AgentsStreamingPipeline:
         return str_value
     
     def process_record(self, row):
-        """Process a single record"""
+        """Process a single record - returns None if record should be skipped"""
         # Remove cursor field (last one)
         row_data = row[:-1]
+        
+        # Check if agentTaxIdentificationNumber or businessLicense are NULL/empty
+        # If so, skip this record silently
+        agent_tax_id = row_data[24]
+        business_license = row_data[25]
+        
+        if not agent_tax_id or str(agent_tax_id).strip() == '' or str(agent_tax_id).strip().upper() in ('NIL', 'NULL', 'NONE'):
+            return None
+        
+        if not business_license or str(business_license).strip() == '' or str(business_license).strip().upper() in ('NIL', 'NULL', 'NONE'):
+            return None
         
         return AgentRecord(
             reportingDate=str(row_data[0]) if row_data[0] else None,
@@ -232,8 +236,8 @@ class AgentsStreamingPipeline:
             postalCode=str(row_data[21]).strip() if row_data[21] else None,
             country=str(row_data[22]).strip() if row_data[22] else None,
             gpsCoordinates=str(row_data[23]).strip() if row_data[23] else None,
-            agentTaxIdentificationNumber=str(row_data[24]).strip(),  # NOT NULL - no fallback
-            businessLicense=str(row_data[25]).strip()  # NOT NULL - no fallback
+            agentTaxIdentificationNumber=str(row_data[24]).strip(),  # NOT NULL - validated above
+            businessLicense=str(row_data[25]).strip()  # NOT NULL - validated above
         )
     
     def insert_to_postgres(self, record: AgentRecord, cursor):
@@ -355,6 +359,11 @@ class AgentsStreamingPipeline:
                     last_agent_id = row[-1]  # cursor_agent_id
                     
                     record = self.process_record(row)
+                    
+                    # Skip record if it's None (validation failed)
+                    if record is None:
+                        continue
+                    
                     message = json.dumps(asdict(record), default=str)
                     
                     # Publish
