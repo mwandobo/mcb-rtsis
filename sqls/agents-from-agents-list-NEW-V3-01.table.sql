@@ -30,7 +30,18 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')           AS reportingD
        al.IS_ACTIVE                                         AS IS_ACTIVE
 FROM AGENTS_LIST_V3 al
          JOIN BANKEMPLOYEE be
-                    ON RIGHT(TRIM(al.TERMINAL_ID), 8) = TRIM(be.STAFF_NO)
+              ON
+                  CASE
+                      WHEN LENGTH(REPLACE(al.TERMINAL_ID, ' ', '')) > 8
+                          THEN RIGHT(REPLACE(al.TERMINAL_ID, ' ', ''), 8)
+                      ELSE REPLACE(al.TERMINAL_ID, ' ', '')
+                      END
+                      =
+                  CASE
+                      WHEN LENGTH(REPLACE(be.STAFF_NO, ' ', '')) > 8
+                          THEN RIGHT(REPLACE(be.STAFF_NO, ' ', ''), 8)
+                      ELSE REPLACE(be.STAFF_NO, ' ', '')
+                      END
 
          LEFT JOIN (SELECT al.AGENT_ID,
                            bl.REGION AS BOT_REGION,

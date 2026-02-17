@@ -24,4 +24,4 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        al.GPS_COORDINATES                                AS gpsCoordinates,
        al.AGENT_TAX_IDENTIFICATION_NUMBER                AS agentTaxIdentificationNumber,
        al.BUSINESS_LICENCE                               AS businessLicense
-FROM AGENTS_LIST_V4 al;
+FROM AGENTS_LIST_V3 al;
