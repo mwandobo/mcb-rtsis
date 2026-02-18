@@ -24,7 +24,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        al.HOUSE_NUMBER                                   AS houseNumber,
        al.POSTAL_CODE                                    AS postalCode,
        al.COUNTRY                                        AS country,
-       al.GPS_COORDINATES                                AS gpsCoordinates,
+       COALESCE(al.GPS_COORDINATES, '-6.7725°,38.9769°') AS gpsCoordinates,
        al.AGENT_TAX_IDENTIFICATION_NUMBER                AS agentTaxIdentificationNumber,
        al.BUSINESS_LICENCE                               AS businessLicense
 FROM AGENTS_LIST_V4 al
