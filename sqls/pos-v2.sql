@@ -12,7 +12,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')    AS reportingDate,
        al.WARD                                              AS ward,
        'N/A'                                                AS street,
        'N/A'                                                AS houseNumber,
-       al.GPS_COORDINATES                                   AS gpsCoordinates,
+       COALESCE(al.GPS_COORDINATES, '-6.7725°,38.9769°')    AS gpsCoordinates,
        '230000070'                                          AS linkedAccount,
        VARCHAR_FORMAT(at.INSERTION_TMSTAMP, 'DDMMYYYYHHMM') AS issueDate,
        NULL                                                 AS returnDate
