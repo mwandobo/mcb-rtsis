@@ -26,7 +26,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
        COALESCE(department_data.DESCRIPTION, 'N/A')                                                 AS empDepartment,
        VARCHAR_FORMAT(c.TMSTAMP, 'DDMMYYYYHHMM')                                                    AS appointmentDate,
        'TANZANIA, UNITED REPUBLIC OF'                                                               AS empNationality,
-       VARCHAR_FORMAT(be.TMSTAMP, 'DDMMYYYYHHMM')                                                   AS lastPromotionDate,
+       VARCHAR_FORMAT(c.TMSTAMP, 'DDMMYYYYHHMM')                                                    AS lastPromotionDate,
        c.SALARY_AMN                                                                                 AS basicSalary,
        null                                                                                         AS benefitType,
        null                                                                                         AS benefitAmount
