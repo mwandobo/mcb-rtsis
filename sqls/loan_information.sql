@@ -44,7 +44,6 @@ select CURRENT_TIMESTAMP                                                        
            END                                                                  AS purposeMortgage,
        GG.DESCRIPTION                                                           as purposeOtherLoans,
        'Others'                                                                 as sourceFundMortgage,
-       'Others'                                                                 as sourceFundMortgage,
        'Reducing Method'                                                        as amortizationType,
        wela.FK_UNITCODE                                                         as branchCode,
        wela.LOAN_OFFICER_NAME                                                   as loanOfficer,
