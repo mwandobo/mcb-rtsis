@@ -25,6 +25,8 @@ class PersonalDataCorporateRecord:
     establishedDate: Optional[str]
     legalForm: str
     negativeClientStatus: str
+    totalEmployeesMAle: int
+    totalEmployeesFemale: int
     registrationCountry: Optional[str]
     registrationNumber: Optional[str]
     taxIdentificationNumber: Optional[str]
@@ -33,7 +35,30 @@ class PersonalDataCorporateRecord:
     parentIncorporationNumber: Optional[str]
     groupId: Optional[str]
     sectorSnaClassification: str
-    relatedCustomers: str  # JSON string
+    relatedCustomers: str  # JSON string - will be stored as JSONB
+    # Business Address
+    postalCode: Optional[str]
+    region: Optional[str]
+    district: Optional[str]
+    ward: Optional[str]
+    street: Optional[str]
+    houseNumber: Optional[str]
+    # Secondary Address
+    secondaryStreet: Optional[str]
+    secondartHouseNumber: Optional[str]
+    secondaryPostalCode: Optional[str]
+    secondaryRegion: Optional[str]
+    secondaryDistrict: Optional[str]
+    secondaryCountry: Optional[str]
+    secondaryTextAddress: Optional[str]
+    # Contact Person
+    mobileNumber: Optional[str]
+    alternativeMobileNumber: Optional[str]
+    fixedLineNumber: Optional[str]
+    faxNumber: Optional[str]
+    emailAddress: Optional[str]
+    socialMedia: Optional[str]
+    # Relations Entity
     entityName: str
     certificateIncorporation: Optional[str]
     entityRegion: str
@@ -121,9 +146,11 @@ class PersonalDataCorporateStreamingPipeline:
         SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                corp.SURNAME                                    AS companyName,
                ca.corporate_cust_id                            AS customerIdentificationNumber,
-               corp.DATE_OF_BIRTH                              AS establishedDate,
+               corp.CUST_OPEN_DATE                             AS establishedDate,
                'LimitedLiabilityCompanyPrivate'                AS legalForm,
                'NoNegativeStatus'                              AS negativeClientStatus,
+               0                                               AS totalEmployeesMAle,
+               0                                               AS totalEmployeesFemale,
                CASE UPPER(TRIM(id_country.description))
                    WHEN 'TANZANIA'
                        THEN 'TANZANIA, UNITED REPUBLIC OF' END AS registrationCountry,
@@ -149,7 +176,15 @@ class PersonalDataCorporateStreamingPipeline:
                                                                           WHEN 'M' THEN '"Male"'
                                                                           WHEN 'F' THEN '"Female"'
                                                                           ELSE 'null' END || ',' ||
+                                                       '"cellPhone":' || CASE
+                                                                             WHEN TRIM(c_address.TELEPHONE) IS NOT NULL
+                                                                                 THEN '"' || REPLACE(TRIM(c_address.TELEPHONE), '"', '\\"') || '"'
+                                                                             ELSE 'null' END || ',' ||
                                                        '"relationType":"Director",' ||
+                                                       '"nationalId":' || CASE
+                                                                              WHEN TRIM(id.ID_NO) IS NOT NULL
+                                                                                  THEN '"' || REPLACE(TRIM(id.ID_NO), '"', '\\"') || '"'
+                                                                              ELSE 'null' END || ',' ||
                                                        '"nationality":' || CASE UPPER(TRIM(id_country.description))
                                                                                WHEN 'TANZANIA'
                                                                                    THEN '"TANZANIA, UNITED REPUBLIC OF"'
@@ -172,6 +207,14 @@ class PersonalDataCorporateStreamingPipeline:
                                                                         WHEN TRIM(c_address.ADDRESS_1) IS NOT NULL
                                                                             THEN '"' || REPLACE(TRIM(c_address.ADDRESS_1), '"', '\\"') || '"'
                                                                         ELSE 'null' END || ',' ||
+                                                       '"houseNumber":' || CASE
+                                                                               WHEN TRIM(c_address.ADDRESS_2) IS NOT NULL
+                                                                                   THEN '"' || REPLACE(TRIM(c_address.ADDRESS_2), '"', '\\"') || '"'
+                                                                               ELSE 'null' END || ',' ||
+                                                       '"poBox":' || CASE
+                                                                         WHEN TRIM(c_address.ADDRESS_1) IS NOT NULL
+                                                                             THEN '"' || REPLACE(TRIM(c_address.ADDRESS_1), '"', '\\"') || '"'
+                                                                         ELSE 'null' END || ',' ||
                                                        '"zipCode":' || CASE
                                                                            WHEN TRIM(c_address.ZIP_CODE) IS NOT NULL
                                                                                THEN '"' || REPLACE(TRIM(c_address.ZIP_CODE), '"', '\\"') || '"'
@@ -195,6 +238,32 @@ class PersonalDataCorporateStreamingPipeline:
                        ), ','
                ) || ']'                                        AS related_customers,
 
+               -- BUSINESS ADDRESS
+               NULL                                            AS postalCode,
+               corp.CITY_OF_BIRTH                              AS region,
+               NULL                                            AS district,
+               NULL                                            AS ward,
+               NULL                                            AS street,
+               NULL                                            AS houseNumber,
+
+               -- SECONDARY ADDRESSES
+               NULL                                            AS secondaryStreet,
+               NULL                                            AS secondartHouseNumber,
+               NULL                                            AS secondaryPostalCode,
+               NULL                                            AS secondaryRegion,
+               NULL                                            AS secondaryDistrict,
+               'TANZANIA, UNITED REPUBLIC OF'                  AS secondaryCountry,
+               NULL                                            AS secondaryTextAddress,
+
+               --CONTACT PERSON
+               NULL                                            AS mobileNumber,
+               NULL                                            AS alternativeMobileNumber,
+               NULL                                            AS fixedLineNumber,
+               NULL                                            AS faxNumber,
+               NULL                                            AS emailAddress,
+               NULL                                            AS socialMedia,
+
+                -- RELATIONS ENTITY
                'N/A'                                           AS entityName,
                NULL                                            AS certificateIncorporation,
                'N/A'                                           AS entityRegion,
@@ -247,7 +316,8 @@ class PersonalDataCorporateStreamingPipeline:
 
         GROUP BY corp.SURNAME,
                  ca.corporate_cust_id,
-                 corp.DATE_OF_BIRTH,
+                 corp.CUST_OPEN_DATE,
+                 corp.CITY_OF_BIRTH,
                  id_country.DESCRIPTION,
                  id.ID_NO,
                  cc.ID_NO
@@ -375,26 +445,51 @@ class PersonalDataCorporateStreamingPipeline:
             establishedDate=str(row_data[3]).strip() if row_data[3] else None,
             legalForm=str(row_data[4]).strip() if row_data[4] else None,
             negativeClientStatus=str(row_data[5]).strip() if row_data[5] else None,
-            registrationCountry=str(row_data[6]).strip() if row_data[6] else None,
-            registrationNumber=str(row_data[7]).strip() if row_data[7] else None,
-            taxIdentificationNumber=str(row_data[8]).strip() if row_data[8] else None,
-            tradeName=str(row_data[9]).strip() if row_data[9] else None,
-            parentName=str(row_data[10]).strip() if row_data[10] else None,
-            parentIncorporationNumber=str(row_data[11]).strip() if row_data[11] else None,
-            groupId=str(row_data[12]).strip() if row_data[12] else None,
-            sectorSnaClassification=str(row_data[13]).strip() if row_data[13] else None,
-            relatedCustomers=str(row_data[14]).strip() if row_data[14] else '[]',
-            entityName=str(row_data[15]).strip() if row_data[15] else None,
-            certificateIncorporation=str(row_data[16]).strip() if row_data[16] else None,
-            entityRegion=str(row_data[17]).strip() if row_data[17] else None,
-            entityDistrict=str(row_data[18]).strip() if row_data[18] else None,
-            entityWard=str(row_data[19]).strip() if row_data[19] else None,
-            entityStreet=str(row_data[20]).strip() if row_data[20] else None,
-            entityHouseNumber=str(row_data[21]).strip() if row_data[21] else None,
-            entityPostalCode=str(row_data[22]).strip() if row_data[22] else None,
-            groupParentCode=str(row_data[23]).strip() if row_data[23] else None,
-            shareOwnedPercentage=str(row_data[24]).strip() if row_data[24] else None,
-            shareOwnedAmount=str(row_data[25]).strip() if row_data[25] else None,
+            totalEmployeesMAle=int(row_data[6]) if row_data[6] else 0,
+            totalEmployeesFemale=int(row_data[7]) if row_data[7] else 0,
+            registrationCountry=str(row_data[8]).strip() if row_data[8] else None,
+            registrationNumber=str(row_data[9]).strip() if row_data[9] else None,
+            taxIdentificationNumber=str(row_data[10]).strip() if row_data[10] else None,
+            tradeName=str(row_data[11]).strip() if row_data[11] else None,
+            parentName=str(row_data[12]).strip() if row_data[12] else None,
+            parentIncorporationNumber=str(row_data[13]).strip() if row_data[13] else None,
+            groupId=str(row_data[14]).strip() if row_data[14] else None,
+            sectorSnaClassification=str(row_data[15]).strip() if row_data[15] else None,
+            relatedCustomers=str(row_data[16]).strip() if row_data[16] else '[]',
+            # Business Address
+            postalCode=str(row_data[17]).strip() if row_data[17] else None,
+            region=str(row_data[18]).strip() if row_data[18] else None,
+            district=str(row_data[19]).strip() if row_data[19] else None,
+            ward=str(row_data[20]).strip() if row_data[20] else None,
+            street=str(row_data[21]).strip() if row_data[21] else None,
+            houseNumber=str(row_data[22]).strip() if row_data[22] else None,
+            # Secondary Address
+            secondaryStreet=str(row_data[23]).strip() if row_data[23] else None,
+            secondartHouseNumber=str(row_data[24]).strip() if row_data[24] else None,
+            secondaryPostalCode=str(row_data[25]).strip() if row_data[25] else None,
+            secondaryRegion=str(row_data[26]).strip() if row_data[26] else None,
+            secondaryDistrict=str(row_data[27]).strip() if row_data[27] else None,
+            secondaryCountry=str(row_data[28]).strip() if row_data[28] else None,
+            secondaryTextAddress=str(row_data[29]).strip() if row_data[29] else None,
+            # Contact Person
+            mobileNumber=str(row_data[30]).strip() if row_data[30] else None,
+            alternativeMobileNumber=str(row_data[31]).strip() if row_data[31] else None,
+            fixedLineNumber=str(row_data[32]).strip() if row_data[32] else None,
+            faxNumber=str(row_data[33]).strip() if row_data[33] else None,
+            emailAddress=str(row_data[34]).strip() if row_data[34] else None,
+            socialMedia=str(row_data[35]).strip() if row_data[35] else None,
+            # Relations Entity
+            entityName=str(row_data[36]).strip() if row_data[36] else None,
+            certificateIncorporation=str(row_data[37]).strip() if row_data[37] else None,
+            entityRegion=str(row_data[38]).strip() if row_data[38] else None,
+            entityDistrict=str(row_data[39]).strip() if row_data[39] else None,
+            entityWard=str(row_data[40]).strip() if row_data[40] else None,
+            entityStreet=str(row_data[41]).strip() if row_data[41] else None,
+            entityHouseNumber=str(row_data[42]).strip() if row_data[42] else None,
+            entityPostalCode=str(row_data[43]).strip() if row_data[43] else None,
+            groupParentCode=str(row_data[44]).strip() if row_data[44] else None,
+            shareOwnedPercentage=str(row_data[45]).strip() if row_data[45] else None,
+            shareOwnedAmount=str(row_data[46]).strip() if row_data[46] else None,
         )
 
     def insert_to_postgres(self, record: PersonalDataCorporateRecord, cursor):
@@ -402,19 +497,25 @@ class PersonalDataCorporateStreamingPipeline:
         insert_sql = """
         INSERT INTO "personalDataCorporate" (
             "reportingDate", "companyName", "customerIdentificationNumber", "establishedDate",
-            "legalForm", "negativeClientStatus", "registrationCountry", "registrationNumber",
-            "taxIdentificationNumber", "tradeName", "parentName", "parentIncorporationNumber",
-            "groupId", "sectorSnaClassification", "relatedCustomers", "entityName",
-            "certificateIncorporation", "entityRegion", "entityDistrict", "entityWard",
+            "legalForm", "negativeClientStatus", "totalEmployeesMAle", "totalEmployeesFemale",
+            "registrationCountry", "registrationNumber", "taxIdentificationNumber", "tradeName",
+            "parentName", "parentIncorporationNumber", "groupId", "sectorSnaClassification",
+            "relatedCustomers", "postalCode", region, district, ward, street, "houseNumber",
+            "secondaryStreet", "secondartHouseNumber", "secondaryPostalCode", "secondaryRegion",
+            "secondaryDistrict", "secondaryCountry", "secondaryTextAddress", "mobileNumber",
+            "alternativeMobileNumber", "fixedLineNumber", "faxNumber", "emailAddress", "socialMedia",
+            "entityName", "certificateIncorporation", "entityRegion", "entityDistrict", "entityWard",
             "entityStreet", "entityHouseNumber", "entityPostalCode", "groupParentCode",
             "shareOwnedPercentage", "shareOwnedAmount"
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT ("customerIdentificationNumber") DO UPDATE SET
             "reportingDate" = EXCLUDED."reportingDate",
             "companyName" = EXCLUDED."companyName",
             "establishedDate" = EXCLUDED."establishedDate",
             "legalForm" = EXCLUDED."legalForm",
             "negativeClientStatus" = EXCLUDED."negativeClientStatus",
+            "totalEmployeesMAle" = EXCLUDED."totalEmployeesMAle",
+            "totalEmployeesFemale" = EXCLUDED."totalEmployeesFemale",
             "registrationCountry" = EXCLUDED."registrationCountry",
             "registrationNumber" = EXCLUDED."registrationNumber",
             "taxIdentificationNumber" = EXCLUDED."taxIdentificationNumber",
@@ -424,6 +525,25 @@ class PersonalDataCorporateStreamingPipeline:
             "groupId" = EXCLUDED."groupId",
             "sectorSnaClassification" = EXCLUDED."sectorSnaClassification",
             "relatedCustomers" = EXCLUDED."relatedCustomers",
+            "postalCode" = EXCLUDED."postalCode",
+            region = EXCLUDED.region,
+            district = EXCLUDED.district,
+            ward = EXCLUDED.ward,
+            street = EXCLUDED.street,
+            "houseNumber" = EXCLUDED."houseNumber",
+            "secondaryStreet" = EXCLUDED."secondaryStreet",
+            "secondartHouseNumber" = EXCLUDED."secondartHouseNumber",
+            "secondaryPostalCode" = EXCLUDED."secondaryPostalCode",
+            "secondaryRegion" = EXCLUDED."secondaryRegion",
+            "secondaryDistrict" = EXCLUDED."secondaryDistrict",
+            "secondaryCountry" = EXCLUDED."secondaryCountry",
+            "secondaryTextAddress" = EXCLUDED."secondaryTextAddress",
+            "mobileNumber" = EXCLUDED."mobileNumber",
+            "alternativeMobileNumber" = EXCLUDED."alternativeMobileNumber",
+            "fixedLineNumber" = EXCLUDED."fixedLineNumber",
+            "faxNumber" = EXCLUDED."faxNumber",
+            "emailAddress" = EXCLUDED."emailAddress",
+            "socialMedia" = EXCLUDED."socialMedia",
             "entityName" = EXCLUDED."entityName",
             "certificateIncorporation" = EXCLUDED."certificateIncorporation",
             "entityRegion" = EXCLUDED."entityRegion",
@@ -446,6 +566,8 @@ class PersonalDataCorporateStreamingPipeline:
                 record.establishedDate,
                 record.legalForm,
                 record.negativeClientStatus,
+                record.totalEmployeesMAle,
+                record.totalEmployeesFemale,
                 record.registrationCountry,
                 record.registrationNumber,
                 record.taxIdentificationNumber,
@@ -454,7 +576,26 @@ class PersonalDataCorporateStreamingPipeline:
                 record.parentIncorporationNumber,
                 record.groupId,
                 record.sectorSnaClassification,
-                record.relatedCustomers,
+                record.relatedCustomers,  # Will be cast to JSONB
+                record.postalCode,
+                record.region,
+                record.district,
+                record.ward,
+                record.street,
+                record.houseNumber,
+                record.secondaryStreet,
+                record.secondartHouseNumber,
+                record.secondaryPostalCode,
+                record.secondaryRegion,
+                record.secondaryDistrict,
+                record.secondaryCountry,
+                record.secondaryTextAddress,
+                record.mobileNumber,
+                record.alternativeMobileNumber,
+                record.fixedLineNumber,
+                record.faxNumber,
+                record.emailAddress,
+                record.socialMedia,
                 record.entityName,
                 record.certificateIncorporation,
                 record.entityRegion,

@@ -20,7 +20,6 @@ from db2_connection import DB2Connection
 class AgentRecord:
     reportingDate: str
     agentName: str
-    terminalID: str
     agentId: str
     tillNumber: Optional[str]
     businessForm: str
@@ -85,10 +84,9 @@ class AgentsStreamingPipeline:
         query = f"""
         SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
                al.AGENT_NAME                                     AS agentName,
-               al.TERMINAL_ID                                    AS terminalID,
                al.AGENT_ID                                       AS agentId,
                al.TILL_NUMBER                                    AS tillNumber,
-               al.BUSINESS_FORM                                  AS businessForm,
+               COALESCE(al.BUSINESS_FORM, 'Sole Proprietor')     AS businessForm,
                al.AGENT_PRINCIPAL                                AS agentPrincipal,
                al.AGENT_PRINCIPAL_NAME                           AS agentPrincipalName,
                al.GENDER                                         AS gender,
@@ -96,7 +94,11 @@ class AgentsStreamingPipeline:
                al.CLOSED_DATE                                    AS closedDate,
                al.CERT_INCORPORATION                             AS certIncorporation,
                al.NATIONALITY                                    AS nationality,
-               al.AGENT_STATUS                                   AS agentStatus,
+               CASE
+                   WHEN be.EMPL_STATUS = '1' THEN 'Active'
+                   WHEN be.EMPL_STATUS = '0' THEN 'Inactive'
+                   ELSE 'Suspended'
+                   END                                           AS agentStatus,
                al.AGENT_TYPE                                     AS agentType,
                al.ACCOUNT_NUMBER                                 AS accountNumber,
                al.REGION                                         AS region,
@@ -110,7 +112,20 @@ class AgentsStreamingPipeline:
                al.AGENT_TAX_IDENTIFICATION_NUMBER                AS agentTaxIdentificationNumber,
                al.BUSINESS_LICENCE                               AS businessLicense,
                al.AGENT_ID                                       AS cursor_agent_id
-        FROM AGENTS_LIST_V3 al
+        FROM AGENTS_LIST_V4 al
+                 JOIN BANKEMPLOYEE be
+                      ON
+                          CASE
+                              WHEN LENGTH(REPLACE(al.TERMINAL_ID, ' ', '')) > 8
+                                  THEN RIGHT(REPLACE(al.TERMINAL_ID, ' ', ''), 8)
+                              ELSE REPLACE(al.TERMINAL_ID, ' ', '')
+                              END
+                              =
+                          CASE
+                              WHEN LENGTH(REPLACE(be.STAFF_NO, ' ', '')) > 8
+                                  THEN RIGHT(REPLACE(be.STAFF_NO, ' ', ''), 8)
+                              ELSE REPLACE(be.STAFF_NO, ' ', '')
+                              END
         {where_clause}
         ORDER BY al.AGENT_ID ASC
         FETCH FIRST {self.batch_size} ROWS ONLY
@@ -122,7 +137,20 @@ class AgentsStreamingPipeline:
         """Get total count of available agent records"""
         return """
         SELECT COUNT(*) as total_count
-        FROM AGENTS_LIST_V3
+        FROM AGENTS_LIST_V4 al
+                 JOIN BANKEMPLOYEE be
+                      ON
+                          CASE
+                              WHEN LENGTH(REPLACE(al.TERMINAL_ID, ' ', '')) > 8
+                                  THEN RIGHT(REPLACE(al.TERMINAL_ID, ' ', ''), 8)
+                              ELSE REPLACE(al.TERMINAL_ID, ' ', '')
+                              END
+                              =
+                          CASE
+                              WHEN LENGTH(REPLACE(be.STAFF_NO, ' ', '')) > 8
+                                  THEN RIGHT(REPLACE(be.STAFF_NO, ' ', ''), 8)
+                              ELSE REPLACE(be.STAFF_NO, ' ', '')
+                              END
         """
     
     @contextmanager
@@ -202,8 +230,8 @@ class AgentsStreamingPipeline:
         
         # Check if agentTaxIdentificationNumber or businessLicense are NULL/empty
         # If so, skip this record silently
-        agent_tax_id = row_data[24]
-        business_license = row_data[25]
+        agent_tax_id = row_data[23]
+        business_license = row_data[24]
         
         if not agent_tax_id or str(agent_tax_id).strip() == '' or str(agent_tax_id).strip().upper() in ('NIL', 'NULL', 'NONE'):
             return None
@@ -214,47 +242,45 @@ class AgentsStreamingPipeline:
         return AgentRecord(
             reportingDate=str(row_data[0]) if row_data[0] else None,
             agentName=str(row_data[1]).strip() if row_data[1] else None,
-            terminalID=str(row_data[2]).strip() if row_data[2] else None,
-            agentId=str(row_data[3]).strip() if row_data[3] else None,
-            tillNumber=str(row_data[4]).strip() if row_data[4] else None,
-            businessForm=str(row_data[5]).strip() if row_data[5] else None,
-            agentPrincipal=str(row_data[6]).strip() if row_data[6] else None,
-            agentPrincipalName=str(row_data[7]).strip() if row_data[7] else None,
-            gender=str(row_data[8]).strip() if row_data[8] else None,
-            registrationDate=self.clean_date_value(row_data[9]),
-            closedDate=self.clean_date_value(row_data[10]),
-            certIncorporation=str(row_data[11]).strip() if row_data[11] else None,
-            nationality=str(row_data[12]).strip() if row_data[12] else None,
-            agentStatus=str(row_data[13]).strip() if row_data[13] else None,
-            agentType=str(row_data[14]).strip() if row_data[14] else None,
-            accountNumber=str(row_data[15]).strip() if row_data[15] else None,
-            region=str(row_data[16]).strip() if row_data[16] else None,
-            district=str(row_data[17]).strip() if row_data[17] else None,
-            ward=str(row_data[18]).strip() if row_data[18] else None,
-            street=str(row_data[19]).strip() if row_data[19] else None,
-            houseNumber=str(row_data[20]).strip() if row_data[20] else None,
-            postalCode=str(row_data[21]).strip() if row_data[21] else None,
-            country=str(row_data[22]).strip() if row_data[22] else None,
-            gpsCoordinates=str(row_data[23]).strip() if row_data[23] else None,
-            agentTaxIdentificationNumber=str(row_data[24]).strip(),  # NOT NULL - validated above
-            businessLicense=str(row_data[25]).strip()  # NOT NULL - validated above
+            agentId=str(row_data[2]).strip() if row_data[2] else None,
+            tillNumber=str(row_data[3]).strip() if row_data[3] else None,
+            businessForm=str(row_data[4]).strip() if row_data[4] else None,
+            agentPrincipal=str(row_data[5]).strip() if row_data[5] else None,
+            agentPrincipalName=str(row_data[6]).strip() if row_data[6] else None,
+            gender=str(row_data[7]).strip() if row_data[7] else None,
+            registrationDate=self.clean_date_value(row_data[8]),
+            closedDate=self.clean_date_value(row_data[9]),
+            certIncorporation=str(row_data[10]).strip() if row_data[10] else None,
+            nationality=str(row_data[11]).strip() if row_data[11] else None,
+            agentStatus=str(row_data[12]).strip() if row_data[12] else None,
+            agentType=str(row_data[13]).strip() if row_data[13] else None,
+            accountNumber=str(row_data[14]).strip() if row_data[14] else None,
+            region=str(row_data[15]).strip() if row_data[15] else None,
+            district=str(row_data[16]).strip() if row_data[16] else None,
+            ward=str(row_data[17]).strip() if row_data[17] else None,
+            street=str(row_data[18]).strip() if row_data[18] else None,
+            houseNumber=str(row_data[19]).strip() if row_data[19] else None,
+            postalCode=str(row_data[20]).strip() if row_data[20] else None,
+            country=str(row_data[21]).strip() if row_data[21] else None,
+            gpsCoordinates=str(row_data[22]).strip() if row_data[22] else None,
+            agentTaxIdentificationNumber=str(row_data[23]).strip(),  # NOT NULL - validated above
+            businessLicense=str(row_data[24]).strip()  # NOT NULL - validated above
         )
     
     def insert_to_postgres(self, record: AgentRecord, cursor):
         """Insert record to PostgreSQL"""
         insert_sql = """
         INSERT INTO "agents" (
-            "reportingDate", "agentName", "terminalID", "agentId", "tillNumber",
+            "reportingDate", "agentName", "agentId", "tillNumber",
             "businessForm", "agentPrincipal", "agentPrincipalName", gender,
             "registrationDate", "closedDate", "certIncorporation", nationality,
             "agentStatus", "agentType", "accountNumber", region, district, ward,
             street, "houseNumber", "postalCode", country, "gpsCoordinates",
             "agentTaxIdentificationNumber", "businessLicense"
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT ("agentId") DO UPDATE SET
             "reportingDate" = EXCLUDED."reportingDate",
             "agentName" = EXCLUDED."agentName",
-            "terminalID" = EXCLUDED."terminalID",
             "tillNumber" = EXCLUDED."tillNumber",
             "businessForm" = EXCLUDED."businessForm",
             "agentPrincipal" = EXCLUDED."agentPrincipal",
@@ -282,7 +308,6 @@ class AgentsStreamingPipeline:
         cursor.execute(insert_sql, (
             record.reportingDate,
             record.agentName,
-            record.terminalID,
             record.agentId,
             record.tillNumber,
             record.businessForm,
