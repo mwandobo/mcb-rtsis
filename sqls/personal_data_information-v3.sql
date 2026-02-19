@@ -130,7 +130,6 @@ SELECT CURRENT_TIMESTAMP                                                        
        NULL                                                                                             AS street,
        NULL                                                                                             AS houseNumber,
        c_address.zip_code                                                                               AS postalCode,
-       c_address.CITY                                                                                   AS region,
        COALESCE(
                loc_region_city.REGION,
                loc_region_dist.REGION,
@@ -138,15 +137,12 @@ SELECT CURRENT_TIMESTAMP                                                        
                loc_region_from_ward.REGION,
                'Dar es Salaam'
        )                                                                                                AS region,
-       c_address.REGION                                                                                 AS district,
-
        COALESCE(
                loc_district_region.DISTRICT,
                loc_district_from_ward.DISTRICT,
                loc_district_from_city.DISTRICT,
                loc_district_from_region.DISTRICT
        )                                                                                                AS district,
-       c_address.ADDRESS_1                                                                              AS ward,
        ward_selection.WARD                                                                              AS ward,
        c_country.description                                                                            AS country,
        NULL                                                                                             AS sstreet,
