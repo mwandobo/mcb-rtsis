@@ -124,24 +124,31 @@ SELECT CURRENT_TIMESTAMP                                                        
        NULL                                                                                             AS houseNumber,
        c_address.zip_code                                                                               AS postalCode,
        c_address.CITY                                                                                   AS region,
-       loc_region_city.REGION                                                                           AS bot_region,
-       COALESCE(
-               loc_region_city.REGION,
-               loc_region_dist.REGION
-       )                                                                                                AS bot_region_v1,
-       COALESCE(
-               loc_region_city.REGION,
-               loc_region_dist.REGION,
-               loc_region_from_district.REGION
-       )                                                                                                AS bot_region_v2,
+--        loc_region_city.REGION                                                                           AS bot_region,
+--        COALESCE(
+--                loc_region_city.REGION,
+--                loc_region_dist.REGION
+--        )                                                                                                AS bot_region_v1,
+--        COALESCE(
+--                loc_region_city.REGION,
+--                loc_region_dist.REGION,
+--                loc_region_from_district.REGION
+--        )                                                                                                AS bot_region_v2,
        COALESCE(
                loc_region_city.REGION,
                loc_region_dist.REGION,
                loc_region_from_district.REGION,
                loc_region_from_ward.REGION,
-               'N/A'
+               'Dar es Salaam'
        )                                                                                                AS bot_region_v3,
-       c_address.REGION                                                                                 AS district,
+--        c_address.REGION                                                                                 AS district,
+
+       COALESCE(
+               loc_district_region.DISTRICT,
+               loc_district_from_ward.DISTRICT,
+               loc_district_from_city.DISTRICT,
+               loc_district_from_region.DISTRICT
+       )                                                                                                AS bot_district_v2,
        c_address.ADDRESS_1                                                                              AS ward,
        c_country.description                                                                            AS country,
        NULL                                                                                             AS sstreet,
@@ -181,8 +188,8 @@ FROM customer c
                                        ',', '')
                           || '%'
                        AND loc_region_city.rn = 1
--- fallback on district to region
 
+-- fallback on district to region
          LEFT JOIN (SELECT REGION,
                            ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
                     FROM bank_location_lookup_v2) loc_region_dist
@@ -229,6 +236,7 @@ FROM customer c
                                        ',', '')
                                || '%'
                        AND loc_region_from_district.rn = 1
+
     -- fallback to ward then take the region
          LEFT JOIN (SELECT REGION,
                            WARD,
@@ -254,9 +262,118 @@ FROM customer c
                                        ',', '')
                                || '%'
                        AND loc_region_from_ward.rn = 1
+    --end of region join and lookups
 
---end of region join and lookups
 
+    --district-mapping
+
+         LEFT JOIN (SELECT REGION,
+                           DISTRICT,
+                           ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                    FROM bank_location_lookup_v2) loc_district_region
+                   ON loc_district_region.rn = 1
+                       AND COALESCE(
+                                   loc_region_city.REGION,
+                                   loc_region_dist.REGION,
+                                   loc_region_from_district.REGION,
+                                   loc_region_from_ward.REGION
+                           ) = loc_district_region.REGION
+                       AND REPLACE(
+                                   REPLACE(
+                                           REPLACE(
+                                                   REPLACE(UPPER(TRIM(c_address.REGION)), ' ', ''),
+                                                   '-', ''),
+                                           '_', ''),
+                                   ',', '')
+                          LIKE '%' ||
+                               REPLACE(
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(UPPER(TRIM(loc_district_region.DISTRICT)), ' ', ''),
+                                                       '-', ''),
+                                               '_', ''),
+                                       ',', '')
+                               || '%'
+
+    -- ward text → district
+
+         LEFT JOIN (SELECT REGION,
+                           DISTRICT,
+                           WARD,
+                           ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                    FROM bank_location_lookup_v2) loc_district_from_ward
+                   ON loc_district_region.DISTRICT IS NULL
+                       AND loc_district_from_ward.rn = 1
+                       AND COALESCE(
+                                   loc_region_city.REGION,
+                                   loc_region_dist.REGION,
+                                   loc_region_from_district.REGION,
+                                   loc_region_from_ward.REGION
+                           ) = loc_district_from_ward.REGION
+                       AND REPLACE(
+                                   REPLACE(
+                                           REPLACE(
+                                                   REPLACE(UPPER(TRIM(c_address.ADDRESS_1)), ' ', ''),
+                                                   '-', ''),
+                                           '_', ''),
+                                   ',', '')
+                          LIKE '%' ||
+                               REPLACE(
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(UPPER(TRIM(loc_district_from_ward.WARD)), ' ', ''),
+                                                       '-', ''),
+                                               '_', ''),
+                                       ',', '')
+                               || '%'
+
+         LEFT JOIN (SELECT REGION,
+                           DISTRICT,
+                           ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                    FROM bank_location_lookup_v2) loc_district_from_city
+                   ON loc_district_region.DISTRICT IS NULL
+                       AND loc_district_from_ward.DISTRICT IS NULL
+                       AND loc_district_from_city.rn = 1
+                       AND COALESCE(
+                                   loc_region_city.REGION,
+                                   loc_region_dist.REGION,
+                                   loc_region_from_district.REGION,
+                                   loc_region_from_ward.REGION
+                           ) = loc_district_from_city.REGION
+                       AND REPLACE(
+                                   REPLACE(
+                                           REPLACE(
+                                                   REPLACE(UPPER(TRIM(c_address.CITY)), ' ', ''),
+                                                   '-', ''),
+                                           '_', ''),
+                                   ',', '')
+                          LIKE '%' ||
+                               REPLACE(
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(UPPER(TRIM(loc_district_from_city.DISTRICT)), ' ', ''),
+                                                       '-', ''),
+                                               '_', ''),
+                                       ',', '')
+                               || '%'
+         LEFT JOIN (SELECT REGION,
+                           DISTRICT,
+                           ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT )AS rn
+                    FROM bank_location_lookup_v2) loc_district_from_region
+                   ON loc_district_region.DISTRICT IS NULL
+                       AND loc_district_from_ward.DISTRICT IS NULL
+                       AND loc_district_from_city.DISTRICT IS NULL
+                       AND loc_district_from_region.rn = 1
+                       AND loc_district_from_region.REGION =
+                           COALESCE(
+                                   loc_region_city.REGION,
+                                   loc_region_dist.REGION,
+                                   loc_region_from_district.REGION,
+                                   loc_region_from_ward.REGION,
+                                   'Dar es Salaam'
+                           )
+
+    -- end of district mapping
 
          LEFT JOIN generic_detail c_country
                    ON c_address.fkgd_has_country = c_country.serial_num
