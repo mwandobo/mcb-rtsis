@@ -1,3 +1,10 @@
+WITH district_wards AS (SELECT DISTINCT DISTRICT,
+                                        WARD,
+                                        ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY WARD) AS rn,
+                                        COUNT(*) OVER (PARTITION BY DISTRICT)                   AS total_wards
+                        FROM bank_location_lookup_v2)
+
+
 SELECT CURRENT_TIMESTAMP                                                                                AS reportingDate,
        TRIM(c.cust_id)                                                                                  AS customerIdentificationNumber,
        COALESCE(NULLIF(TRIM(c.first_name), ''), 'N/A')                                                  AS firstName,
@@ -124,32 +131,23 @@ SELECT CURRENT_TIMESTAMP                                                        
        NULL                                                                                             AS houseNumber,
        c_address.zip_code                                                                               AS postalCode,
        c_address.CITY                                                                                   AS region,
---        loc_region_city.REGION                                                                           AS bot_region,
---        COALESCE(
---                loc_region_city.REGION,
---                loc_region_dist.REGION
---        )                                                                                                AS bot_region_v1,
---        COALESCE(
---                loc_region_city.REGION,
---                loc_region_dist.REGION,
---                loc_region_from_district.REGION
---        )                                                                                                AS bot_region_v2,
        COALESCE(
                loc_region_city.REGION,
                loc_region_dist.REGION,
                loc_region_from_district.REGION,
                loc_region_from_ward.REGION,
                'Dar es Salaam'
-       )                                                                                                AS bot_region_v3,
---        c_address.REGION                                                                                 AS district,
+       )                                                                                                AS region,
+       c_address.REGION                                                                                 AS district,
 
        COALESCE(
                loc_district_region.DISTRICT,
                loc_district_from_ward.DISTRICT,
                loc_district_from_city.DISTRICT,
                loc_district_from_region.DISTRICT
-       )                                                                                                AS bot_district_v2,
+       )                                                                                                AS district,
        c_address.ADDRESS_1                                                                              AS ward,
+       ward_selection.WARD                                                                              AS ward,
        c_country.description                                                                            AS country,
        NULL                                                                                             AS sstreet,
        NULL                                                                                             AS shouseNumber,
@@ -358,7 +356,7 @@ FROM customer c
                                || '%'
          LEFT JOIN (SELECT REGION,
                            DISTRICT,
-                           ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT )AS rn
+                           ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT ) AS rn
                     FROM bank_location_lookup_v2) loc_district_from_region
                    ON loc_district_region.DISTRICT IS NULL
                        AND loc_district_from_ward.DISTRICT IS NULL
@@ -372,6 +370,18 @@ FROM customer c
                                    loc_region_from_ward.REGION,
                                    'Dar es Salaam'
                            )
+
+
+         LEFT JOIN district_wards ward_selection
+                   ON ward_selection.DISTRICT = COALESCE(
+                           loc_district_region.DISTRICT,
+                           loc_district_from_ward.DISTRICT,
+                           loc_district_from_city.DISTRICT,
+                           loc_district_from_region.DISTRICT,
+                           'Dar es Salaam'
+                                                )
+                       AND ward_selection.rn = MOD(ASCII(SUBSTR(TRIM(c.CUST_ID), 1, 1)), ward_selection.total_wards) + 1
+
 
     -- end of district mapping
 
