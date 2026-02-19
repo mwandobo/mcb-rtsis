@@ -3,6 +3,12 @@ WITH district_wards AS (SELECT DISTINCT DISTRICT,
                                         ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY WARD) AS rn,
                                         COUNT(*) OVER (PARTITION BY DISTRICT)                   AS total_wards
                         FROM bank_location_lookup_v2)
+   , region_districts AS (SELECT REGION,
+                                 DISTRICT,
+                                 ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT) AS rn,
+                                 COUNT(*) OVER (PARTITION BY REGION)                       AS total_districts
+                          FROM bank_location_lookup_v2
+                          GROUP BY REGION, DISTRICT)
 
 
 SELECT CURRENT_TIMESTAMP                                                                                AS reportingDate,
@@ -72,8 +78,17 @@ SELECT CURRENT_TIMESTAMP                                                        
        CASE UPPER(TRIM(id_country.description)) WHEN 'TANZANIA' THEN 'TANZANIA, UNITED REPUBLIC OF' END AS birthCountry,
        NULL                                                                                             AS birthPostalCode,
        NULL                                                                                             AS birthHouseNumber,
-       C.BIRTHPLACE                                                                                     AS birthRegion,
-       'N/A'                                                                                            AS birthDistrict,
+       COALESCE(
+               loc_region_birth_city.REGION,
+               loc_birth_region_from_district.REGION,
+               loc_birth_region_from_ward.REGION,
+               loc_region_city.REGION,
+               loc_region_dist.REGION,
+               loc_region_from_district.REGION,
+               loc_region_from_ward.REGION,
+               'Dar es Salaam'
+       )                                                                                                AS birthRegion,
+       birth_district_pick.DISTRICT                                                                     AS birthDistrict,
        NULL                                                                                             AS birthWard,
        NULL                                                                                             AS birthStreet,
        CASE UPPER(TRIM(idt.description))
@@ -126,10 +141,10 @@ SELECT CURRENT_TIMESTAMP                                                        
        c_address.fax_no                                                                                 AS faxNumber,
        c.e_mail                                                                                         AS emailAddress,
        c.internet_address                                                                               AS socialMedia,
-       c_address.address_1 || ' ' || c_address.address_2                                                AS mainAddress,
+       ward_selection.WARD                                                                              AS mainAddress,
        NULL                                                                                             AS street,
        NULL                                                                                             AS houseNumber,
-       c_address.zip_code                                                                               AS postalCode,
+       ward_selection.WARD                                                                              AS postalCode,
        COALESCE(
                loc_region_city.REGION,
                loc_region_dist.REGION,
@@ -159,8 +174,83 @@ FROM customer c
                        AND c_address.communication_addr = '1'
                        AND c_address.entry_status = '1'
 
+         LEFT JOIN (SELECT REGION,
+                           ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
+                    FROM bank_location_lookup_v2) loc_region_birth_city
+                   ON REPLACE(
+                              REPLACE(
+                                      REPLACE(
+                                              REPLACE(UPPER(TRIM(C.BIRTHPLACE)), ' ', ''),
+                                              '-', ''),
+                                      '_', ''),
+                              ',', '')
+                          LIKE '%' ||
+                               REPLACE(
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(UPPER(TRIM(loc_region_birth_city.REGION)), ' ', ''),
+                                                       '-', ''),
+                                               '_', ''),
+                                       ',', '')
+                          || '%'
+                       AND loc_region_birth_city.rn = 1
 
-    --region join and lookups
+    -- fallback on district to region
+         LEFT JOIN (SELECT REGION,
+                           DISTRICT,
+                           ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY REGION) AS rn
+                    FROM bank_location_lookup_v2) loc_birth_region_from_district
+                   ON loc_region_birth_city.REGION IS NULL
+                       AND REPLACE(
+                                   REPLACE(
+                                           REPLACE(
+                                                   REPLACE(UPPER(TRIM(c.BIRTHPLACE)), ' ', ''),
+                                                   '-', ''),
+                                           '_', ''),
+                                   ',', '')
+                          LIKE '%' ||
+                               REPLACE(
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(UPPER(TRIM(loc_birth_region_from_district.DISTRICT)),
+                                                               ' ', ''),
+                                                       '-', ''),
+                                               '_', ''),
+                                       ',', '')
+                               || '%'
+                       AND loc_birth_region_from_district.rn = 1
+
+-- fallback on ward
+         LEFT JOIN (SELECT REGION,
+                           WARD,
+                           ROW_NUMBER() OVER (PARTITION BY WARD ORDER BY REGION) AS rn
+                    FROM bank_location_lookup_v2) loc_birth_region_from_ward
+                   ON loc_region_birth_city.REGION IS NULL
+                       AND loc_birth_region_from_district.REGION IS NULL
+                       AND REPLACE(
+                                   REPLACE(
+                                           REPLACE(
+                                                   REPLACE(UPPER(TRIM(c.BIRTHPLACE)), ' ', ''),
+                                                   '-', ''),
+                                           '_', ''),
+                                   ',', '')
+                          LIKE '%' ||
+                               REPLACE(
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(UPPER(TRIM(loc_birth_region_from_ward.WARD)), ' ', ''),
+                                                       '-', ''),
+                                               '_', ''),
+                                       ',', '')
+                               || '%'
+                       AND loc_birth_region_from_ward.rn = 1
+
+
+    --current location lookup
+
+
+    --current location lookup
+    --region
     --no fallback
          LEFT JOIN (SELECT REGION,
                            ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
@@ -206,7 +296,7 @@ FROM customer c
                                || '%'
                        AND loc_region_dist.rn = 1
 
-    --fallback to district to district then take the region
+    --fallback to district then take the region
          LEFT JOIN (SELECT REGION,
                            DISTRICT,
                            ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY REGION) AS rn
@@ -380,6 +470,28 @@ FROM customer c
 
 
     -- end of district mapping
+
+
+         LEFT JOIN region_districts birth_district_pick
+                   ON birth_district_pick.REGION =
+                      COALESCE(
+                              loc_region_birth_city.REGION,
+                              loc_birth_region_from_district.REGION,
+                              loc_birth_region_from_ward.REGION,
+                              loc_region_city.REGION,
+                              loc_region_dist.REGION,
+                              loc_region_from_district.REGION,
+                              loc_region_from_ward.REGION,
+                              'Dar es Salaam'
+                      )
+                       AND birth_district_pick.rn =
+                           MOD(
+                                   ASCII(SUBSTR(TRIM(c.CUST_ID), 1, 1)),
+                                   birth_district_pick.total_districts
+                           ) + 1
+
+    -- end of mapping
+
 
          LEFT JOIN generic_detail c_country
                    ON c_address.fkgd_has_country = c_country.serial_num
