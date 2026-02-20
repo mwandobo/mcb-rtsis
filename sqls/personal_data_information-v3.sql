@@ -346,6 +346,7 @@ FROM customer c
     --end of region join and lookups
 
     --district-mapping
+    --no fallback
          LEFT JOIN (SELECT REGION,
                            DISTRICT,
                            ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
@@ -404,6 +405,7 @@ FROM customer c
                                                '_', ''),
                                        ',', '')
                                || '%'
+
          LEFT JOIN (SELECT REGION,
                            DISTRICT,
                            ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
@@ -433,6 +435,7 @@ FROM customer c
                                                '_', ''),
                                        ',', '')
                                || '%'
+-- fallback to take random district from the ward
          LEFT JOIN (SELECT REGION,
                            DISTRICT,
                            ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT ) AS rn
