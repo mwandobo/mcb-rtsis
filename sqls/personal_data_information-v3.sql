@@ -244,10 +244,7 @@ FROM customer c
                                        ',', '')
                                || '%'
                        AND loc_birth_region_from_ward.rn = 1
-
-
     --current location lookup
-
 
     --current location lookup
     --region
@@ -348,9 +345,7 @@ FROM customer c
                        AND loc_region_from_ward.rn = 1
     --end of region join and lookups
 
-
     --district-mapping
-
          LEFT JOIN (SELECT REGION,
                            DISTRICT,
                            ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
@@ -378,7 +373,6 @@ FROM customer c
                                                '_', ''),
                                        ',', '')
                                || '%'
-
     -- ward text → district
 
          LEFT JOIN (SELECT REGION,
@@ -410,7 +404,6 @@ FROM customer c
                                                '_', ''),
                                        ',', '')
                                || '%'
-
          LEFT JOIN (SELECT REGION,
                            DISTRICT,
                            ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
@@ -457,7 +450,6 @@ FROM customer c
                                    'Dar es Salaam'
                            )
 
-
          LEFT JOIN district_wards ward_selection
                    ON ward_selection.DISTRICT = COALESCE(
                            loc_district_region.DISTRICT,
@@ -467,8 +459,6 @@ FROM customer c
                            'Dar es Salaam'
                                                 )
                        AND ward_selection.rn = MOD(ASCII(SUBSTR(TRIM(c.CUST_ID), 1, 1)), ward_selection.total_wards) + 1
-
-
     -- end of district mapping
 
 
@@ -489,9 +479,7 @@ FROM customer c
                                    ASCII(SUBSTR(TRIM(c.CUST_ID), 1, 1)),
                                    birth_district_pick.total_districts
                            ) + 1
-
     -- end of mapping
-
 
          LEFT JOIN generic_detail c_country
                    ON c_address.fkgd_has_country = c_country.serial_num
