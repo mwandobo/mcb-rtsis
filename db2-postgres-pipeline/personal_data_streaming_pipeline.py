@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Personal Data Streaming Pipeline - Producer and Consumer run simultaneously
-Uses personal_data_information-v2.sql query with camelCase naming
+Uses personal_data_information-v3.sql query with camelCase naming
 """
 
 import pika
@@ -42,7 +42,7 @@ class PersonalDataStreamingPipeline:
         self.logger.info("🔄 Mode: Streaming (Producer + Consumer simultaneously)")
     
     def get_personal_data_query(self, last_cust_id=None):
-        """Get the personal data query using cursor-based pagination for DB2"""
+        """Get the personal data query using cursor-based pagination for DB2 - v3 WITHOUT CTEs (inlined for performance)"""
         
         if last_cust_id is None:
             # First batch
@@ -54,9 +54,9 @@ class PersonalDataStreamingPipeline:
         query = f"""
         SELECT CURRENT_TIMESTAMP                                                                                AS reportingDate,
                TRIM(c.cust_id)                                                                                  AS customerIdentificationNumber,
-               c.first_name                                                                                     AS firstName,
-               c.middle_name                                                                                    AS middleNames,
-               c.surname                                                                                        AS otherNames,
+               COALESCE(NULLIF(TRIM(c.first_name), ''), 'N/A')                                                  AS firstName,
+               COALESCE(NULLIF(TRIM(c.middle_name), ''), 'N/A')                                                 AS middleNames,
+               COALESCE(NULLIF(TRIM(c.surname), ''), 'N/A')                                                     AS otherNames,
                TRIM(
                        CASE
                            WHEN c.cust_type = '1' THEN
@@ -104,7 +104,7 @@ class PersonalDataStreamingPipeline:
                    WHEN 'CUSTOMER SERVICE' THEN 'Self-employed'
                    ELSE 'Unemployed'
                    END                                                                                          AS employmentStatus,
-               c.salary_amn                                                                                     AS monthlyIncome,
+               gd_customer_income.DESCRIPTION                                                                   AS monthlyIncome,
                (c.num_of_children + c.children_above18)                                                         AS numberDependants,
                gd_edulevel.description                                                                          AS educationLevel,
                0.00                                                                                             AS averageMonthlyExpenditure,
@@ -116,10 +116,20 @@ class PersonalDataStreamingPipeline:
                NULL                                                                                             AS monthlyExpenses,
                c.date_of_birth                                                                                  AS birthDate,
                id_country.description                                                                           AS birthCountry,
+               CASE UPPER(TRIM(id_country.description)) WHEN 'TANZANIA' THEN 'TANZANIA, UNITED REPUBLIC OF' END AS birthCountry,
                NULL                                                                                             AS birthPostalCode,
                NULL                                                                                             AS birthHouseNumber,
-               'N/A'                                                                                            AS birthRegion,
-               'N/A'                                                                                            AS birthDistrict,
+               COALESCE(
+                       loc_region_birth_city.REGION,
+                       loc_birth_region_from_district.REGION,
+                       loc_birth_region_from_ward.REGION,
+                       loc_region_city.REGION,
+                       loc_region_dist.REGION,
+                       loc_region_from_district.REGION,
+                       loc_region_from_ward.REGION,
+                       'Dar es Salaam'
+               )                                                                                                AS birthRegion,
+               birth_district_pick.DISTRICT                                                                     AS birthDistrict,
                NULL                                                                                             AS birthWard,
                NULL                                                                                             AS birthStreet,
                CASE UPPER(TRIM(idt.description))
@@ -172,13 +182,24 @@ class PersonalDataStreamingPipeline:
                c_address.fax_no                                                                                 AS faxNumber,
                c.e_mail                                                                                         AS emailAddress,
                c.internet_address                                                                               AS socialMedia,
-               c_address.address_1 || ' ' || c_address.address_2                                                AS mainAddress,
+               ward_selection.WARD                                                                              AS mainAddress,
                NULL                                                                                             AS street,
                NULL                                                                                             AS houseNumber,
-               c_address.zip_code                                                                               AS postalCode,
-               c_address.CITY                                                                                   AS region,
-               c_address.REGION                                                                                 AS district,
-               c_address.ADDRESS_1                                                                              AS ward,
+               ward_selection.WARD                                                                              AS postalCode,
+               COALESCE(
+                       loc_region_city.REGION,
+                       loc_region_dist.REGION,
+                       loc_region_from_district.REGION,
+                       loc_region_from_ward.REGION,
+                       'Dar es Salaam'
+               )                                                                                                AS region,
+               COALESCE(
+                       loc_district_region.DISTRICT,
+                       loc_district_from_ward.DISTRICT,
+                       loc_district_from_city.DISTRICT,
+                       loc_district_from_region.DISTRICT
+               )                                                                                                AS district,
+               ward_selection.WARD                                                                              AS ward,
                c_country.description                                                                            AS country,
                NULL                                                                                             AS sstreet,
                NULL                                                                                             AS shouseNumber,
@@ -188,14 +209,316 @@ class PersonalDataStreamingPipeline:
                NULL                                                                                             AS sward,
                NULL                                                                                             AS scountry,
                
-               -- Add cust_id for cursor tracking
-               c.cust_id                                                                                        AS cust_id
+               -- Add cust_id for cursor tracking (use same format as customerIdentificationNumber)
+               TRIM(c.cust_id)                                                                                  AS cust_id
 
         FROM customer c
+
                  LEFT JOIN cust_address c_address
                            ON c_address.fk_customercust_id = c.cust_id
                                AND c_address.communication_addr = '1'
                                AND c_address.entry_status = '1'
+
+                 LEFT JOIN (SELECT REGION,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_birth_city
+                           ON REPLACE(
+                                      REPLACE(
+                                              REPLACE(
+                                                      REPLACE(UPPER(TRIM(C.BIRTHPLACE)), ' ', ''),
+                                                      '-', ''),
+                                              '_', ''),
+                                      ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_birth_city.REGION)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                  || '%'
+                               AND loc_region_birth_city.rn = 1
+
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_birth_region_from_district
+                           ON loc_region_birth_city.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c.BIRTHPLACE)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_birth_region_from_district.DISTRICT)),
+                                                                       ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_birth_region_from_district.rn = 1
+
+                 LEFT JOIN (SELECT REGION,
+                                   WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY WARD ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_birth_region_from_ward
+                           ON loc_region_birth_city.REGION IS NULL
+                               AND loc_birth_region_from_district.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c.BIRTHPLACE)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_birth_region_from_ward.WARD)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_birth_region_from_ward.rn = 1
+
+                 LEFT JOIN (SELECT REGION,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_city
+                           ON REPLACE(
+                                      REPLACE(
+                                              REPLACE(
+                                                      REPLACE(UPPER(TRIM(c_address.CITY)), ' ', ''),
+                                                      '-', ''),
+                                              '_', ''),
+                                      ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_city.REGION)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                  || '%'
+                               AND loc_region_city.rn = 1
+
+                 LEFT JOIN (SELECT REGION,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_dist
+                           ON loc_region_city.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.REGION)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_dist.REGION)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_region_dist.rn = 1
+
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_from_district
+                           ON loc_region_city.REGION IS NULL
+                               AND loc_region_dist.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.REGION)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_from_district.DISTRICT)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_region_from_district.rn = 1
+
+                 LEFT JOIN (SELECT REGION,
+                                   WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY WARD ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_from_ward
+                           ON loc_region_city.REGION IS NULL
+                               AND loc_region_dist.REGION IS NULL
+                               AND loc_region_from_district.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.ADDRESS_1)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_from_ward.WARD)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_region_from_ward.rn = 1
+
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                            FROM bank_location_lookup_v2) loc_district_region
+                           ON loc_district_region.rn = 1
+                               AND COALESCE(
+                                           loc_region_city.REGION,
+                                           loc_region_dist.REGION,
+                                           loc_region_from_district.REGION,
+                                           loc_region_from_ward.REGION
+                                   ) = loc_district_region.REGION
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.REGION)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_district_region.DISTRICT)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                            FROM bank_location_lookup_v2) loc_district_from_ward
+                           ON loc_district_region.DISTRICT IS NULL
+                               AND loc_district_from_ward.rn = 1
+                               AND COALESCE(
+                                           loc_region_city.REGION,
+                                           loc_region_dist.REGION,
+                                           loc_region_from_district.REGION,
+                                           loc_region_from_ward.REGION
+                                   ) = loc_district_from_ward.REGION
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.ADDRESS_1)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_district_from_ward.WARD)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                            FROM bank_location_lookup_v2) loc_district_from_city
+                           ON loc_district_region.DISTRICT IS NULL
+                               AND loc_district_from_ward.DISTRICT IS NULL
+                               AND loc_district_from_city.rn = 1
+                               AND COALESCE(
+                                           loc_region_city.REGION,
+                                           loc_region_dist.REGION,
+                                           loc_region_from_district.REGION,
+                                           loc_region_from_ward.REGION
+                                   ) = loc_district_from_city.REGION
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.CITY)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_district_from_city.DISTRICT)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT ) AS rn
+                            FROM bank_location_lookup_v2) loc_district_from_region
+                           ON loc_district_region.DISTRICT IS NULL
+                               AND loc_district_from_ward.DISTRICT IS NULL
+                               AND loc_district_from_city.DISTRICT IS NULL
+                               AND loc_district_from_region.rn = 1
+                               AND loc_district_from_region.REGION =
+                                   COALESCE(
+                                           loc_region_city.REGION,
+                                           loc_region_dist.REGION,
+                                           loc_region_from_district.REGION,
+                                           loc_region_from_ward.REGION,
+                                           'Dar es Salaam'
+                                   )
+
+                 LEFT JOIN (SELECT DISTRICT, WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY WARD) AS rn,
+                                   COUNT(*) OVER (PARTITION BY DISTRICT) AS total_wards
+                            FROM bank_location_lookup_v2) ward_selection
+                           ON ward_selection.DISTRICT = COALESCE(
+                                   loc_district_region.DISTRICT,
+                                   loc_district_from_ward.DISTRICT,
+                                   loc_district_from_city.DISTRICT,
+                                   loc_district_from_region.DISTRICT,
+                                   'Dar es Salaam'
+                                                        )
+                               AND ward_selection.rn = MOD(ASCII(SUBSTR(TRIM(c.CUST_ID), 1, 1)), ward_selection.total_wards) + 1
+
+                 LEFT JOIN (SELECT REGION, DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT) AS rn,
+                                   COUNT(*) OVER (PARTITION BY REGION) AS total_districts
+                            FROM bank_location_lookup_v2
+                            GROUP BY REGION, DISTRICT) birth_district_pick
+                           ON birth_district_pick.REGION =
+                              COALESCE(
+                                      loc_region_birth_city.REGION,
+                                      loc_birth_region_from_district.REGION,
+                                      loc_birth_region_from_ward.REGION,
+                                      loc_region_city.REGION,
+                                      loc_region_dist.REGION,
+                                      loc_region_from_district.REGION,
+                                      loc_region_from_ward.REGION,
+                                      'Dar es Salaam'
+                              )
+                               AND birth_district_pick.rn =
+                                   MOD(
+                                           ASCII(SUBSTR(TRIM(c.CUST_ID), 1, 1)),
+                                           birth_district_pick.total_districts
+                                   ) + 1
 
                  LEFT JOIN generic_detail c_country
                            ON c_address.fkgd_has_country = c_country.serial_num
@@ -266,10 +589,20 @@ class PersonalDataStreamingPipeline:
                  LEFT JOIN generic_detail gd_edulevel
                            ON gd_edulevel.fk_generic_headpar = cc_edulevel.fk_generic_detafk
                                AND gd_edulevel.serial_num = cc_edulevel.fk_generic_detaser
+
+                 LEFT JOIN customer_category customer_income
+                           ON customer_income.fk_customercust_id = c.cust_id
+                               AND customer_income.fk_categorycategor = 'INCLEVEL'
+                               AND customer_income.fk_generic_detafk = 'INCLV'
+
+                 LEFT JOIN generic_detail gd_customer_income
+                           ON gd_customer_income.fk_generic_headpar = customer_income.fk_generic_detafk
+                               AND gd_customer_income.serial_num = customer_income.fk_generic_detaser
+
         WHERE UPPER(TRIM(idt.description)) NOT IN ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE') 
             AND c.CUST_TYPE = '1'
             {where_clause}
-        ORDER BY c.cust_id ASC
+        ORDER BY c.cust_id
         FETCH FIRST {self.batch_size} ROWS ONLY
         """
         
@@ -392,6 +725,9 @@ class PersonalDataStreamingPipeline:
                     # Process and publish batch
                     batch_published = 0
                     for row in rows:
+                        # Update cursor for each row (like agents pipeline)
+                        last_cust_id = row[-1]  # cust_id (last column using negative index)
+                        
                         record = self.personal_data_processor.process_record(row, 'personalData')
                         
                         if self.personal_data_processor.validate_record(record):
@@ -408,13 +744,7 @@ class PersonalDataStreamingPipeline:
                     # Close connection after batch
                     connection.close()
                     
-                    # Update cursor for next batch (use last record's cust_id)
-                    if rows:
-                        last_row = rows[-1]
-                        last_cust_id = last_row[78]  # cust_id (last column)
-                        
-                        self.logger.info(f"🔄 Cursor updated: last_cust_id={last_cust_id}")
-                    
+                    self.logger.info(f"🔄 Cursor updated: last_cust_id={last_cust_id}")
                     self.logger.info(f"🏭 Producer: Published batch {batch_number} ({batch_published} records, {self.total_produced} total)")
                     
                     processed_count += len(rows)
@@ -591,7 +921,8 @@ def main():
     print("  - Batch size: 10 records per batch")
     print("  - camelCase table: personalData")
     print("  - camelCase field names")
-    print("  - Uses personal_data_information-v2.sql query")
+    print("  - Uses personal_data_information-v3.sql query")
+    print("  - Complex location mapping with bank_location_lookup_v2")
     print("  - Customer-based cursor pagination")
     print("=" * 60)
     

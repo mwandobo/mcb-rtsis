@@ -1,42 +1,24 @@
 #!/usr/bin/env python3
 """
-Personal Data Streaming Pipeline Runner
+Run the personal data streaming pipeline with v3 query (CTEs removed for performance)
 """
 
 from personal_data_streaming_pipeline import PersonalDataStreamingPipeline
 
 def main():
-    """Run the personal data streaming pipeline"""
-    
-    print("👤 PERSONAL DATA STREAMING PIPELINE RUNNER")
-    print("=" * 60)
-    print("📦 Batch size: 10 records per batch")
-    print("🔄 Mode: Process ALL available personal data")
-    print("👤 Table: personalData (camelCase)")
-    print("🔑 Primary Key: customerIdentificationNumber")
-    print("📋 Query: personal_data_information-v2.sql")
-    print("=" * 60)
-    
-    # Initialize pipeline with batch size of 10
-    pipeline = PersonalDataStreamingPipeline(10)
+    # Create pipeline with batch size of 500 (like agents/POS)
+    pipeline = PersonalDataStreamingPipeline(batch_size=500)
     
     try:
-        print("🚀 Starting personal data streaming pipeline execution...")
-        
-        # Run the streaming pipeline
-        total_processed = pipeline.run_streaming_pipeline()
-        
-        print(f"\n✅ Personal data pipeline completed successfully!")
-        print(f"📊 Total records processed: {total_processed:,}")
+        # Run the streaming pipeline (both producer and consumer)
+        pipeline.run_streaming_pipeline()
         
     except KeyboardInterrupt:
-        print("\n⚠️ Pipeline interrupted by user")
-        print("🛑 Stopping personal data streaming pipeline...")
-        
+        pipeline.logger.info("Pipeline stopped by user")
     except Exception as e:
-        print(f"\n❌ Pipeline failed with error: {e}")
-        import traceback
-        traceback.print_exc()
+        pipeline.logger.error(f"Pipeline error: {e}")
+        import sys
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
