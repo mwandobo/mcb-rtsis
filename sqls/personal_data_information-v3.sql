@@ -110,7 +110,7 @@ SELECT CURRENT_TIMESTAMP                                                        
                THEN null
            ELSE TO_CHAR(id.expiry_date, 'YYYY-MM-DD')
            END                                                                                          AS expirationDate,
-       'N/A'                                                                                            AS issuancePlace,
+       'Dar es Salaam'                                                                                            AS issuancePlace,
        CASE UPPER(TRIM(idt.description))
            WHEN 'COMPANYS REGISTRY NUMBER' THEN 'Business Registrations and Licensing Agency (BRELA)'
            WHEN 'DRIVING LICENCE' THEN 'Tanzania Revenue Authority (TRA)'
