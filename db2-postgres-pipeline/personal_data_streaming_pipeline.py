@@ -18,7 +18,7 @@ from db2_connection import DB2Connection
 from processors.personal_data_processor import PersonalDataProcessor, PersonalDataRecord
 
 class PersonalDataStreamingPipeline:
-    def __init__(self, batch_size=10):
+    def __init__(self, batch_size=500):  # Increased from 10 to 500 like agents/POS
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.personal_data_processor = PersonalDataProcessor()
@@ -38,7 +38,7 @@ class PersonalDataStreamingPipeline:
         self.logger = logging.getLogger(__name__)
         
         self.logger.info("👤 Personal Data STREAMING Pipeline initialized")
-        self.logger.info(f"📊 Batch size: {batch_size} records per batch")
+        self.logger.info(f"📊 Batch size: {batch_size} records per batch (optimized like agents/POS)")
         self.logger.info("🔄 Mode: Streaming (Producer + Consumer simultaneously)")
     
     def get_personal_data_query(self, last_cust_id=None):
@@ -115,8 +115,8 @@ class PersonalDataStreamingPipeline:
                NULL                                                                                             AS maidenName,
                NULL                                                                                             AS monthlyExpenses,
                c.date_of_birth                                                                                  AS birthDate,
-               id_country.description                                                                           AS birthCountry,
-               CASE UPPER(TRIM(id_country.description)) WHEN 'TANZANIA' THEN 'TANZANIA, UNITED REPUBLIC OF' END AS birthCountry,
+               CASE UPPER(TRIM(id_country.description)) WHEN 'TANZANIA' THEN 'TANZANIA, UNITED REPUBLIC OF' 
+                    ELSE id_country.description END                                                             AS birthCountry,
                NULL                                                                                             AS birthPostalCode,
                NULL                                                                                             AS birthHouseNumber,
                COALESCE(
@@ -146,7 +146,7 @@ class PersonalDataStreamingPipeline:
                    WHEN id.issue_date = DATE '0001-01-01'
                        THEN 'N/A'
                    ELSE TO_CHAR(id.issue_date, 'YYYY-MM-DD')
-                   END                                                                                          AS issuance_date,
+                   END                                                                                          AS issuanceDate,
                CASE
                    WHEN id.expiry_date = DATE '0001-01-01'
                        THEN 'N/A'
@@ -918,7 +918,7 @@ def main():
     print("  - Producer and Consumer run SIMULTANEOUSLY")
     print("  - Real-time processing as data arrives")
     print("  - Minimal queue accumulation")
-    print("  - Batch size: 10 records per batch")
+    print("  - Batch size: 500 records per batch (optimized like agents/POS)")
     print("  - camelCase table: personalData")
     print("  - camelCase field names")
     print("  - Uses personal_data_information-v3.sql query")
@@ -926,7 +926,7 @@ def main():
     print("  - Customer-based cursor pagination")
     print("=" * 60)
     
-    pipeline = PersonalDataStreamingPipeline(10)
+    pipeline = PersonalDataStreamingPipeline(500)  # Use optimized batch size like agents/POS
     
     try:
         count = pipeline.run_streaming_pipeline()
