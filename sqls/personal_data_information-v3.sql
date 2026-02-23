@@ -65,7 +65,7 @@ SELECT CURRENT_TIMESTAMP                                                        
            END                                                                                          AS employmentStatus,
        gd_customer_income.DESCRIPTION                                                                   AS monthlyIncome,
        (c.num_of_children + c.children_above18)                                                         AS numberDependants,
-       gd_edulevel.description                                                                          AS educationLevel,
+       COALESCE(gd_edulevel.description, 'Basic')                                                       AS educationLevel,
        0.00                                                                                             AS averageMonthlyExpenditure,
        c.blacklisted_ind                                                                                AS negativeClientStatus,
        c.spouse_name                                                                                    AS spousesFullName,
@@ -74,7 +74,6 @@ SELECT CURRENT_TIMESTAMP                                                        
        NULL                                                                                             AS maidenName,
        NULL                                                                                             AS monthlyExpenses,
        c.date_of_birth                                                                                  AS birthDate,
-       id_country.description                                                                           AS birthCountry,
        CASE UPPER(TRIM(id_country.description)) WHEN 'TANZANIA' THEN 'TANZANIA, UNITED REPUBLIC OF' END AS birthCountry,
        NULL                                                                                             AS birthPostalCode,
        NULL                                                                                             AS birthHouseNumber,
@@ -112,7 +111,6 @@ SELECT CURRENT_TIMESTAMP                                                        
            ELSE TO_CHAR(id.expiry_date, 'YYYY-MM-DD')
            END                                                                                          AS expirationDate,
        'N/A'                                                                                            AS issuancePlace,
-
        CASE UPPER(TRIM(idt.description))
            WHEN 'COMPANYS REGISTRY NUMBER' THEN 'Business Registrations and Licensing Agency (BRELA)'
            WHEN 'DRIVING LICENCE' THEN 'Tanzania Revenue Authority (TRA)'
@@ -565,5 +563,28 @@ FROM customer c
                        AND gd_customer_income.serial_num = customer_income.fk_generic_detaser
 
 
-WHERE UPPER(TRIM(idt.description)) NOT IN ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE')
-  and c.CUST_TYPE = '1';
+-- WHERE UPPER(TRIM(idt.description)) NOT IN
+--       ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE')
+
+--   AND (
+--     UPPER(TRIM(idt.description)) <> 'NATIONAL IDENTITY CARD'
+--         OR LENGTH(TRIM(id.id_no)) = 20
+--     )
+
+WHERE c.CUST_TYPE = '1'
+    AND UPPER(TRIM(idt.description)) NOT IN
+      ('OTHER TYPE OF IDENTIFICATION', 'BIRTH CERTIFICATE', 'N/A')
+
+  AND NOT (
+    UPPER(TRIM(idt.description)) = 'NATIONAL IDENTITY CARD'
+        AND LENGTH(TRIM(id.id_no)) < 20
+    )
+  AND NOT (
+    UPPER(TRIM(idt.description)) = 'DRIVING LICENCE'
+        AND LENGTH(TRIM(id.id_no)) < 10
+    )
+  AND NOT (
+    UPPER(TRIM(idt.description)) = 'VOTERS ID'
+        AND UPPER(TRIM(id.id_no)) NOT LIKE 'T%'
+    )
+;

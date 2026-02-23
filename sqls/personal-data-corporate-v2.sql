@@ -30,6 +30,10 @@ WITH corporate_customers AS
                        AND pa.PRODUCT_ID = 31704))
 
 SELECT CURRENT_TIMESTAMP                               AS reportingDate,
+--        corp.BIRTHPLACE,
+--        ca2.CITY as region,
+--        ca2.REGION as district,
+--        ca2.ADDRESS_1 as ward,
        corp.SURNAME                                    AS companyName,
        ca.corporate_cust_id                            AS customerIdentificationNumber,
        corp.DATE_OF_BIRTH                              AS establishedDate,
@@ -61,44 +65,16 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                                                                   WHEN 'F' THEN '"Female"'
                                                                   ELSE 'null' END || ',' ||
                                                '"relationType":"Director",' ||
+                                               '"nationalId":' ||  rel_id.id_no || ',' ||
                                                '"nationality":' || CASE UPPER(TRIM(id_country.description))
                                                                        WHEN 'TANZANIA'
                                                                            THEN '"TANZANIA, UNITED REPUBLIC OF"'
                                                                        ELSE 'null' END || ',' ||
                                                '"appointmentDate":"N/A",' ||
                                                '"terminationDate":null,' ||
-                                               '"street":null,' ||
-                                               '"country":' || CASE UPPER(TRIM(id_country.description))
-                                                                   WHEN 'TANZANIA' THEN '"TANZANIA, UNITED REPUBLIC OF"'
-                                                                   ELSE 'null' END || ',' ||
-                                               '"region":' || CASE
-                                                                  WHEN TRIM(c_address.CITY) IS NOT NULL
-                                                                      THEN '"' || REPLACE(TRIM(c_address.CITY), '"', '\"') || '"'
-                                                                  ELSE 'null' END || ',' ||
-                                               '"district":' || CASE
-                                                                    WHEN TRIM(c_address.REGION) IS NOT NULL
-                                                                        THEN '"' || REPLACE(TRIM(c_address.REGION), '"', '\"') || '"'
-                                                                    ELSE 'null' END || ',' ||
-                                               '"ward":' || CASE
-                                                                WHEN TRIM(c_address.ADDRESS_1) IS NOT NULL
-                                                                    THEN '"' || REPLACE(TRIM(c_address.ADDRESS_1), '"', '\"') || '"'
-                                                                ELSE 'null' END || ',' ||
-                                               '"zipCode":' || CASE
-                                                                   WHEN TRIM(c_address.ZIP_CODE) IS NOT NULL
-                                                                       THEN '"' || REPLACE(TRIM(c_address.ZIP_CODE), '"', '\"') || '"'
-                                                                   ELSE 'null' END || ',' ||
-                                               '"primaryRegion":' || CASE
-                                                                         WHEN TRIM(c_address.CITY) IS NOT NULL
-                                                                             THEN '"' || REPLACE(TRIM(c_address.CITY), '"', '\"') || '"'
-                                                                         ELSE 'null' END || ',' ||
-                                               '"primaryDistrict":' || CASE
-                                                                           WHEN TRIM(c_address.REGION) IS NOT NULL
-                                                                               THEN '"' || REPLACE(TRIM(c_address.REGION), '"', '\"') || '"'
-                                                                           ELSE 'null' END || ',' ||
-                                               '"primaryWard":' || CASE
-                                                                       WHEN TRIM(c_address.ADDRESS_1) IS NOT NULL
-                                                                           THEN '"' || REPLACE(TRIM(c_address.ADDRESS_1), '"', '\"') || '"'
-                                                                       ELSE 'null' END ||
+                                               '"rateSharesOwnedValue":null,' ||
+                                               '"rateSharesOwnedValue":null,'  ||
+                                               '"amountSharesOwnedValue":null,' ||
                                                '},'
                                        )
                                ) AS CLOB
@@ -120,7 +96,7 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
 
 FROM corporate_agreements ca
 
-         JOIN CUSTOMER corp
+         JOIN PROFITS.CUSTOMER corp
               ON corp.CUST_ID = ca.corporate_cust_id
 
          JOIN corporate_customers cc
@@ -135,6 +111,10 @@ FROM corporate_agreements ca
 
          JOIN CUSTOMER rel
               ON rel.CUST_ID = ca2.FK_CUSTOMERCUST_ID
+
+         LEFT JOIN other_id rel_id
+                   ON rel_id.fk_customercust_id = rel.cust_id
+                       AND (CASE WHEN rel_id.serial_no IS NULL THEN '1' ELSE rel_id.main_flag END) = '1'
 
          LEFT JOIN cust_address c_address
                    ON c_address.fk_customercust_id = corp.cust_id
@@ -157,11 +137,17 @@ WHERE ca2.FK_CUSTOMERCUST_ID <> ca.corporate_cust_id
   AND rel.FIRST_NAME IS NOT NULL
   AND TRIM(rel.FIRST_NAME) <> ''
 
-GROUP BY corp.SURNAME,
-         ca.corporate_cust_id,
-         corp.DATE_OF_BIRTH,
-         id_country.DESCRIPTION,
-         id.ID_NO,
-         cc.ID_NO
+-- GROUP BY corp.SURNAME,
+--          ca.corporate_cust_id,
+--          corp.DATE_OF_BIRTH,
+--          id_country.DESCRIPTION,
+--          id.ID_NO,
+--          cc.ID_NO
+-- --          corp.BIRTHPLACE,
+-- --          ca2.CITY
+-- --        ca2.REGION ,
+-- --        ca2.ADDRESS_1
+
+
 
 ORDER BY corp.SURNAME;
