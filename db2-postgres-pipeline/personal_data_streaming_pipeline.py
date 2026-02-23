@@ -574,10 +574,15 @@ class PersonalDataStreamingPipeline:
         # Remove cursor field (last one)
         row_data = row[:-1]
         
+        # Check if we have enough fields
+        if len(row_data) < 75:
+            self.logger.warning(f"Record has only {len(row_data)} fields, expected at least 75. Skipping.")
+            return None
+        
         # Check if required fields (region, ward) are NULL
-        # If so, skip this record silently
-        region = row_data[68]  # region field position
-        ward = row_data[70]    # ward field position
+        # Region is at index 67, ward is at index 69 (0-indexed, after removing cursor)
+        region = row_data[67] if len(row_data) > 67 else None
+        ward = row_data[69] if len(row_data) > 69 else None
         
         if not region or str(region).strip() == '' or str(region).strip().upper() in ('NIL', 'NULL', 'NONE'):
             return None
@@ -585,86 +590,93 @@ class PersonalDataStreamingPipeline:
         if not ward or str(ward).strip() == '' or str(ward).strip().upper() in ('NIL', 'NULL', 'NONE'):
             return None
 
-        return PersonalDataRecord(
-            reportingDate=str(row_data[0]) if row_data[0] else None,
-            customerIdentificationNumber=str(row_data[1]).strip() if row_data[1] else None,
-            firstName=str(row_data[2]).strip() if row_data[2] else 'N/A',
-            middleNames=str(row_data[3]).strip() if row_data[3] else 'N/A',
-            otherNames=str(row_data[4]).strip() if row_data[4] else 'N/A',
-            fullNames=str(row_data[5]).strip() if row_data[5] else None,
-            presentSurname=str(row_data[6]).strip() if row_data[6] else None,
-            birthSurname=str(row_data[7]).strip() if row_data[7] else None,
-            gender=str(row_data[8]).strip() if row_data[8] else 'Not Applicable',
-            maritalStatus=str(row_data[9]).strip() if row_data[9] else 'Single',
-            numberSpouse=str(row_data[10]).strip() if row_data[10] else None,
-            nationality=str(row_data[11]).strip() if row_data[11] else None,
-            citizenship=str(row_data[12]).strip() if row_data[12] else None,
-            residency=str(row_data[13]).strip() if row_data[13] else 'Resident',
-            profession=str(row_data[14]).strip() if row_data[14] else None,
-            sectorSnaClassification=str(row_data[15]).strip() if row_data[15] else 'Households',
-            fateStatus=str(row_data[16]).strip() if row_data[16] else 'No Fate',
-            socialStatus=str(row_data[17]).strip() if row_data[17] else 'N/A',
-            employmentStatus=str(row_data[18]).strip() if row_data[18] else 'Unemployed',
-            monthlyIncome=str(row_data[19]).strip() if row_data[19] else None,
-            numberDependants=int(row_data[20]) if row_data[20] else 0,
-            educationLevel=str(row_data[21]).strip() if row_data[21] else 'Basic',
-            averageMonthlyExpenditure=Decimal(str(row_data[22])) if row_data[22] else Decimal('0.00'),
-            negativeClientStatus=str(row_data[23]).strip() if row_data[23] else None,
-            spousesFullName=str(row_data[24]).strip() if row_data[24] else None,
-            spouseIdentificationType=str(row_data[25]).strip() if row_data[25] else None,
-            spouseIdentificationNumber=str(row_data[26]).strip() if row_data[26] else None,
-            maidenName=str(row_data[27]).strip() if row_data[27] else None,
-            monthlyExpenses=Decimal(str(row_data[28])) if row_data[28] else None,
-            birthDate=str(row_data[29]) if row_data[29] else None,
-            birthCountry=str(row_data[30]).strip() if row_data[30] else None,
-            birthPostalCode=str(row_data[31]).strip() if row_data[31] else None,
-            birthHouseNumber=str(row_data[32]).strip() if row_data[32] else None,
-            birthRegion=str(row_data[33]).strip() if row_data[33] else 'Dar es Salaam',
-            birthDistrict=str(row_data[34]).strip() if row_data[34] else None,
-            birthWard=str(row_data[35]).strip() if row_data[35] else None,
-            birthStreet=str(row_data[36]).strip() if row_data[36] else None,
-            identificationType=str(row_data[37]).strip() if row_data[37] else 'NationalIdentityCard',
-            identificationNumber=str(row_data[38]).strip() if row_data[38] else None,
-            issuanceDate=str(row_data[39]).strip() if row_data[39] else None,
-            expirationDate=str(row_data[40]).strip() if row_data[40] else None,
-            issuancePlace=str(row_data[41]).strip() if row_data[41] else 'Dar es Salaam',
-            issuingAuthority=str(row_data[42]).strip() if row_data[42] else None,
-            businessName=str(row_data[43]).strip() if row_data[43] else None,
-            establishmentDate=str(row_data[44]).strip() if row_data[44] else None,
-            businessRegistrationNumber=str(row_data[45]).strip() if row_data[45] else None,
-            businessRegistrationDate=str(row_data[46]).strip() if row_data[46] else None,
-            businessLicenseNumber=str(row_data[47]).strip() if row_data[47] else None,
-            taxIdentificationNumber=str(row_data[48]).strip() if row_data[48] else None,
-            employerName=str(row_data[49]).strip() if row_data[49] else None,
-            employerRegion=str(row_data[50]).strip() if row_data[50] else None,
-            employerDistrict=str(row_data[51]).strip() if row_data[51] else None,
-            employerWard=str(row_data[52]).strip() if row_data[52] else None,
-            employerStreet=str(row_data[53]).strip() if row_data[53] else None,
-            employerHouseNumber=str(row_data[54]).strip() if row_data[54] else None,
-            employerPostalCode=str(row_data[55]).strip() if row_data[55] else None,
-            businessNature=str(row_data[56]).strip() if row_data[56] else None,
-            mobileNumber=str(row_data[57]).strip() if row_data[57] else None,
-            alternativeMobileNumber=str(row_data[58]).strip() if row_data[58] else None,
-            fixedLineNumber=str(row_data[59]).strip() if row_data[59] else None,
-            faxNumber=str(row_data[60]).strip() if row_data[60] else None,
-            emailAddress=str(row_data[61]).strip() if row_data[61] else None,
-            socialMedia=str(row_data[62]).strip() if row_data[62] else None,
-            mainAddress=str(row_data[63]).strip() if row_data[63] else None,
-            street=str(row_data[64]).strip() if row_data[64] else None,
-            houseNumber=str(row_data[65]).strip() if row_data[65] else None,
-            postalCode=str(row_data[66]).strip() if row_data[66] else None,
-            region=str(row_data[68]).strip(),  # NOT NULL - validated above
-            district=str(row_data[69]).strip() if row_data[69] else None,
-            ward=str(row_data[70]).strip(),  # NOT NULL - validated above
-            country=str(row_data[71]).strip() if row_data[71] else None,
-            sstreet=str(row_data[72]).strip() if row_data[72] else None,
-            shouseNumber=str(row_data[73]).strip() if row_data[73] else None,
-            spostalCode=str(row_data[74]).strip() if row_data[74] else None,
-            sregion=str(row_data[75]).strip() if row_data[75] else None,
-            sdistrict=str(row_data[76]).strip() if row_data[76] else None,
-            sward=str(row_data[77]).strip() if row_data[77] else None,
-            scountry=str(row_data[78]).strip() if row_data[78] else None,
-        )
+        try:
+            return PersonalDataRecord(
+                reportingDate=str(row_data[0]) if row_data[0] else None,
+                customerIdentificationNumber=str(row_data[1]).strip() if row_data[1] else None,
+                firstName=str(row_data[2]).strip() if row_data[2] else 'N/A',
+                middleNames=str(row_data[3]).strip() if row_data[3] else 'N/A',
+                otherNames=str(row_data[4]).strip() if row_data[4] else 'N/A',
+                fullNames=str(row_data[5]).strip() if row_data[5] else None,
+                presentSurname=str(row_data[6]).strip() if row_data[6] else None,
+                birthSurname=str(row_data[7]).strip() if row_data[7] else None,
+                gender=str(row_data[8]).strip() if row_data[8] else 'Not Applicable',
+                maritalStatus=str(row_data[9]).strip() if row_data[9] else 'Single',
+                numberSpouse=str(row_data[10]).strip() if row_data[10] else None,
+                nationality=str(row_data[11]).strip() if row_data[11] else None,
+                citizenship=str(row_data[12]).strip() if row_data[12] else None,
+                residency=str(row_data[13]).strip() if row_data[13] else 'Resident',
+                profession=str(row_data[14]).strip() if row_data[14] else None,
+                sectorSnaClassification=str(row_data[15]).strip() if row_data[15] else 'Households',
+                fateStatus=str(row_data[16]).strip() if row_data[16] else 'No Fate',
+                socialStatus=str(row_data[17]).strip() if row_data[17] else 'N/A',
+                employmentStatus=str(row_data[18]).strip() if row_data[18] else 'Unemployed',
+                monthlyIncome=str(row_data[19]).strip() if row_data[19] else None,
+                numberDependants=int(row_data[20]) if row_data[20] else 0,
+                educationLevel=str(row_data[21]).strip() if row_data[21] else 'Basic',
+                averageMonthlyExpenditure=Decimal(str(row_data[22])) if row_data[22] else Decimal('0.00'),
+                negativeClientStatus=str(row_data[23]).strip() if row_data[23] else None,
+                spousesFullName=str(row_data[24]).strip() if row_data[24] else None,
+                spouseIdentificationType=str(row_data[25]).strip() if row_data[25] else None,
+                spouseIdentificationNumber=str(row_data[26]).strip() if row_data[26] else None,
+                maidenName=str(row_data[27]).strip() if row_data[27] else None,
+                monthlyExpenses=Decimal(str(row_data[28])) if row_data[28] else None,
+                birthDate=str(row_data[29]) if row_data[29] else None,
+                birthCountry=str(row_data[30]).strip() if row_data[30] else None,
+                birthPostalCode=str(row_data[31]).strip() if row_data[31] else None,
+                birthHouseNumber=str(row_data[32]).strip() if row_data[32] else None,
+                birthRegion=str(row_data[33]).strip() if row_data[33] else 'Dar es Salaam',
+                birthDistrict=str(row_data[34]).strip() if row_data[34] else None,
+                birthWard=str(row_data[35]).strip() if row_data[35] else None,
+                birthStreet=str(row_data[36]).strip() if row_data[36] else None,
+                identificationType=str(row_data[37]).strip() if row_data[37] else 'NationalIdentityCard',
+                identificationNumber=str(row_data[38]).strip() if row_data[38] else None,
+                issuanceDate=str(row_data[39]).strip() if row_data[39] else None,
+                expirationDate=str(row_data[40]).strip() if row_data[40] else None,
+                issuancePlace=str(row_data[41]).strip() if row_data[41] else 'Dar es Salaam',
+                issuingAuthority=str(row_data[42]).strip() if row_data[42] else None,
+                businessName=str(row_data[43]).strip() if row_data[43] else None,
+                establishmentDate=str(row_data[44]).strip() if row_data[44] else None,
+                businessRegistrationNumber=str(row_data[45]).strip() if row_data[45] else None,
+                businessRegistrationDate=str(row_data[46]).strip() if row_data[46] else None,
+                businessLicenseNumber=str(row_data[47]).strip() if row_data[47] else None,
+                taxIdentificationNumber=str(row_data[48]).strip() if row_data[48] else None,
+                employerName=str(row_data[49]).strip() if row_data[49] else None,
+                employerRegion=str(row_data[50]).strip() if row_data[50] else None,
+                employerDistrict=str(row_data[51]).strip() if row_data[51] else None,
+                employerWard=str(row_data[52]).strip() if row_data[52] else None,
+                employerStreet=str(row_data[53]).strip() if row_data[53] else None,
+                employerHouseNumber=str(row_data[54]).strip() if row_data[54] else None,
+                employerPostalCode=str(row_data[55]).strip() if row_data[55] else None,
+                businessNature=str(row_data[56]).strip() if row_data[56] else None,
+                mobileNumber=str(row_data[57]).strip() if row_data[57] else None,
+                alternativeMobileNumber=str(row_data[58]).strip() if row_data[58] else None,
+                fixedLineNumber=str(row_data[59]).strip() if row_data[59] else None,
+                faxNumber=str(row_data[60]).strip() if row_data[60] else None,
+                emailAddress=str(row_data[61]).strip() if row_data[61] else None,
+                socialMedia=str(row_data[62]).strip() if row_data[62] else None,
+                mainAddress=str(row_data[63]).strip() if row_data[63] else None,
+                street=str(row_data[64]).strip() if row_data[64] else None,
+                houseNumber=str(row_data[65]).strip() if row_data[65] else None,
+                postalCode=str(row_data[66]).strip() if row_data[66] else None,
+                region=str(row_data[67]).strip(),  # NOT NULL - validated above
+                district=str(row_data[68]).strip() if row_data[68] else None,
+                ward=str(row_data[69]).strip(),  # NOT NULL - validated above
+                country=str(row_data[70]).strip() if row_data[70] else None,
+                sstreet=str(row_data[71]).strip() if row_data[71] else None,
+                shouseNumber=str(row_data[72]).strip() if row_data[72] else None,
+                spostalCode=str(row_data[73]).strip() if row_data[73] else None,
+                sregion=str(row_data[74]).strip() if row_data[74] else None,
+                sdistrict=str(row_data[75]).strip() if row_data[75] else None,
+                sward=str(row_data[76]).strip() if row_data[76] else None,
+                scountry=str(row_data[77]).strip() if row_data[77] else None,
+            )
+        except IndexError as e:
+            self.logger.error(f"IndexError processing record: {e}. Row has {len(row_data)} fields")
+            return None
+        except Exception as e:
+            self.logger.error(f"Error processing record: {e}")
+            return None
 
     def insert_to_postgres(self, record: PersonalDataRecord, cursor):
         """Insert record to PostgreSQL"""
