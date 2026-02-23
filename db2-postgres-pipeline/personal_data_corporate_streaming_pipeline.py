@@ -181,7 +181,50 @@ class PersonalDataCorporateStreamingPipeline:
                NULL                                            AS groupId,
                'Other financial Corporations'                  AS sectorSnaClassification,
 
-               '[]'                                            AS related_customers,
+               -- Build proper JSON for related_customers with fixed trailing comma issue
+               CASE 
+                   WHEN COUNT(rel.CUST_ID) > 0 THEN
+                       '[' ||
+                       RTRIM(
+                               CAST(
+                                       XMLSERIALIZE(
+                                               XMLAGG(
+                                                       XMLTEXT(
+                                                               '{{' ||
+                                                               '"fullName":"' || REPLACE(COALESCE(TRIM(rel.FIRST_NAME) || ' ' ||
+                                                                                          COALESCE(TRIM(rel.MIDDLE_NAME) || ' ', '') ||
+                                                                                          TRIM(rel.SURNAME), ''), '"', '\\"') ||
+                                                               '",' ||
+                                                               '"gender":' || CASE TRIM(rel.SEX)
+                                                                                  WHEN 'M' THEN '"Male"'
+                                                                                  WHEN 'F' THEN '"Female"'
+                                                                                  ELSE 'null' END || ',' ||
+                                                               '"cellPhone":' || CASE
+                                                                                     WHEN TRIM(c_address.TELEPHONE) IS NOT NULL
+                                                                                         THEN '"' || REPLACE(TRIM(c_address.TELEPHONE), '"', '\\"') || '"'
+                                                                                     ELSE 'null' END || ',' ||
+                                                               '"relationType":"Director",' ||
+                                                               '"nationalId":' || CASE
+                                                                                      WHEN TRIM(id.ID_NO) IS NOT NULL
+                                                                                          THEN '"' || REPLACE(TRIM(id.ID_NO), '"', '\\"') || '"'
+                                                                                      ELSE 'null' END || ',' ||
+                                                               '"nationality":' || CASE UPPER(TRIM(id_country.description))
+                                                                                       WHEN 'TANZANIA'
+                                                                                           THEN '"TANZANIA, UNITED REPUBLIC OF"'
+                                                                                       ELSE 'null' END || ',' ||
+                                                               '"appointmentDate":"' || COALESCE(corp.CUST_OPEN_DATE, '') || '",' ||
+                                                               '"terminationDate":null,' ||
+                                                               '"rateSharesOwnedValue":"N/A",' ||
+                                                               '"amountSharesOwnedValue":"N/A"' ||
+                                                               '}},'
+                                                       )
+                                               ) AS CLOB
+                                       ) AS VARCHAR(32000)
+                               ), ','
+                       ) ||
+                       ']'
+                   ELSE '[]'
+               END                                             AS related_customers,
 
                -- BUSINESS ADDRESS
                NULL                                            AS street,
@@ -880,7 +923,7 @@ class PersonalDataCorporateStreamingPipeline:
                 record.groupId,
                 record.sectorSnaClassification,
                 record.relatedCustomers,  # Will be cast to JSONB
-                record.street,  # Added v4 field
+                record.street,  # This field exists in current table
                 record.country,  # Added v4 field
                 record.region,
                 record.district,
