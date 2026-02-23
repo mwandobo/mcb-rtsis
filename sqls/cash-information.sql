@@ -1,6 +1,6 @@
 --Cash Information
 SELECT
-    CURRENT_TIMESTAMP as reportingDate,
+    varchar_format(CURRENT_TIMESTAMP,'DDMMYYYYHHMM') as reportingDate,
     gte.FK_UNITCODETRXUNIT AS branchCode,
     CASE
       WHEN gl.EXTERNAL_GLACCOUNT='101000001' THEN 'Cash in vault'
@@ -40,8 +40,8 @@ SELECT
         ELSE
             gte.DC_AMOUNT
     END AS tzsAmount,
-    gte.TRN_DATE as transactionDate,
-    gte.AVAILABILITY_DATE as maturityDate,
+    VARCHAR_FORMAT(gte.TRN_DATE,'DDMMYYYHHMM') as transactionDate,
+    varchar_format(gte.AVAILABILITY_DATE,'DDMMYYYYHHMM') as maturityDate,
     0 as allowanceProbableLoss,
     0 as botProvision
 FROM
