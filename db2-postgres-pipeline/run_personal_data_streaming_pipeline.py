@@ -15,7 +15,7 @@ def main():
     print("=" * 60)
     
     # Create pipeline with batch size
-    pipeline = PersonalDataStreamingPipeline(batch_size=500)
+    pipeline = PersonalDataStreamingPipeline(batch_size=1000)
     
     try:
         # Run the streaming pipeline
