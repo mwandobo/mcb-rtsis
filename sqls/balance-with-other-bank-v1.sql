@@ -16,23 +16,42 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        gte.DC_AMOUNT                                      AS orgAmount,
 
        -- USD Amount: only if currency is USD, otherwise null
+--        CASE
+--            WHEN gte.CURRENCY_SHORT_DES = 'USD'
+--                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+--            WHEN gte.CURRENCY_SHORT_DES IN ('TZ', 'TZS')
+--                THEN DECIMAL(gte.DC_AMOUNT / 2500.00, 18, 2) -- <<< TZS → USD
+--            ELSE
+--                NULL
+--            END                                            AS usdAmount,
+
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
-           WHEN gte.CURRENCY_SHORT_DES IN ('TZ', 'TZS')
-               THEN DECIMAL(gte.DC_AMOUNT / 2500.00, 18, 2) -- <<< TZS → USD
-           ELSE
-               NULL
+
+           WHEN gte.CURRENCY_SHORT_DES <> 'USD'
+               THEN DECIMAL(gte.DC_AMOUNT / fx.rate, 18, 2)
+
+           ELSE NULL
            END                                            AS usdAmount,
 
        -- TZS Amount: convert only if USD, otherwise use as is
+--        CASE
+--            WHEN gte.CURRENCY_SHORT_DES = 'USD'
+--                THEN DECIMAL(gte.DC_AMOUNT * 2500.00, 18, 2)
+--            WHEN gte.CURRENCY_SHORT_DES IN ('TZ', 'TZS')
+--                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+--            ELSE
+--                NULL
+--            END                                            AS tzsAmount,
+       -- ===============================
+       -- Local Amount (Converted to TZS)
+       -- ===============================
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
-               THEN DECIMAL(gte.DC_AMOUNT * 2500.00, 18, 2)
-           WHEN gte.CURRENCY_SHORT_DES IN ('TZ', 'TZS')
-               THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
-           ELSE
-               NULL
+               THEN DECIMAL(gte.DC_AMOUNT * fx.rate, 18, 2)
+
+           ELSE DECIMAL(gte.DC_AMOUNT, 18, 2)
            END                                            AS tzsAmount,
        gte.TRN_DATE                                       as transactionDate,
        (DATE(gte.AVAILABILITY_DATE) - DATE(gte.TRN_DATE)) AS pastDueDays,
