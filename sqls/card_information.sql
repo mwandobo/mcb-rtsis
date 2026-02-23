@@ -1,12 +1,12 @@
 SELECT
-    CURRENT_TIMESTAMP AS reportingDate,
+    VARCHAR_FORMAT(CURRENT_TIMESTAMP,'DDMMYYYYHHMM') AS reportingDate,
     'MWCOTZTZ' AS bankCode,
     CA.FULL_CARD_NO AS cardNumber,
     RIGHT(TRIM(CA.FULL_CARD_NO), 10) AS binNumber,
     CA.FK_CUST_ID AS customerIdentificationNumber,
     'Debit' AS cardType,
     NULL AS cardTypeSubCategory,
-    CA.TUN_DATE AS cardIssueDate,
+    VARCHAR_FORMAT(CA.TUN_DATE,'DDMMYYYYHHMM') AS cardIssueDate,
     'Mwalimu Commercial Bank Plc' AS cardIssuer,
     'Domestic' AS cardIssuerCategory,
     'TANZANIA, UNITED REPUBLIC OF' AS cardIssuerCountry,
@@ -17,7 +17,7 @@ SELECT
     END AS cardStatus,
     'VISA' AS cardScheme,
     'UBX Tanzania Limited' AS acquiringPartner,
-    CA.CARD_EXPIRY_DATE AS cardExpireDate
+    VARCHAR_FORMAT(CA.CARD_EXPIRY_DATE,'DDMMYYYYHHMM') AS cardExpireDate
 
 FROM
     CMS_CARD CA
