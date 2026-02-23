@@ -97,20 +97,20 @@ SELECT CURRENT_TIMESTAMP                                                        
            WHEN 'PASSPORT' THEN 'Passport'
            WHEN 'STUDENT ID' THEN 'Student ID'
            WHEN 'VOTERS ID' THEN 'VotersRegistrationCard'
-           ELSE 'N/A'
+           ELSE 'NationalIdentityCard'
            END                                                                                          AS identificationType,
        id.id_no                                                                                         AS identificationNumber,
        CASE
            WHEN id.issue_date = DATE '0001-01-01'
-               THEN 'N/A'
+               THEN null
            ELSE TO_CHAR(id.issue_date, 'YYYY-MM-DD')
            END                                                                                          AS issuance_date,
        CASE
            WHEN id.expiry_date = DATE '0001-01-01'
-               THEN 'N/A'
+               THEN null
            ELSE TO_CHAR(id.expiry_date, 'YYYY-MM-DD')
            END                                                                                          AS expirationDate,
-       'N/A'                                                                                            AS issuancePlace,
+       'Dar es Salaam'                                                                                            AS issuancePlace,
        CASE UPPER(TRIM(idt.description))
            WHEN 'COMPANYS REGISTRY NUMBER' THEN 'Business Registrations and Licensing Agency (BRELA)'
            WHEN 'DRIVING LICENCE' THEN 'Tanzania Revenue Authority (TRA)'
