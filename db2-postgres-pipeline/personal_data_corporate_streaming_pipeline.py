@@ -25,6 +25,7 @@ class PersonalDataCorporateRecord:
     establishedDate: Optional[str]
     legalForm: str
     negativeClientStatus: str
+    numberOfEmployees: Optional[int]  # Added from v4
     totalEmployeesMAle: int
     totalEmployeesFemale: int
     registrationCountry: Optional[str]
@@ -37,12 +38,15 @@ class PersonalDataCorporateRecord:
     sectorSnaClassification: str
     relatedCustomers: str  # JSON string - will be stored as JSONB
     # Business Address
-    postalCode: Optional[str]
+    street: Optional[str]  # Added from v4
+    country: Optional[str]  # Added from v4
     region: Optional[str]
     district: Optional[str]
     ward: Optional[str]
-    street: Optional[str]
     houseNumber: Optional[str]
+    postalCode: Optional[str]
+    poBox: Optional[str]  # Added from v4
+    zipCode: Optional[str]  # Added from v4
     # Secondary Address
     secondaryStreet: Optional[str]
     secondartHouseNumber: Optional[str]
@@ -61,7 +65,7 @@ class PersonalDataCorporateRecord:
     # Relations Entity
     entityName: str
     certificateIncorporation: Optional[str]
-    entityRegion: str
+    entityRegion: str  # Fixed field name consistency
     entityDistrict: str
     entityWard: str
     entityStreet: str
@@ -73,7 +77,7 @@ class PersonalDataCorporateRecord:
 
 
 class PersonalDataCorporateStreamingPipeline:
-    def __init__(self, batch_size=100):
+    def __init__(self, batch_size=500):  # Increased from 100 to 500 for better performance
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
@@ -99,12 +103,13 @@ class PersonalDataCorporateStreamingPipeline:
         )
         self.logger = logging.getLogger(__name__)
 
-        self.logger.info("Personal Data Corporate STREAMING Pipeline initialized")
+        self.logger.info("Personal Data Corporate STREAMING Pipeline initialized (V4)")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
+        self.logger.info("Using personal-data-corporates-v4.sql with location mapping")
 
     def get_corporate_query(self, last_customer_id=None):
-        """Get the corporate query with cursor-based pagination"""
+        """Get the corporate query with cursor-based pagination - V4 with location mapping"""
 
         where_clause = "WHERE ca2.FK_CUSTOMERCUST_ID <> ca.corporate_cust_id AND rel.FIRST_NAME IS NOT NULL AND TRIM(rel.FIRST_NAME) <> ''"
 
@@ -125,6 +130,19 @@ class PersonalDataCorporateStreamingPipeline:
                         FROM W_DIM_CUSTOMER
                         WHERE CUST_TYPE_IND = 'Corporate') x
                   WHERE rn = 1),
+
+             district_wards AS (SELECT DISTINCT DISTRICT,
+                                                WARD,
+                                                ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY WARD) AS rn,
+                                                COUNT(*) OVER (PARTITION BY DISTRICT)                   AS total_wards
+                                FROM bank_location_lookup_v2)
+                ,
+             region_districts AS (SELECT REGION,
+                                         DISTRICT,
+                                         ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT) AS rn,
+                                         COUNT(*) OVER (PARTITION BY REGION)                       AS total_districts
+                                  FROM bank_location_lookup_v2
+                                  GROUP BY REGION, DISTRICT),
 
              corporate_agreements AS
                  (SELECT DISTINCT a.AGR_SN,
@@ -149,6 +167,7 @@ class PersonalDataCorporateStreamingPipeline:
                corp.CUST_OPEN_DATE                             AS establishedDate,
                'LimitedLiabilityCompanyPrivate'                AS legalForm,
                'NoNegativeStatus'                              AS negativeClientStatus,
+               corp.NO_OF_EMPLOYEES                            AS numberOfEmployees,
                0                                               AS totalEmployeesMAle,
                0                                               AS totalEmployeesFemale,
                CASE UPPER(TRIM(id_country.description))
@@ -161,90 +180,32 @@ class PersonalDataCorporateStreamingPipeline:
                NULL                                            AS parentIncorporationNumber,
                NULL                                            AS groupId,
                'Other financial Corporations'                  AS sectorSnaClassification,
-               '[' ||
-               RTRIM(
-                       CAST(
-                               XMLSERIALIZE(
-                                       XMLAGG(
-                                               XMLTEXT(
-                                                       '{{' ||
-                                                       '"fullName":"' || REPLACE(COALESCE(TRIM(rel.FIRST_NAME) || ' ' ||
-                                                                                          COALESCE(TRIM(rel.MIDDLE_NAME) || ' ', '') ||
-                                                                                          TRIM(rel.SURNAME), ''), '"', '\\"') ||
-                                                       '",' ||
-                                                       '"gender":' || CASE TRIM(rel.SEX)
-                                                                          WHEN 'M' THEN '"Male"'
-                                                                          WHEN 'F' THEN '"Female"'
-                                                                          ELSE 'null' END || ',' ||
-                                                       '"cellPhone":' || CASE
-                                                                             WHEN TRIM(c_address.TELEPHONE) IS NOT NULL
-                                                                                 THEN '"' || REPLACE(TRIM(c_address.TELEPHONE), '"', '\\"') || '"'
-                                                                             ELSE 'null' END || ',' ||
-                                                       '"relationType":"Director",' ||
-                                                       '"nationalId":' || CASE
-                                                                              WHEN TRIM(id.ID_NO) IS NOT NULL
-                                                                                  THEN '"' || REPLACE(TRIM(id.ID_NO), '"', '\\"') || '"'
-                                                                              ELSE 'null' END || ',' ||
-                                                       '"nationality":' || CASE UPPER(TRIM(id_country.description))
-                                                                               WHEN 'TANZANIA'
-                                                                                   THEN '"TANZANIA, UNITED REPUBLIC OF"'
-                                                                               ELSE 'null' END || ',' ||
-                                                       '"appointmentDate":"N/A",' ||
-                                                       '"terminationDate":null,' ||
-                                                       '"street":null,' ||
-                                                       '"country":' || CASE UPPER(TRIM(id_country.description))
-                                                                           WHEN 'TANZANIA' THEN '"TANZANIA, UNITED REPUBLIC OF"'
-                                                                           ELSE 'null' END || ',' ||
-                                                       '"region":' || CASE
-                                                                          WHEN TRIM(c_address.CITY) IS NOT NULL
-                                                                              THEN '"' || REPLACE(TRIM(c_address.CITY), '"', '\\"') || '"'
-                                                                          ELSE 'null' END || ',' ||
-                                                       '"district":' || CASE
-                                                                            WHEN TRIM(c_address.REGION) IS NOT NULL
-                                                                                THEN '"' || REPLACE(TRIM(c_address.REGION), '"', '\\"') || '"'
-                                                                            ELSE 'null' END || ',' ||
-                                                       '"ward":' || CASE
-                                                                        WHEN TRIM(c_address.ADDRESS_1) IS NOT NULL
-                                                                            THEN '"' || REPLACE(TRIM(c_address.ADDRESS_1), '"', '\\"') || '"'
-                                                                        ELSE 'null' END || ',' ||
-                                                       '"houseNumber":' || CASE
-                                                                               WHEN TRIM(c_address.ADDRESS_2) IS NOT NULL
-                                                                                   THEN '"' || REPLACE(TRIM(c_address.ADDRESS_2), '"', '\\"') || '"'
-                                                                               ELSE 'null' END || ',' ||
-                                                       '"poBox":' || CASE
-                                                                         WHEN TRIM(c_address.ADDRESS_1) IS NOT NULL
-                                                                             THEN '"' || REPLACE(TRIM(c_address.ADDRESS_1), '"', '\\"') || '"'
-                                                                         ELSE 'null' END || ',' ||
-                                                       '"zipCode":' || CASE
-                                                                           WHEN TRIM(c_address.ZIP_CODE) IS NOT NULL
-                                                                               THEN '"' || REPLACE(TRIM(c_address.ZIP_CODE), '"', '\\"') || '"'
-                                                                           ELSE 'null' END || ',' ||
-                                                       '"primaryRegion":' || CASE
-                                                                                 WHEN TRIM(c_address.CITY) IS NOT NULL
-                                                                                     THEN '"' || REPLACE(TRIM(c_address.CITY), '"', '\\"') || '"'
-                                                                                 ELSE 'null' END || ',' ||
-                                                       '"primaryDistrict":' || CASE
-                                                                                   WHEN TRIM(c_address.REGION) IS NOT NULL
-                                                                                       THEN '"' || REPLACE(TRIM(c_address.REGION), '"', '\\"') || '"'
-                                                                                   ELSE 'null' END || ',' ||
-                                                       '"primaryWard":' || CASE
-                                                                               WHEN TRIM(c_address.ADDRESS_1) IS NOT NULL
-                                                                                   THEN '"' || REPLACE(TRIM(c_address.ADDRESS_1), '"', '\\"') || '"'
-                                                                               ELSE 'null' END ||
-                                                       '}},'
-                                               )
-                                       ) AS CLOB
-                               ) AS VARCHAR(32000)
-                       ), ','
-               ) || ']'                                        AS related_customers,
+
+               '[]'                                            AS related_customers,
 
                -- BUSINESS ADDRESS
-               NULL                                            AS postalCode,
-               corp.CITY_OF_BIRTH                              AS region,
-               NULL                                            AS district,
-               NULL                                            AS ward,
                NULL                                            AS street,
+               CASE UPPER(TRIM(id_country.description))
+                   WHEN 'TANZANIA'
+                       THEN 'TANZANIA, UNITED REPUBLIC OF' END AS country,
+               COALESCE(
+                       loc_region_city.REGION,
+                       loc_region_dist.REGION,
+                       loc_region_from_district.REGION,
+                       loc_region_from_ward.REGION,
+                       'Dar es Salaam'
+               )                                               AS region,
+               COALESCE(
+                       loc_district_region.DISTRICT,
+                       loc_district_from_ward.DISTRICT,
+                       loc_district_from_city.DISTRICT,
+                       loc_district_from_region.DISTRICT
+               )                                               AS district,
+               ward_selection.WARD                             AS ward,
                NULL                                            AS houseNumber,
+               ward_selection.WARD                             AS postalCode,
+               c_address.ADDRESS_1                             AS poBox,
+               c_address.ZIP_CODE                              AS zipCode,
 
                -- SECONDARY ADDRESSES
                NULL                                            AS secondaryStreet,
@@ -263,11 +224,22 @@ class PersonalDataCorporateStreamingPipeline:
                NULL                                            AS emailAddress,
                NULL                                            AS socialMedia,
 
-                -- RELATIONS ENTITY
+               -- RELATIONS ENTITY
                'N/A'                                           AS entityName,
                NULL                                            AS certificateIncorporation,
-               'N/A'                                           AS entityRegion,
-               'N/A'                                           AS entityDistrict,
+               COALESCE(
+                       loc_region_city.REGION,
+                       loc_region_dist.REGION,
+                       loc_region_from_district.REGION,
+                       loc_region_from_ward.REGION,
+                       'Dar es Salaam'
+               )                                               AS entityRegion,
+               COALESCE(
+                       loc_district_region.DISTRICT,
+                       loc_district_from_ward.DISTRICT,
+                       loc_district_from_city.DISTRICT,
+                       loc_district_from_region.DISTRICT
+               )                                               AS entityDistrict,
                'N/A'                                           AS entityWard,
                'N/A'                                           AS entityStreet,
                'N/A'                                           AS entityHouseNumber,
@@ -282,6 +254,321 @@ class PersonalDataCorporateStreamingPipeline:
                  JOIN PROFITS.CUSTOMER corp
                       ON corp.CUST_ID = ca.corporate_cust_id
 
+                 LEFT JOIN cust_address c_address
+                           ON c_address.fk_customercust_id = corp.cust_id
+                               AND c_address.communication_addr = '1'
+                               AND c_address.entry_status = '1'
+
+            --lookup
+                 LEFT JOIN (SELECT REGION,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_birth_city
+                           ON REPLACE(
+                                      REPLACE(
+                                              REPLACE(
+                                                      REPLACE(UPPER(TRIM(corp.BIRTHPLACE)), ' ', ''),
+                                                      '-', ''),
+                                              '_', ''),
+                                      ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_birth_city.REGION)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                  || '%'
+                               AND loc_region_birth_city.rn = 1
+
+            -- fallback on district to region
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_birth_region_from_district
+                           ON loc_region_birth_city.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(corp.BIRTHPLACE)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_birth_region_from_district.DISTRICT)),
+                                                                       ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_birth_region_from_district.rn = 1
+
+        -- fallback on ward
+                 LEFT JOIN (SELECT REGION,
+                                   WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY WARD ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_birth_region_from_ward
+                           ON loc_region_birth_city.REGION IS NULL
+                               AND loc_birth_region_from_district.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(corp.BIRTHPLACE)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_birth_region_from_ward.WARD)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_birth_region_from_ward.rn = 1
+            --current location lookup
+
+            --current location lookup
+            --region
+            --no fallback
+                 LEFT JOIN (SELECT REGION,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_city
+                           ON REPLACE(
+                                      REPLACE(
+                                              REPLACE(
+                                                      REPLACE(UPPER(TRIM(c_address.CITY)), ' ', ''),
+                                                      '-', ''),
+                                              '_', ''),
+                                      ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_city.REGION)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                  || '%'
+                               AND loc_region_city.rn = 1
+
+        -- fallback on district to region
+                 LEFT JOIN (SELECT REGION,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_dist
+                           ON loc_region_city.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.REGION)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_dist.REGION)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_region_dist.rn = 1
+
+            --fallback to district then take the region
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_from_district
+                           ON loc_region_city.REGION IS NULL
+                               AND loc_region_dist.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.REGION)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_from_district.DISTRICT)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_region_from_district.rn = 1
+
+            -- fallback to ward then take the region
+                 LEFT JOIN (SELECT REGION,
+                                   WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY WARD ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region_from_ward
+                           ON loc_region_city.REGION IS NULL
+                               AND loc_region_dist.REGION IS NULL
+                               AND loc_region_from_district.REGION IS NULL
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.ADDRESS_1)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_region_from_ward.WARD)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+                               AND loc_region_from_ward.rn = 1
+            --end of region join and lookups
+
+            --district-mapping
+            --no fallback
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                            FROM bank_location_lookup_v2) loc_district_region
+                           ON loc_district_region.rn = 1
+                               AND COALESCE(
+                                           loc_region_city.REGION,
+                                           loc_region_dist.REGION,
+                                           loc_region_from_district.REGION,
+                                           loc_region_from_ward.REGION
+                                   ) = loc_district_region.REGION
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.REGION)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_district_region.DISTRICT)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+            -- ward text → district
+
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                            FROM bank_location_lookup_v2) loc_district_from_ward
+                           ON loc_district_region.DISTRICT IS NULL
+                               AND loc_district_from_ward.rn = 1
+                               AND COALESCE(
+                                           loc_region_city.REGION,
+                                           loc_region_dist.REGION,
+                                           loc_region_from_district.REGION,
+                                           loc_region_from_ward.REGION
+                                   ) = loc_district_from_ward.REGION
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.ADDRESS_1)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_district_from_ward.WARD)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                            FROM bank_location_lookup_v2) loc_district_from_city
+                           ON loc_district_region.DISTRICT IS NULL
+                               AND loc_district_from_ward.DISTRICT IS NULL
+                               AND loc_district_from_city.rn = 1
+                               AND COALESCE(
+                                           loc_region_city.REGION,
+                                           loc_region_dist.REGION,
+                                           loc_region_from_district.REGION,
+                                           loc_region_from_ward.REGION
+                                   ) = loc_district_from_city.REGION
+                               AND REPLACE(
+                                           REPLACE(
+                                                   REPLACE(
+                                                           REPLACE(UPPER(TRIM(c_address.CITY)), ' ', ''),
+                                                           '-', ''),
+                                                   '_', ''),
+                                           ',', '')
+                                  LIKE '%' ||
+                                       REPLACE(
+                                               REPLACE(
+                                                       REPLACE(
+                                                               REPLACE(UPPER(TRIM(loc_district_from_city.DISTRICT)), ' ', ''),
+                                                               '-', ''),
+                                                       '_', ''),
+                                               ',', '')
+                                       || '%'
+        -- fallback to take random district from the ward
+                 LEFT JOIN (SELECT REGION,
+                                   DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT ) AS rn
+                            FROM bank_location_lookup_v2) loc_district_from_region
+                           ON loc_district_region.DISTRICT IS NULL
+                               AND loc_district_from_ward.DISTRICT IS NULL
+                               AND loc_district_from_city.DISTRICT IS NULL
+                               AND loc_district_from_region.rn = 1
+                               AND loc_district_from_region.REGION =
+                                   COALESCE(
+                                           loc_region_city.REGION,
+                                           loc_region_dist.REGION,
+                                           loc_region_from_district.REGION,
+                                           loc_region_from_ward.REGION,
+                                           'Dar es Salaam'
+                                   )
+
+                 LEFT JOIN district_wards ward_selection
+                           ON ward_selection.DISTRICT = COALESCE(
+                                   loc_district_region.DISTRICT,
+                                   loc_district_from_ward.DISTRICT,
+                                   loc_district_from_city.DISTRICT,
+                                   loc_district_from_region.DISTRICT,
+                                   'Dar es Salaam'
+                                                        )
+                               AND
+                              ward_selection.rn = MOD(ASCII(SUBSTR(TRIM(corp.CUST_ID), 1, 1)), ward_selection.total_wards) + 1
+            -- end of district mapping
+
+                 LEFT JOIN region_districts birth_district_pick
+                           ON birth_district_pick.REGION =
+                              COALESCE(
+                                      loc_region_birth_city.REGION,
+                                      loc_birth_region_from_district.REGION,
+                                      loc_birth_region_from_ward.REGION,
+                                      loc_region_city.REGION,
+                                      loc_region_dist.REGION,
+                                      loc_region_from_district.REGION,
+                                      loc_region_from_ward.REGION,
+                                      'Dar es Salaam'
+                              )
+                               AND birth_district_pick.rn =
+                                   MOD(
+                                           ASCII(SUBSTR(TRIM(corp.CUST_ID), 1, 1)),
+                                           birth_district_pick.total_districts
+                                   ) + 1
+            -- end of mapping
                  JOIN corporate_customers cc
                       ON cc.CUST_ID = corp.CUST_ID
 
@@ -294,11 +581,6 @@ class PersonalDataCorporateStreamingPipeline:
 
                  JOIN CUSTOMER rel
                       ON rel.CUST_ID = ca2.FK_CUSTOMERCUST_ID
-
-                 LEFT JOIN cust_address c_address
-                           ON c_address.fk_customercust_id = corp.cust_id
-                               AND c_address.communication_addr = '1'
-                               AND c_address.entry_status = '1'
 
                  LEFT JOIN other_id id
                            ON id.fk_customercust_id = corp.cust_id
@@ -318,7 +600,19 @@ class PersonalDataCorporateStreamingPipeline:
                  ca.corporate_cust_id,
                  corp.CUST_OPEN_DATE,
                  corp.CITY_OF_BIRTH,
+                 loc_district_region.DISTRICT,
+                 loc_district_from_ward.DISTRICT,
+                 loc_district_from_city.DISTRICT,
+                 loc_district_from_region.DISTRICT,
+                 loc_region_city.REGION,
+                 loc_region_dist.REGION,
+                 loc_region_from_district.REGION,
+                 loc_region_from_ward.REGION,
                  id_country.DESCRIPTION,
+                 ward_selection.WARD,
+                 c_address.ZIP_CODE,
+                 c_address.ADDRESS_1,
+                 corp.NO_OF_EMPLOYEES,
                  id.ID_NO,
                  cc.ID_NO
 
@@ -445,51 +739,55 @@ class PersonalDataCorporateStreamingPipeline:
             establishedDate=str(row_data[3]).strip() if row_data[3] else None,
             legalForm=str(row_data[4]).strip() if row_data[4] else None,
             negativeClientStatus=str(row_data[5]).strip() if row_data[5] else None,
-            totalEmployeesMAle=int(row_data[6]) if row_data[6] else 0,
-            totalEmployeesFemale=int(row_data[7]) if row_data[7] else 0,
-            registrationCountry=str(row_data[8]).strip() if row_data[8] else None,
-            registrationNumber=str(row_data[9]).strip() if row_data[9] else None,
-            taxIdentificationNumber=str(row_data[10]).strip() if row_data[10] else None,
-            tradeName=str(row_data[11]).strip() if row_data[11] else None,
-            parentName=str(row_data[12]).strip() if row_data[12] else None,
-            parentIncorporationNumber=str(row_data[13]).strip() if row_data[13] else None,
-            groupId=str(row_data[14]).strip() if row_data[14] else None,
-            sectorSnaClassification=str(row_data[15]).strip() if row_data[15] else None,
-            relatedCustomers=str(row_data[16]).strip() if row_data[16] else '[]',
+            numberOfEmployees=int(row_data[6]) if row_data[6] else 0,  # Added from v4
+            totalEmployeesMAle=int(row_data[7]) if row_data[7] else 0,
+            totalEmployeesFemale=int(row_data[8]) if row_data[8] else 0,
+            registrationCountry=str(row_data[9]).strip() if row_data[9] else None,
+            registrationNumber=str(row_data[10]).strip() if row_data[10] else None,
+            taxIdentificationNumber=str(row_data[11]).strip() if row_data[11] else None,
+            tradeName=str(row_data[12]).strip() if row_data[12] else None,
+            parentName=str(row_data[13]).strip() if row_data[13] else None,
+            parentIncorporationNumber=str(row_data[14]).strip() if row_data[14] else None,
+            groupId=str(row_data[15]).strip() if row_data[15] else None,
+            sectorSnaClassification=str(row_data[16]).strip() if row_data[16] else None,
+            relatedCustomers=str(row_data[17]).strip() if row_data[17] else '[]',
             # Business Address
-            postalCode=str(row_data[17]).strip() if row_data[17] else None,
-            region=str(row_data[18]).strip() if row_data[18] else None,
-            district=str(row_data[19]).strip() if row_data[19] else None,
-            ward=str(row_data[20]).strip() if row_data[20] else None,
-            street=str(row_data[21]).strip() if row_data[21] else None,
-            houseNumber=str(row_data[22]).strip() if row_data[22] else None,
+            street=str(row_data[18]).strip() if row_data[18] else None,  # Added from v4
+            country=str(row_data[19]).strip() if row_data[19] else None,  # Added from v4
+            region=str(row_data[20]).strip() if row_data[20] else None,
+            district=str(row_data[21]).strip() if row_data[21] else None,
+            ward=str(row_data[22]).strip() if row_data[22] else None,
+            houseNumber=str(row_data[23]).strip() if row_data[23] else None,
+            postalCode=str(row_data[24]).strip() if row_data[24] else None,
+            poBox=str(row_data[25]).strip() if row_data[25] else None,  # Added from v4
+            zipCode=str(row_data[26]).strip() if row_data[26] else None,  # Added from v4
             # Secondary Address
-            secondaryStreet=str(row_data[23]).strip() if row_data[23] else None,
-            secondartHouseNumber=str(row_data[24]).strip() if row_data[24] else None,
-            secondaryPostalCode=str(row_data[25]).strip() if row_data[25] else None,
-            secondaryRegion=str(row_data[26]).strip() if row_data[26] else None,
-            secondaryDistrict=str(row_data[27]).strip() if row_data[27] else None,
-            secondaryCountry=str(row_data[28]).strip() if row_data[28] else None,
-            secondaryTextAddress=str(row_data[29]).strip() if row_data[29] else None,
+            secondaryStreet=str(row_data[27]).strip() if row_data[27] else None,
+            secondartHouseNumber=str(row_data[28]).strip() if row_data[28] else None,
+            secondaryPostalCode=str(row_data[29]).strip() if row_data[29] else None,
+            secondaryRegion=str(row_data[30]).strip() if row_data[30] else None,
+            secondaryDistrict=str(row_data[31]).strip() if row_data[31] else None,
+            secondaryCountry=str(row_data[32]).strip() if row_data[32] else None,
+            secondaryTextAddress=str(row_data[33]).strip() if row_data[33] else None,
             # Contact Person
-            mobileNumber=str(row_data[30]).strip() if row_data[30] else None,
-            alternativeMobileNumber=str(row_data[31]).strip() if row_data[31] else None,
-            fixedLineNumber=str(row_data[32]).strip() if row_data[32] else None,
-            faxNumber=str(row_data[33]).strip() if row_data[33] else None,
-            emailAddress=str(row_data[34]).strip() if row_data[34] else None,
-            socialMedia=str(row_data[35]).strip() if row_data[35] else None,
+            mobileNumber=str(row_data[34]).strip() if row_data[34] else None,
+            alternativeMobileNumber=str(row_data[35]).strip() if row_data[35] else None,
+            fixedLineNumber=str(row_data[36]).strip() if row_data[36] else None,
+            faxNumber=str(row_data[37]).strip() if row_data[37] else None,
+            emailAddress=str(row_data[38]).strip() if row_data[38] else None,
+            socialMedia=str(row_data[39]).strip() if row_data[39] else None,
             # Relations Entity
-            entityName=str(row_data[36]).strip() if row_data[36] else None,
-            certificateIncorporation=str(row_data[37]).strip() if row_data[37] else None,
-            entityRegion=str(row_data[38]).strip() if row_data[38] else None,
-            entityDistrict=str(row_data[39]).strip() if row_data[39] else None,
-            entityWard=str(row_data[40]).strip() if row_data[40] else None,
-            entityStreet=str(row_data[41]).strip() if row_data[41] else None,
-            entityHouseNumber=str(row_data[42]).strip() if row_data[42] else None,
-            entityPostalCode=str(row_data[43]).strip() if row_data[43] else None,
-            groupParentCode=str(row_data[44]).strip() if row_data[44] else None,
-            shareOwnedPercentage=str(row_data[45]).strip() if row_data[45] else None,
-            shareOwnedAmount=str(row_data[46]).strip() if row_data[46] else None,
+            entityName=str(row_data[40]).strip() if row_data[40] else None,
+            certificateIncorporation=str(row_data[41]).strip() if row_data[41] else None,
+            entityRegion=str(row_data[42]).strip() if row_data[42] else None,
+            entityDistrict=str(row_data[43]).strip() if row_data[43] else None,
+            entityWard=str(row_data[44]).strip() if row_data[44] else None,
+            entityStreet=str(row_data[45]).strip() if row_data[45] else None,
+            entityHouseNumber=str(row_data[46]).strip() if row_data[46] else None,
+            entityPostalCode=str(row_data[47]).strip() if row_data[47] else None,
+            groupParentCode=str(row_data[48]).strip() if row_data[48] else None,
+            shareOwnedPercentage=str(row_data[49]).strip() if row_data[49] else None,
+            shareOwnedAmount=str(row_data[50]).strip() if row_data[50] else None,
         )
 
     def insert_to_postgres(self, record: PersonalDataCorporateRecord, cursor):
@@ -497,23 +795,24 @@ class PersonalDataCorporateStreamingPipeline:
         insert_sql = """
         INSERT INTO "personalDataCorporate" (
             "reportingDate", "companyName", "customerIdentificationNumber", "establishedDate",
-            "legalForm", "negativeClientStatus", "totalEmployeesMAle", "totalEmployeesFemale",
+            "legalForm", "negativeClientStatus", "numberOfEmployees", "totalEmployeesMAle", "totalEmployeesFemale",
             "registrationCountry", "registrationNumber", "taxIdentificationNumber", "tradeName",
             "parentName", "parentIncorporationNumber", "groupId", "sectorSnaClassification",
-            "relatedCustomers", "postalCode", region, district, ward, street, "houseNumber",
-            "secondaryStreet", "secondartHouseNumber", "secondaryPostalCode", "secondaryRegion",
+            "relatedCustomers", street, country, region, district, ward, "houseNumber", "postalCode", 
+            "poBox", "zipCode", "secondaryStreet", "secondartHouseNumber", "secondaryPostalCode", "secondaryRegion",
             "secondaryDistrict", "secondaryCountry", "secondaryTextAddress", "mobileNumber",
             "alternativeMobileNumber", "fixedLineNumber", "faxNumber", "emailAddress", "socialMedia",
             "entityName", "certificateIncorporation", "entityRegion", "entityDistrict", "entityWard",
             "entityStreet", "entityHouseNumber", "entityPostalCode", "groupParentCode",
             "shareOwnedPercentage", "shareOwnedAmount"
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT ("customerIdentificationNumber") DO UPDATE SET
             "reportingDate" = EXCLUDED."reportingDate",
             "companyName" = EXCLUDED."companyName",
             "establishedDate" = EXCLUDED."establishedDate",
             "legalForm" = EXCLUDED."legalForm",
             "negativeClientStatus" = EXCLUDED."negativeClientStatus",
+            "numberOfEmployees" = EXCLUDED."numberOfEmployees",
             "totalEmployeesMAle" = EXCLUDED."totalEmployeesMAle",
             "totalEmployeesFemale" = EXCLUDED."totalEmployeesFemale",
             "registrationCountry" = EXCLUDED."registrationCountry",
@@ -525,12 +824,15 @@ class PersonalDataCorporateStreamingPipeline:
             "groupId" = EXCLUDED."groupId",
             "sectorSnaClassification" = EXCLUDED."sectorSnaClassification",
             "relatedCustomers" = EXCLUDED."relatedCustomers",
-            "postalCode" = EXCLUDED."postalCode",
+            street = EXCLUDED.street,
+            country = EXCLUDED.country,
             region = EXCLUDED.region,
             district = EXCLUDED.district,
             ward = EXCLUDED.ward,
-            street = EXCLUDED.street,
             "houseNumber" = EXCLUDED."houseNumber",
+            "postalCode" = EXCLUDED."postalCode",
+            "poBox" = EXCLUDED."poBox",
+            "zipCode" = EXCLUDED."zipCode",
             "secondaryStreet" = EXCLUDED."secondaryStreet",
             "secondartHouseNumber" = EXCLUDED."secondartHouseNumber",
             "secondaryPostalCode" = EXCLUDED."secondaryPostalCode",
@@ -566,6 +868,7 @@ class PersonalDataCorporateStreamingPipeline:
                 record.establishedDate,
                 record.legalForm,
                 record.negativeClientStatus,
+                record.numberOfEmployees,  # Added v4 field
                 record.totalEmployeesMAle,
                 record.totalEmployeesFemale,
                 record.registrationCountry,
@@ -577,12 +880,15 @@ class PersonalDataCorporateStreamingPipeline:
                 record.groupId,
                 record.sectorSnaClassification,
                 record.relatedCustomers,  # Will be cast to JSONB
-                record.postalCode,
+                record.street,  # Added v4 field
+                record.country,  # Added v4 field
                 record.region,
                 record.district,
                 record.ward,
-                record.street,
                 record.houseNumber,
+                record.postalCode,
+                record.poBox,  # Added v4 field
+                record.zipCode,  # Added v4 field
                 record.secondaryStreet,
                 record.secondartHouseNumber,
                 record.secondaryPostalCode,
