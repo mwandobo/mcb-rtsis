@@ -48,6 +48,7 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
        corp.CUST_OPEN_DATE                             AS establishedDate,
        'LimitedLiabilityCompanyPrivate'                AS legalForm,
        'NoNegativeStatus'                              AS negativeClientStatus,
+       corp.NO_OF_EMPLOYEES                            AS numberOfEmployees,
        0                                               AS totalEmployeesMAle,
        0                                               AS totalEmployeesFemale,
        CASE UPPER(TRIM(id_country.description))
@@ -60,6 +61,7 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
        NULL                                            AS parentIncorporationNumber,
        NULL                                            AS groupId,
        'Other financial Corporations'                  AS sectorSnaClassification,
+
        '[' ||
        RTRIM(
                CAST(
@@ -88,7 +90,7 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                                                                        WHEN 'TANZANIA'
                                                                            THEN '"TANZANIA, UNITED REPUBLIC OF"'
                                                                        ELSE 'null' END || ',' ||
-                                               '"appointmentDate":"N/A",' ||
+                                               '"appointmentDate":"' || corp.CUST_OPEN_DATE || '",' ||
                                                '"terminationDate":null,' ||
                                                '"rateSharesOwnedValue":"N/A",' ||
                                                '"amountSharesOwnedValue":"N/A",' ||
@@ -97,18 +99,21 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                                ) AS CLOB
                        ) AS VARCHAR(32000)
                ), ','
-       ) || ']'                                        AS related_customers,
+       ) ||
+       ']'                                             AS related_customers,
 
        -- BUSINESS ADDRESS
        NULL                                            AS street,
-       NULL                                            AS country,
+       CASE UPPER(TRIM(id_country.description))
+           WHEN 'TANZANIA'
+               THEN 'TANZANIA, UNITED REPUBLIC OF' END AS country,
        COALESCE(
                loc_region_city.REGION,
                loc_region_dist.REGION,
                loc_region_from_district.REGION,
                loc_region_from_ward.REGION,
                'Dar es Salaam'
-       )                                               AS regi,
+       )                                               AS region,
        COALESCE(
                loc_district_region.DISTRICT,
                loc_district_from_ward.DISTRICT,
@@ -118,8 +123,8 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
        ward_selection.WARD                             AS ward,
        NULL                                            AS houseNumber,
        ward_selection.WARD                             AS postalCode,
-       NULL                                            AS poBox,
-       NULL                                            AS zipCode,
+       c_address.ADDRESS_1                             AS poBox,
+       c_address.ZIP_CODE                              AS zipCode,
 
 
        -- SECONDARY ADDRESSES
@@ -142,8 +147,19 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
        -- RELATIONS ENTITY
        'N/A'                                           AS entityName,
        NULL                                            AS certificateIncorporation,
-       'N/A'                                           AS entityRegion,
-       'N/A'                                           AS entityDistrict,
+       COALESCE(
+               loc_region_city.REGION,
+               loc_region_dist.REGION,
+               loc_region_from_district.REGION,
+               loc_region_from_ward.REGION,
+               'Dar es Salaam'
+       )                                               AS entiryRegion,
+       COALESCE(
+               loc_district_region.DISTRICT,
+               loc_district_from_ward.DISTRICT,
+               loc_district_from_city.DISTRICT,
+               loc_district_from_region.DISTRICT
+       )                                               AS entityDistrict,
        'N/A'                                           AS entityWard,
        'N/A'                                           AS entityStreet,
        'N/A'                                           AS entityHouseNumber,
@@ -522,6 +538,9 @@ GROUP BY corp.SURNAME,
          loc_region_from_ward.REGION,
          id_country.DESCRIPTION,
          ward_selection.WARD,
+         c_address.ZIP_CODE,
+         c_address.ADDRESS_1,
+         corp.NO_OF_EMPLOYEES,
          id.ID_NO,
          cc.ID_NO
 
