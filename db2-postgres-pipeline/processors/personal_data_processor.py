@@ -30,7 +30,7 @@ class PersonalDataRecord(BaseRecord):
     fateStatus: Optional[str]
     socialStatus: Optional[str]
     employmentStatus: Optional[str]
-    monthlyIncome: Optional[Decimal]
+    monthlyIncome: Optional[str]  # Changed from Decimal to str in v3 (now from gd_customer_income.DESCRIPTION)
     numberDependants: Optional[int]
     educationLevel: Optional[str]
     averageMonthlyExpenditure: Optional[Decimal]
@@ -118,7 +118,7 @@ class PersonalDataProcessor(BaseProcessor):
             fateStatus=str(raw_data[16]).strip() if raw_data[16] else None,
             socialStatus=str(raw_data[17]).strip() if raw_data[17] else None,
             employmentStatus=str(raw_data[18]).strip() if raw_data[18] else None,
-            monthlyIncome=Decimal(str(raw_data[19])) if raw_data[19] is not None else None,
+            monthlyIncome=str(raw_data[19]).strip() if raw_data[19] else None,  # v3: now text from gd_customer_income.DESCRIPTION
             numberDependants=int(raw_data[20]) if raw_data[20] is not None else None,
             educationLevel=str(raw_data[21]).strip() if raw_data[21] else None,
             averageMonthlyExpenditure=Decimal(str(raw_data[22])) if raw_data[22] is not None else None,
@@ -205,7 +205,7 @@ class PersonalDataProcessor(BaseProcessor):
             fateStatus=record_data.get('fateStatus'),
             socialStatus=record_data.get('socialStatus'),
             employmentStatus=record_data.get('employmentStatus'),
-            monthlyIncome=Decimal(str(record_data.get('monthlyIncome'))) if record_data.get('monthlyIncome') is not None else None,
+            monthlyIncome=str(record_data.get('monthlyIncome')) if record_data.get('monthlyIncome') is not None else None,  # v3: text field
             numberDependants=int(record_data.get('numberDependants')) if record_data.get('numberDependants') is not None else None,
             educationLevel=record_data.get('educationLevel'),
             averageMonthlyExpenditure=Decimal(str(record_data.get('averageMonthlyExpenditure'))) if record_data.get('averageMonthlyExpenditure') is not None else None,

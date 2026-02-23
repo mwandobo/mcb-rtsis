@@ -47,7 +47,6 @@ def recreate_agents_table():
             id SERIAL PRIMARY KEY,
             "reportingDate" VARCHAR(50),
             "agentName" VARCHAR(255),
-            "terminalID" VARCHAR(50),
             "agentId" VARCHAR(50) UNIQUE NOT NULL,
             "tillNumber" VARCHAR(50),
             "businessForm" VARCHAR(100),
@@ -83,7 +82,6 @@ def recreate_agents_table():
         logger.info("Creating indexes...")
         
         cursor.execute('CREATE INDEX idx_agents_agent_id ON "agents"("agentId")')
-        cursor.execute('CREATE INDEX idx_agents_terminal_id ON "agents"("terminalID")')
         cursor.execute('CREATE INDEX idx_agents_agent_name ON "agents"("agentName")')
         cursor.execute('CREATE INDEX idx_agents_region ON "agents"(region)')
         cursor.execute('CREATE INDEX idx_agents_district ON "agents"(district)')

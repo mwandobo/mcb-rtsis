@@ -32,7 +32,7 @@ def check_count():
         logger.info(f"Total records in agents table: {count:,}")
         
         # Get sample records
-        cursor.execute('SELECT "agentId", "agentName", "terminalID" FROM "agents" LIMIT 5')
+        cursor.execute('SELECT "agentId", "agentName", "agentStatus" FROM "agents" LIMIT 5')
         samples = cursor.fetchall()
         
         logger.info("\nSample records:")

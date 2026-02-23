@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-Create personalData table with camelCase naming
+Recreate personalData table with updated schema (monthlyIncome as VARCHAR)
 """
 
 import psycopg2
 from config import Config
 
-def create_personal_data_table():
-    """Create personalData table in PostgreSQL with camelCase naming"""
-    
+def recreate_personal_data_table():
+    """Drop and recreate personalData table"""
     config = Config()
     
     try:
-        # Connect to PostgreSQL
         conn = psycopg2.connect(
             host=config.database.pg_host,
             port=config.database.pg_port,
@@ -20,16 +18,17 @@ def create_personal_data_table():
             user=config.database.pg_user,
             password=config.database.pg_password
         )
-        
         cursor = conn.cursor()
         
-        # Drop table if exists
-        cursor.execute('DROP TABLE IF EXISTS "personalData"')
+        print("🗑️  Dropping existing personalData table...")
+        cursor.execute('DROP TABLE IF EXISTS "personalData" CASCADE')
+        conn.commit()
+        print("✅ Table dropped")
         
-        # Create personalData table with camelCase fields
-        create_table_sql = """
+        print("📋 Creating new personalData table with VARCHAR monthlyIncome...")
+        
+        create_table_query = """
         CREATE TABLE "personalData" (
-            id SERIAL PRIMARY KEY,
             "reportingDate" TIMESTAMP,
             "customerIdentificationNumber" VARCHAR(50),
             "firstName" VARCHAR(100),
@@ -39,7 +38,7 @@ def create_personal_data_table():
             "presentSurname" VARCHAR(100),
             "birthSurname" VARCHAR(100),
             "gender" VARCHAR(20),
-            "maritalStatus" VARCHAR(20),
+            "maritalStatus" VARCHAR(50),
             "numberSpouse" VARCHAR(10),
             "nationality" VARCHAR(100),
             "citizenship" VARCHAR(100),
@@ -108,30 +107,54 @@ def create_personal_data_table():
             "sdistrict" VARCHAR(100),
             "sward" VARCHAR(100),
             "scountry" VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
         
-        cursor.execute(create_table_sql)
-        
-        # Create indexes for better performance
-        cursor.execute('CREATE INDEX IF NOT EXISTS "idx_personalData_customerIdentificationNumber" ON "personalData" ("customerIdentificationNumber")')
-        cursor.execute('CREATE INDEX IF NOT EXISTS "idx_personalData_reportingDate" ON "personalData" ("reportingDate")')
-        cursor.execute('CREATE INDEX IF NOT EXISTS "idx_personalData_identificationNumber" ON "personalData" ("identificationNumber")')
-        
+        cursor.execute(create_table_query)
         conn.commit()
+        print("✅ Table created successfully")
+        
+        # Create trigger for updatedAt
+        print("🔧 Creating trigger for updatedAt...")
+        trigger_function = """
+        CREATE OR REPLACE FUNCTION update_personal_data_updated_at()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW."updatedAt" = CURRENT_TIMESTAMP;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+        """
+        
+        trigger = """
+        CREATE TRIGGER personal_data_updated_at_trigger
+        BEFORE UPDATE ON "personalData"
+        FOR EACH ROW
+        EXECUTE FUNCTION update_personal_data_updated_at();
+        """
+        
+        cursor.execute(trigger_function)
+        cursor.execute(trigger)
+        conn.commit()
+        print("✅ Trigger created")
+        
         cursor.close()
         conn.close()
         
-        print("✅ personalData table created successfully with camelCase naming")
-        print("📋 Table structure:")
-        print("   - Table name: personalData (camelCase)")
-        print("   - 73 fields with camelCase naming")
-        print("   - Indexes on customerIdentificationNumber, reportingDate, identificationNumber")
+        print("\n" + "="*60)
+        print("✅ personalData table recreated successfully!")
+        print("📊 Key change: monthlyIncome is now VARCHAR(100)")
+        print("🔄 Ready for v3 pipeline with income level descriptions")
+        print("="*60)
         
     except Exception as e:
-        print(f"❌ Error creating personalData table: {e}")
-        raise
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
-    create_personal_data_table()
+    print("🔄 RECREATING personalData TABLE")
+    print("="*60)
+    recreate_personal_data_table()

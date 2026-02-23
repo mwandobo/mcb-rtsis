@@ -71,7 +71,7 @@ class POSStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
 
     def get_pos_query(self, last_pos_number=None):
-        """Get the POS query with cursor-based pagination"""
+        """Get the POS query with cursor-based pagination - V3 with location mapping"""
 
         where_clause = ""
 
@@ -88,12 +88,18 @@ class POSStreamingPipeline:
                NULL                                                 AS posHolderNin,
                '103-847-451'                                        AS posHolderTin,
                NULL                                                 AS postalCode,
-               al.REGION                                            AS region,
-               al.DISTRICT                                          AS district,
-               al.WARD                                              AS ward,
+               loc_region.REGION                                    AS region,
+               COALESCE(
+                       loc_district.DISTRICT,
+                       loc_district_from_region.DISTRICT
+               )                                                    AS district,
+               COALESCE(
+                       loc_ward.WARD,
+                       loc_ward_from_district.WARD
+               )                                                    AS ward,
                'N/A'                                                AS street,
                'N/A'                                                AS houseNumber,
-               al.GPS_COORDINATES                                   AS gpsCoordinates,
+               COALESCE(al.GPS_COORDINATES, '-6.7725°,38.9769°')    AS gpsCoordinates,
                '230000070'                                          AS linkedAccount,
                VARCHAR_FORMAT(at.INSERTION_TMSTAMP, 'DDMMYYYYHHMM') AS issueDate,
                NULL                                                 AS returnDate,
@@ -112,6 +118,40 @@ class POSStreamingPipeline:
                                        THEN RIGHT(REPLACE(al.TERMINAL_ID, ' ', ''), 8)
                                    ELSE REPLACE(al.TERMINAL_ID, ' ', '')
                                    END
+                 LEFT JOIN (SELECT REGION,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY REGION) AS rn
+                            FROM bank_location_lookup_v2) loc_region
+                           ON REPLACE(REPLACE(REPLACE(REPLACE(UPPER(TRIM(al.O_REGION)), ' ', ''), '-', ''), '_', ''), ',', '')
+                                  LIKE '%' || REPLACE(REPLACE(REPLACE(REPLACE(UPPER(TRIM(loc_region.REGION)), ' ', ''), '-', ''), '_', ''), ',', '') || '%'
+                               AND loc_region.rn = 1
+                 LEFT JOIN (SELECT REGION, DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION, DISTRICT ORDER BY DISTRICT) AS rn
+                            FROM bank_location_lookup_v2) loc_district
+                           ON loc_district.rn = 1
+                               AND loc_region.REGION = loc_district.REGION
+                               AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(TRIM(al.O_DISTRICT)), ' ', ''), '-', ''), '_', ''), ',', '')
+                                  LIKE '%' || REPLACE(REPLACE(REPLACE(REPLACE(UPPER(TRIM(loc_district.DISTRICT)), ' ', ''), '-', ''), '_', ''), ',', '') || '%'
+                 LEFT JOIN (SELECT REGION, DISTRICT,
+                                   ROW_NUMBER() OVER (PARTITION BY REGION ORDER BY DISTRICT) AS rn
+                            FROM bank_location_lookup_v2) loc_district_from_region
+                           ON loc_district.DISTRICT IS NULL
+                               AND loc_district_from_region.rn = 1
+                               AND loc_district_from_region.REGION = loc_region.REGION
+                 LEFT JOIN (SELECT REGION, DISTRICT, WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY DISTRICT, WARD ORDER BY WARD) AS rn
+                            FROM bank_location_lookup_v2) loc_ward
+                           ON loc_ward.rn = 1
+                               AND loc_region.REGION = loc_ward.REGION
+                               AND loc_district.DISTRICT = loc_ward.DISTRICT
+                               AND REPLACE(REPLACE(REPLACE(REPLACE(UPPER(TRIM(al.O_WARD)), ' ', ''), '-', ''), '_', ''), ',', '')
+                                  LIKE '%' || REPLACE(REPLACE(REPLACE(REPLACE(UPPER(TRIM(loc_ward.WARD)), ' ', ''), '-', ''), '_', ''), ',', '') || '%'
+                 LEFT JOIN (SELECT REGION, DISTRICT, WARD,
+                                   ROW_NUMBER() OVER (PARTITION BY DISTRICT ORDER BY WARD) AS rn
+                            FROM bank_location_lookup_v2) loc_ward_from_district
+                           ON loc_ward.WARD IS NULL
+                               AND loc_ward_from_district.rn = 1
+                               AND loc_region.REGION = loc_ward_from_district.REGION
+                               AND COALESCE(loc_district.DISTRICT, loc_district_from_region.DISTRICT) = loc_ward_from_district.DISTRICT
         {where_clause}
         ORDER BY at.FK_USRCODE ASC
         FETCH FIRST {self.batch_size} ROWS ONLY
