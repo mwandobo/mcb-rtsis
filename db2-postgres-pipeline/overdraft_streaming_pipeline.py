@@ -410,8 +410,7 @@ class OverdraftStreamingPipeline:
             self.logger.info("Producer thread started")
             
             # Get total count first
-            with self.db2_conn.get_connection() as conn:
-                cursor = conn.cursor()
+            with self.db2_conn.get_connection(log_connection=True) as conn:        cursor = conn.cursor()
                 cursor.execute(self.get_total_count_query())
                 self.total_available = cursor.fetchone()[0]
             
@@ -435,7 +434,7 @@ class OverdraftStreamingPipeline:
                 rows = None
                 for attempt in range(self.max_retries):
                     try:
-                        with self.db2_conn.get_connection() as conn:
+                        with self.db2_conn.get_connection(log_connection=False) as conn:
                             cursor = conn.cursor()
                             batch_query = self.get_overdraft_query(last_cust_id, last_account_number)
                             cursor.execute(batch_query)

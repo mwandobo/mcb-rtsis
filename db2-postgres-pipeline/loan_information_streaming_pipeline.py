@@ -342,8 +342,7 @@ class LoanInformationStreamingPipeline:
             self.logger.info("Producer thread started")
             
             # Get total count first
-            with self.db2_conn.get_connection() as conn:
-                cursor = conn.cursor()
+            with self.db2_conn.get_connection(log_connection=True) as conn:        cursor = conn.cursor()
                 cursor.execute(self.get_total_count_query())
                 self.total_available = cursor.fetchone()[0]
             
@@ -353,7 +352,7 @@ class LoanInformationStreamingPipeline:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Fetch all records at once (only 13,410 records)
-            with self.db2_conn.get_connection() as conn:
+            with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
                 query = self.get_loan_information_query()
                 cursor.execute(query)
