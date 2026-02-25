@@ -64,6 +64,7 @@ class PersonalDataCorporateRecord:
     socialMedia: Optional[str]
     # Relations Entity
     entityName: str
+    entityType: str  # New field added in v4
     certificateIncorporation: Optional[str]
     entityRegion: str  # Fixed field name consistency
     entityDistrict: str
@@ -172,7 +173,9 @@ class PersonalDataCorporateStreamingPipeline:
                0                                               AS totalEmployeesFemale,
                CASE UPPER(TRIM(id_country.description))
                    WHEN 'TANZANIA'
-                       THEN 'TANZANIA, UNITED REPUBLIC OF' END AS registrationCountry,
+                       THEN 'TANZANIA, UNITED REPUBLIC OF'
+                   ELSE 'TANZANIA, UNITED REPUBLIC OF'
+                   END                                         AS registrationCountry,
                id.id_no                                        AS registrationNumber,
                cc.ID_NO                                        AS taxIdentificationNumber,
                corp.SURNAME                                    AS tradeName,
@@ -181,56 +184,53 @@ class PersonalDataCorporateStreamingPipeline:
                NULL                                            AS groupId,
                'Other financial Corporations'                  AS sectorSnaClassification,
 
-               -- Build proper JSON for related_customers with fixed trailing comma issue
-               CASE 
-                   WHEN COUNT(rel.CUST_ID) > 0 THEN
-                       '[' ||
-                       RTRIM(
-                               CAST(
-                                       XMLSERIALIZE(
-                                               XMLAGG(
-                                                       XMLTEXT(
-                                                               '{{' ||
-                                                               '"fullName":"' || REPLACE(COALESCE(TRIM(rel.FIRST_NAME) || ' ' ||
-                                                                                          COALESCE(TRIM(rel.MIDDLE_NAME) || ' ', '') ||
-                                                                                          TRIM(rel.SURNAME), ''), '"', '\\"') ||
-                                                               '",' ||
-                                                               '"gender":' || CASE TRIM(rel.SEX)
-                                                                                  WHEN 'M' THEN '"Male"'
-                                                                                  WHEN 'F' THEN '"Female"'
-                                                                                  ELSE 'null' END || ',' ||
-                                                               '"cellPhone":' || CASE
-                                                                                     WHEN TRIM(c_address.TELEPHONE) IS NOT NULL
-                                                                                         THEN '"' || REPLACE(TRIM(c_address.TELEPHONE), '"', '\\"') || '"'
-                                                                                     ELSE 'null' END || ',' ||
-                                                               '"relationType":"Director",' ||
-                                                               '"nationalId":' || CASE
-                                                                                      WHEN TRIM(id.ID_NO) IS NOT NULL
-                                                                                          THEN '"' || REPLACE(TRIM(id.ID_NO), '"', '\\"') || '"'
-                                                                                      ELSE 'null' END || ',' ||
-                                                               '"nationality":' || CASE UPPER(TRIM(id_country.description))
-                                                                                       WHEN 'TANZANIA'
-                                                                                           THEN '"TANZANIA, UNITED REPUBLIC OF"'
-                                                                                       ELSE 'null' END || ',' ||
-                                                               '"appointmentDate":"' || COALESCE(corp.CUST_OPEN_DATE, '') || '",' ||
-                                                               '"terminationDate":null,' ||
-                                                               '"rateSharesOwnedValue":"N/A",' ||
-                                                               '"amountSharesOwnedValue":"N/A"' ||
-                                                               '}},'
-                                                       )
-                                               ) AS CLOB
-                                       ) AS VARCHAR(32000)
-                               ), ','
-                       ) ||
-                       ']'
-                   ELSE '[]'
-               END                                             AS related_customers,
+               '[' ||
+               RTRIM(
+                       CAST(
+                               XMLSERIALIZE(
+                                       XMLAGG(
+                                               XMLTEXT(
+                                                       '{{' ||
+                                                       '"fullName":"' || REPLACE(COALESCE(TRIM(rel.FIRST_NAME) || ' ' ||
+                                                                                  COALESCE(TRIM(rel.MIDDLE_NAME) || ' ', '') ||
+                                                                                  TRIM(rel.SURNAME), ''), '"', '\"') ||
+                                                       '",' ||
+                                                       '"gender":' || CASE TRIM(rel.SEX)
+                                                                          WHEN 'M' THEN '"Male"'
+                                                                          WHEN 'F' THEN '"Female"'
+                                                                          ELSE 'null' END || ',' ||
+                                                       '"cellPhone":' || CASE
+                                                                             WHEN TRIM(c_address.TELEPHONE) IS NOT NULL
+                                                                                 THEN '"' || REPLACE(TRIM(c_address.TELEPHONE), '"', '\"') || '"'
+                                                                             ELSE 'null' END || ',' ||
+                                                       '"relationType":"Director",' ||
+                                                       '"nationalId":' || CASE
+                                                                              WHEN TRIM(id.ID_NO) IS NOT NULL
+                                                                                  THEN '"' || REPLACE(TRIM(id.ID_NO), '"', '\"') || '"'
+                                                                              ELSE 'null' END || ',' ||
+                                                       '"nationality":' || CASE UPPER(TRIM(id_country.description))
+                                                                               WHEN 'TANZANIA'
+                                                                                   THEN '"TANZANIA, UNITED REPUBLIC OF"'
+                                                                               ELSE 'null' END || ',' ||
+                                                       '"appointmentDate":"' || corp.CUST_OPEN_DATE || '",' ||
+                                                       '"terminationDate":null,' ||
+                                                       '"rateSharesOwnedValue":"N/A",' ||
+                                                       '"amountSharesOwnedValue":"N/A"' ||
+                                                       '}},'
+                                               )
+                                       ) AS CLOB
+                               ) AS VARCHAR(32000)
+                       ), ','
+               ) ||
+               ']'                                             AS related_customers,
 
                -- BUSINESS ADDRESS
-               NULL                                            AS street,
+               ward_selection.WARD                             AS street,
                CASE UPPER(TRIM(id_country.description))
                    WHEN 'TANZANIA'
-                       THEN 'TANZANIA, UNITED REPUBLIC OF' END AS country,
+                       THEN 'TANZANIA, UNITED REPUBLIC OF'
+                   ELSE 'TANZANIA, UNITED REPUBLIC OF'
+                   END                                         AS country,
                COALESCE(
                        loc_region_city.REGION,
                        loc_region_dist.REGION,
@@ -269,6 +269,7 @@ class PersonalDataCorporateStreamingPipeline:
 
                -- RELATIONS ENTITY
                'N/A'                                           AS entityName,
+               'N/A'                                           AS entityType,
                NULL                                            AS certificateIncorporation,
                COALESCE(
                        loc_region_city.REGION,
@@ -821,16 +822,17 @@ class PersonalDataCorporateStreamingPipeline:
             socialMedia=str(row_data[39]).strip() if row_data[39] else None,
             # Relations Entity
             entityName=str(row_data[40]).strip() if row_data[40] else None,
-            certificateIncorporation=str(row_data[41]).strip() if row_data[41] else None,
-            entityRegion=str(row_data[42]).strip() if row_data[42] else None,
-            entityDistrict=str(row_data[43]).strip() if row_data[43] else None,
-            entityWard=str(row_data[44]).strip() if row_data[44] else None,
-            entityStreet=str(row_data[45]).strip() if row_data[45] else None,
-            entityHouseNumber=str(row_data[46]).strip() if row_data[46] else None,
-            entityPostalCode=str(row_data[47]).strip() if row_data[47] else None,
-            groupParentCode=str(row_data[48]).strip() if row_data[48] else None,
-            shareOwnedPercentage=str(row_data[49]).strip() if row_data[49] else None,
-            shareOwnedAmount=str(row_data[50]).strip() if row_data[50] else None,
+            entityType=str(row_data[41]).strip() if row_data[41] else None,  # New field
+            certificateIncorporation=str(row_data[42]).strip() if row_data[42] else None,
+            entityRegion=str(row_data[43]).strip() if row_data[43] else None,
+            entityDistrict=str(row_data[44]).strip() if row_data[44] else None,
+            entityWard=str(row_data[45]).strip() if row_data[45] else None,
+            entityStreet=str(row_data[46]).strip() if row_data[46] else None,
+            entityHouseNumber=str(row_data[47]).strip() if row_data[47] else None,
+            entityPostalCode=str(row_data[48]).strip() if row_data[48] else None,
+            groupParentCode=str(row_data[49]).strip() if row_data[49] else None,
+            shareOwnedPercentage=str(row_data[50]).strip() if row_data[50] else None,
+            shareOwnedAmount=str(row_data[51]).strip() if row_data[51] else None,
         )
 
     def insert_to_postgres(self, record: PersonalDataCorporateRecord, cursor):
@@ -845,10 +847,10 @@ class PersonalDataCorporateStreamingPipeline:
             "poBox", "zipCode", "secondaryStreet", "secondartHouseNumber", "secondaryPostalCode", "secondaryRegion",
             "secondaryDistrict", "secondaryCountry", "secondaryTextAddress", "mobileNumber",
             "alternativeMobileNumber", "fixedLineNumber", "faxNumber", "emailAddress", "socialMedia",
-            "entityName", "certificateIncorporation", "entityRegion", "entityDistrict", "entityWard",
+            "entityName", "entityType", "certificateIncorporation", "entityRegion", "entityDistrict", "entityWard",
             "entityStreet", "entityHouseNumber", "entityPostalCode", "groupParentCode",
             "shareOwnedPercentage", "shareOwnedAmount"
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT ("customerIdentificationNumber") DO UPDATE SET
             "reportingDate" = EXCLUDED."reportingDate",
             "companyName" = EXCLUDED."companyName",
@@ -890,6 +892,7 @@ class PersonalDataCorporateStreamingPipeline:
             "emailAddress" = EXCLUDED."emailAddress",
             "socialMedia" = EXCLUDED."socialMedia",
             "entityName" = EXCLUDED."entityName",
+            "entityType" = EXCLUDED."entityType",
             "certificateIncorporation" = EXCLUDED."certificateIncorporation",
             "entityRegion" = EXCLUDED."entityRegion",
             "entityDistrict" = EXCLUDED."entityDistrict",
@@ -946,6 +949,7 @@ class PersonalDataCorporateStreamingPipeline:
                 record.emailAddress,
                 record.socialMedia,
                 record.entityName,
+                record.entityType,  # New field
                 record.certificateIncorporation,
                 record.entityRegion,
                 record.entityDistrict,
@@ -965,7 +969,8 @@ class PersonalDataCorporateStreamingPipeline:
             self.logger.info("Producer thread started")
 
             # Get total count
-            with self.db2_conn.get_connection(log_connection=True) as conn:        cursor = conn.cursor()
+            with self.db2_conn.get_connection(log_connection=True) as conn:
+                cursor = conn.cursor()
                 cursor.execute(self.get_total_count_query())
                 self.total_available = cursor.fetchone()[0]
 
