@@ -96,7 +96,7 @@ class BalanceWithOtherBankStreamingPipeline:
                'TANZANIA, UNITED REPUBLIC OF'                     as Country,
                'Domestic bank related'                            as relationshipType,
                'Current'                                          as accountType,
-               null                                               as subAccountType,
+               'Normal'                                               as subAccountType,
                gte.CURRENCY_SHORT_DES                             as currency,
                gte.DC_AMOUNT                                      AS orgAmount,
 
@@ -123,8 +123,8 @@ class BalanceWithOtherBankStreamingPipeline:
                'Current'                                          as assetsClassificationCategory,
                gte.TRN_DATE                                       as contractDate,
                gte.AVAILABILITY_DATE                              as maturityDate,
-               'Highly rated Multilateral Development Banks'      as externalRatingCorrespondentBank,
-               NULL                                               as gradesUnratedBanks,
+               'Unrated'      as externalRatingCorrespondentBank,
+               'Grade B'                                               as gradesUnratedBanks,
                pa.ACCOUNT_NUMBER                                  as cursor_account_number,
                gte.TRN_DATE                                       as cursor_trn_date
 
