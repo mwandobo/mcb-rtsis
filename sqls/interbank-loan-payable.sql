@@ -95,7 +95,6 @@ SELECT
         CASE lb.CURRENCY
             WHEN 'TZS' THEN lb.BOOK_BALANCE
             WHEN 'USD' THEN lb.BOOK_BALANCE * 2531.00
-            WHEN 'EUR' THEN lb.BOOK_BALANCE * (1.17 * 2531.00)
             ELSE 0
         END,
         15, 2

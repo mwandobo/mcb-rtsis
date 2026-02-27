@@ -26,8 +26,13 @@ class DB2Connection:
         )
     
     @contextmanager
-    def get_connection(self):
-        """Get DB2 connection using pyodbc"""
+    def get_connection(self, log_connection=False):
+        """Get DB2 connection using pyodbc
+        
+        Args:
+            log_connection: If True, log connection success at INFO level. 
+                          If False, only log at DEBUG level (default for production)
+        """
         conn = None
         try:
             conn_str = self.get_connection_string()
@@ -36,7 +41,11 @@ class DB2Connection:
             # Connect using pyodbc
             conn = pyodbc.connect(conn_str)
             
-            self.logger.info("[OK] Connected to DB2")
+            if log_connection:
+                self.logger.info("[OK] Connected to DB2")
+            else:
+                self.logger.debug("[OK] Connected to DB2")
+            
             yield conn
             
         except Exception as e:

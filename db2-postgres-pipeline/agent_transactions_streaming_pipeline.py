@@ -179,8 +179,7 @@ class AgentTransactionsStreamingPipeline:
             self.logger.info("🏭 Producer thread started")
             
             # Get total count first
-            with self.db2_conn.get_connection() as conn:
-                cursor = conn.cursor()
+            with self.db2_conn.get_connection(log_connection=True) as conn:        cursor = conn.cursor()
                 count_query = self.get_total_count_query()
                 cursor.execute(count_query)
                 total_available = cursor.fetchone()[0]
@@ -211,7 +210,7 @@ class AgentTransactionsStreamingPipeline:
             
             while offset < total_available:
                 # Fetch batch
-                with self.db2_conn.get_connection() as conn:
+                with self.db2_conn.get_connection(log_connection=False) as conn:
                     cursor = conn.cursor()
                     batch_query = self.get_agent_transactions_query(offset)
                     cursor.execute(batch_query)

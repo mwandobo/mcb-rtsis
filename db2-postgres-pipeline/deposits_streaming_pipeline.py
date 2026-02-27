@@ -216,8 +216,7 @@ class DepositsStreamingPipeline:
                     channel = connection.channel()
                     
                     # Fetch batch using cursor
-                    with self.db2_conn.get_connection() as conn:
-                        cursor = conn.cursor()
+                    with self.db2_conn.get_connection(log_connection=True) as conn:                cursor = conn.cursor()
                         batch_query = self.get_deposits_query(last_trn_date, last_trn_snum)
                         cursor.execute(batch_query)
                         rows = cursor.fetchall()
@@ -264,7 +263,7 @@ class DepositsStreamingPipeline:
                         last_trn_snum = last_row[37]  # trn_snum (last column)
                         
                         # Get the TRN_DATE for this TRN_SNUM
-                        with self.db2_conn.get_connection() as conn:
+                        with self.db2_conn.get_connection(log_connection=False) as conn:
                             cursor = conn.cursor()
                             date_query = f"SELECT TRN_DATE FROM GLI_TRX_EXTRACT WHERE TRN_SNUM = {last_trn_snum}"
                             cursor.execute(date_query)

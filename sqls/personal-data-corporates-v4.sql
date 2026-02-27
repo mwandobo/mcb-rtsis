@@ -1,3 +1,4 @@
+
 WITH corporate_customers AS
          (SELECT CUST_ID,
                  ID_NO
@@ -53,7 +54,9 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
        0                                               AS totalEmployeesFemale,
        CASE UPPER(TRIM(id_country.description))
            WHEN 'TANZANIA'
-               THEN 'TANZANIA, UNITED REPUBLIC OF' END AS registrationCountry,
+               THEN 'TANZANIA, UNITED REPUBLIC OF'
+           ELSE 'TANZANIA, UNITED REPUBLIC OF'
+           END                                         AS registrationCountry,
        id.id_no                                        AS registrationNumber,
        cc.ID_NO                                        AS taxIdentificationNumber,
        corp.SURNAME                                    AS tradeName,
@@ -93,7 +96,7 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                                                '"appointmentDate":"' || corp.CUST_OPEN_DATE || '",' ||
                                                '"terminationDate":null,' ||
                                                '"rateSharesOwnedValue":"N/A",' ||
-                                               '"amountSharesOwnedValue":"N/A",' ||
+                                               '"amountSharesOwnedValue":"N/A"' ||
                                                '},'
                                        )
                                ) AS CLOB
@@ -103,7 +106,7 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
        ']'                                             AS related_customers,
 
        -- BUSINESS ADDRESS
-       NULL                                            AS street,
+       ward_selection.WARD                             AS street,
        CASE UPPER(TRIM(id_country.description))
            WHEN 'TANZANIA'
                THEN 'TANZANIA, UNITED REPUBLIC OF' END AS country,
@@ -146,6 +149,7 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
 
        -- RELATIONS ENTITY
        'N/A'                                           AS entityName,
+       'N/A'                                           AS entityType,
        NULL                                            AS certificateIncorporation,
        COALESCE(
                loc_region_city.REGION,

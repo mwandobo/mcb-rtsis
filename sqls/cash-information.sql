@@ -21,8 +21,7 @@ SELECT
     'Business Hours' as cashSubmissionTime,
     gte.CURRENCY_SHORT_DES as currency,
     null as cashDenomination,
-    null as quantityOfCoinsNotes
-,
+    null as quantityOfCoinsNotes,
  -- orgAmount: always original DC_AMOUNT
     gte.DC_AMOUNT AS orgAmount,
 
@@ -41,7 +40,7 @@ SELECT
             gte.DC_AMOUNT
     END AS tzsAmount,
     VARCHAR_FORMAT(gte.TRN_DATE,'DDMMYYYHHMM') as transactionDate,
-    varchar_format(gte.AVAILABILITY_DATE,'DDMMYYYYHHMM') as maturityDate,
+     varchar_format(CURRENT_TIMESTAMP,'DDMMYYYYHHMM') as maturityDate,
     0 as allowanceProbableLoss,
     0 as botProvision
 FROM

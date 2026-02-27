@@ -740,7 +740,7 @@ class PersonalDataStreamingPipeline:
             self.logger.info("Producer thread started")
 
             # Get total count
-            with self.db2_conn.get_connection() as conn:
+            with self.db2_conn.get_connection(log_connection=True) as conn:
                 cursor = conn.cursor()
                 cursor.execute(self.get_total_count_query())
                 self.total_available = cursor.fetchone()[0]
@@ -762,7 +762,7 @@ class PersonalDataStreamingPipeline:
                 rows = None
                 for attempt in range(self.max_retries):
                     try:
-                        with self.db2_conn.get_connection() as conn:
+                        with self.db2_conn.get_connection(log_connection=False) as conn:
                             cursor = conn.cursor()
                             batch_query = self.get_personal_data_query(last_cust_id)
                             cursor.execute(batch_query)
