@@ -10,7 +10,7 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        'TANZANIA, UNITED REPUBLIC OF'                     as Country,
        'Domestic bank related'                            as relationshipType,
        'Current'                                          as accountType,
-       null                                               as subAccountType,
+       'Normal'                                           as subAccountType,
        gte.CURRENCY_SHORT_DES                             as currency,
        -- orgAmount: always original DC_AMOUNT
        gte.DC_AMOUNT                                      AS orgAmount,
@@ -38,8 +38,8 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        'Current'                                          as assetsClassificationCategory,
        gte.TRN_DATE                                       as contractDate,
        gte.AVAILABILITY_DATE                              as maturityDate,
-       'Highly rated Multilateral Development Banks'      as externalRatingCorrespondentBank,
-       NULL                                               as gradesUnratedBanks
+       'Unrated'      as externalRatingCorrespondentBank,
+       'Grade B'                                               as gradesUnratedBanks
 
 FROM GLI_TRX_EXTRACT as gte
 
