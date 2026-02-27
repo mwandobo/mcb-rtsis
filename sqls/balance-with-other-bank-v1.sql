@@ -10,7 +10,7 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        'TANZANIA, UNITED REPUBLIC OF'                     as Country,
        'Domestic bank related'                            as relationshipType,
        'Current'                                          as accountType,
-       'Normal'                                               as subAccountType,
+       'Normal'                                           as subAccountType,
        gte.CURRENCY_SHORT_DES                             as currency,
        -- orgAmount: always original DC_AMOUNT
        gte.DC_AMOUNT                                      AS orgAmount,
