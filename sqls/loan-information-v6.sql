@@ -157,7 +157,7 @@ WITH LatestInstallments AS (SELECT *
                                     ELSE DECIMAL((la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL), 18, 2) END AS tzsSuspendedInterest
                          FROM LOAN_ACCOUNT la
                                   LEFT JOIN LatestInstallments li ON la.ACC_SN = li.ACC_SN
-                                  LEFT JOIN ProfitsAccount pa ON pa.CUST_ID = la.CUST_ID
+                                  LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = la.CUST_ID AND pa.PRFT_SYSTEM = 4
                                   LEFT JOIN CollateralAgg ON CollateralAgg.COLLTBL_CUST_ID = la.CUST_ID
                                   LEFT JOIN LOAN_ACCOUNT_INFO lai ON la.FK_UNITCODE = lai.FK_LOAN_ACCOUNTFK
                              AND la.ACC_TYPE = lai.FK0LOAN_ACCOUNTACC
