@@ -19,6 +19,12 @@ CASE
     END                                            AS tzsAmount,
 
 
+        CAST(FK_UNITCODE AS VARCHAR(10)) || '-' ||
+        CAST(ACC_TYPE AS VARCHAR(10)) || '-' ||
+        CAST(ACC_SN AS VARCHAR(20))                                             AS loanNumber,
+
+
+
 
 
 
