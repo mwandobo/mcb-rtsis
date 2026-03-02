@@ -1,4 +1,4 @@
-select CURRENT_TIMESTAMP                                                       AS reportingDate,
+select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                       AS reportingDate,
        LTRIM(RTRIM(c.CUST_ID))                                                 AS borrowersInstitutionCode,
        CASE
            WHEN cl.COUNTRY_CODE = 'TZ' THEN 'TANZANIA, UNITED REPUBLIC OF' END as borrowerCountry,
@@ -13,8 +13,8 @@ select CURRENT_TIMESTAMP                                                       A
        'Grade B'                                                               AS gradesUnratedBorrower,
        la.ACC_SN                                                               AS loanNumber,
        'Interbank call loans in Tanzania'                                      AS loanType,
-       la.ACC_OPEN_DT                                                          as issueDate,
-       la.ACC_EXP_DT                                                           AS loanMaturityDate,
+       VARCHAR_FORMAT(la.ACC_OPEN_DT, 'DDMMYYYYHHMM')                          as issueDate,
+       VARCHAR_FORMAT(la.ACC_EXP_DT, 'DDMMYYYYHHMM')                           AS loanMaturityDate,
        gte.CURRENCY_SHORT_DES                                                  as currency,
        la.ACC_LIMIT_AMN                                                        AS orgLoanAmount,
        CASE
@@ -57,14 +57,9 @@ select CURRENT_TIMESTAMP                                                       A
        OV_EXP_DT,
 
        CASE
-           WHEN la.ACC_STATUS = '1'        -- active loan only
+           WHEN la.ACC_STATUS = '1' -- active loan only
                AND la.OV_EXP_DT IS NOT NULL
                AND CURRENT_DATE > la.OV_EXP_DT
-               THEN DAYS(CURRENT_DATE) - DAYS(la.OV_EXP_DT)
-           ELSE 0
-           END AS pastDueDays,
-       CASE
-           WHEN la.OV_EXP_DT IS NOT NULL AND CURRENT_DATE > la.OV_EXP_DT
                THEN DAYS(CURRENT_DATE) - DAYS(la.OV_EXP_DT)
            ELSE 0
            END                                                                 AS pastDueDays,
