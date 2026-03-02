@@ -4,23 +4,23 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
        'TIPS'                                            as accountType,
        null                                              as subAccountType,
        gte.CURRENCY_SHORT_DES                            as currency,
--- orgAmount: always original DC_AMOUNT
-       gte.DC_AMOUNT                                     AS orgAmount,
-
-       -- USD Amount: only if currency is USD, otherwise null
+       gte.DC_AMOUNT                                      AS orgAmount,
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
-               THEN gte.DC_AMOUNT
+               THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+
+           WHEN gte.CURRENCY_SHORT_DES <> 'USD'
+               THEN DECIMAL(gte.DC_AMOUNT / fx.rate, 18, 2)
+
            ELSE NULL
-           END                                           AS usdAmount,
+           END                                            AS usdAmount,
 
-       -- TZS Amount: convert only if USD, otherwise use as is
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
-               THEN gte.DC_AMOUNT * 2500 -- <<< replace with your rate
-           ELSE
-               gte.DC_AMOUNT
-           END                                           AS tzsAmount,
+               THEN DECIMAL(gte.DC_AMOUNT * fx.rate, 18, 2)
+
+           ELSE DECIMAL(gte.DC_AMOUNT, 18, 2)
+           END                                            AS tzsAmount,
        VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')      as transactionDate,
        VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as maturityDate,
        0                                                 as allowanceProbableLoss,
@@ -33,4 +33,22 @@ FROM GLI_TRX_EXTRACT AS gte
               ON c.CUST_ID = gte.CUST_ID
          LEFT JOIN CURRENCY cu
                    ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
+
+         LEFT JOIN CURRENCY curr
+                   ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+
+         LEFT JOIN (SELECT fr.fk_currencyid_curr,
+                           fr.rate
+                    FROM fixing_rate fr
+                    WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN
+                          (SELECT fk_currencyid_curr,
+                                  activation_date,
+                                  MAX(activation_time)
+                           FROM fixing_rate
+                           WHERE activation_date = (SELECT MAX(b.activation_date)
+                                                    FROM fixing_rate b
+                                                    WHERE b.activation_date <= CURRENT_DATE)
+                           GROUP BY fk_currencyid_curr, activation_date)) fx
+                   ON fx.fk_currencyid_curr = curr.ID_CURRENCY
+
 WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
