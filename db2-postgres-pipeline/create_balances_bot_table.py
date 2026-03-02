@@ -15,7 +15,9 @@ def create_balances_bot_table():
     logger = logging.getLogger(__name__)
     
     create_table_sql = """
-    CREATE TABLE IF NOT EXISTS "balancesBot" (
+    DROP TABLE IF EXISTS "balancesBot";
+    
+    CREATE TABLE "balancesBot" (
         id SERIAL,
         "reportingDate" VARCHAR(50),
         "accountNumber" VARCHAR(100),
@@ -33,9 +35,9 @@ def create_balances_bot_table():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     
-    CREATE INDEX IF NOT EXISTS idx_balances_bot_account_number ON "balancesBot"("accountNumber");
-    CREATE INDEX IF NOT EXISTS idx_balances_bot_reporting_date ON "balancesBot"("reportingDate");
-    CREATE INDEX IF NOT EXISTS idx_balances_bot_transaction_date ON "balancesBot"("transactionDate");
+    CREATE INDEX idx_balances_bot_account_number ON "balancesBot"("accountNumber");
+    CREATE INDEX idx_balances_bot_reporting_date ON "balancesBot"("reportingDate");
+    CREATE INDEX idx_balances_bot_transaction_date ON "balancesBot"("transactionDate");
     """
     
     try:

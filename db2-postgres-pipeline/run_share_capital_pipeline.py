@@ -1,41 +1,35 @@
 #!/usr/bin/env python3
 """
-Share Capital Pipeline Runner
+Runner script for Share Capital Streaming Pipeline
 """
 
-from share_capital_streaming_pipeline import ShareCapitalStreamingPipeline
+import sys
 import logging
+from share_capital_streaming_pipeline import ShareCapitalStreamingPipeline
 
 def main():
-    """Run the share capital streaming pipeline"""
-    print("Share Capital Pipeline Runner")
-    print("=" * 65)
-    
-    # Setup logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    
+    """Main function to run the pipeline"""
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
     
+    logger.info("=" * 60)
+    logger.info("Starting Share Capital Streaming Pipeline")
+    logger.info("=" * 60)
+    
     try:
-        # Create and run pipeline with optimized settings
-        pipeline = ShareCapitalStreamingPipeline(batch_size=50)
-        
-        logger.info("Starting Share Capital pipeline...")
-        logger.info("Using optimized cursor-based pagination for better performance...")
-        
-        # Run the streaming pipeline
+        pipeline = ShareCapitalStreamingPipeline(batch_size=500)
         pipeline.run_streaming_pipeline()
         
-        logger.info("Share Capital pipeline completed successfully!")
+        logger.info("=" * 60)
+        logger.info("Pipeline completed successfully")
+        logger.info("=" * 60)
         
     except KeyboardInterrupt:
-        logger.info("Pipeline stopped by user")
+        logger.info("\nPipeline stopped by user")
+        sys.exit(0)
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
-        raise
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

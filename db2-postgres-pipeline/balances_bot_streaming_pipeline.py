@@ -63,48 +63,64 @@ class BalancesBotStreamingPipeline:
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
     
-    def get_query(self, last_account_number=None):
-        """Get the balances-bot query with cursor-based pagination"""
-        
-        where_clause = "WHERE gl.EXTERNAL_GLACCOUNT = '100028000'"
-        
-        if last_account_number:
-            where_clause += f" AND gte.FK_GLG_ACCOUNTACCO > '{last_account_number}'"
+    def get_query(self, offset=0):
+        """Get the balances-bot query with offset-based pagination using ROW_NUMBER"""
         
         query = f"""
-        select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
-               gte.FK_GLG_ACCOUNTACCO                            as accountNumber,
-               'BANK OF TANZANIA'                                as accountName,
-               'TIPS'                                            as accountType,
-               null                                              as subAccountType,
-               gte.CURRENCY_SHORT_DES                            as currency,
-               gte.DC_AMOUNT                                     AS orgAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN gte.DC_AMOUNT
-                   ELSE NULL
-                   END                                           AS usdAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN gte.DC_AMOUNT * 2500
-                   ELSE
-                       gte.DC_AMOUNT
-                   END                                           AS tzsAmount,
-               VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')      as transactionDate,
-               VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as maturityDate,
-               0                                                 as allowanceProbableLoss,
-               0                                                 as botProvision,
-               gte.FK_GLG_ACCOUNTACCO                            as cursor_account_number
-        FROM GLI_TRX_EXTRACT AS gte
-                 JOIN
-             GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
-                 JOIN CUSTOMER c
-                      ON c.CUST_ID = gte.CUST_ID
-                 LEFT JOIN CURRENCY cu
-                           ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
-        {where_clause}
-        ORDER BY gte.FK_GLG_ACCOUNTACCO ASC
-        FETCH FIRST {self.batch_size} ROWS ONLY
+        SELECT * FROM (
+            SELECT 
+                   VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
+                   pa.ACCOUNT_NUMBER                                 as accountNumber,
+                   'BANK OF TANZANIA'                                as accountName,
+                   'TIPS'                                            as accountType,
+                   null                                              as subAccountType,
+                   gte.CURRENCY_SHORT_DES                            as currency,
+                   gte.DC_AMOUNT                                     AS orgAmount,
+                   CASE
+                       WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                           THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+                       WHEN gte.CURRENCY_SHORT_DES <> 'USD'
+                           THEN DECIMAL(gte.DC_AMOUNT / fx.rate, 18, 2)
+                       ELSE NULL
+                       END                                           AS usdAmount,
+                   CASE
+                       WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                           THEN DECIMAL(gte.DC_AMOUNT * fx.rate, 18, 2)
+                       ELSE DECIMAL(gte.DC_AMOUNT, 18, 2)
+                       END                                           AS tzsAmount,
+                   VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')      as transactionDate,
+                   VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as maturityDate,
+                   0                                                 as allowanceProbableLoss,
+                   0                                                 as botProvision,
+                   ROW_NUMBER() OVER (ORDER BY pa.ACCOUNT_NUMBER ASC, gte.TRN_DATE ASC) as rn
+            FROM GLI_TRX_EXTRACT AS gte
+                     JOIN
+                 GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                     JOIN CUSTOMER c
+                          ON c.CUST_ID = gte.CUST_ID
+                     LEFT JOIN CURRENCY cu
+                               ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
+                     LEFT JOIN CURRENCY curr
+                               ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+                     JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
+                        AND pa.PRFT_SYSTEM = 3
+                     LEFT JOIN (SELECT fr.fk_currencyid_curr,
+                                       fr.rate
+                                FROM fixing_rate fr
+                                WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN
+                                      (SELECT fk_currencyid_curr,
+                                              activation_date,
+                                              MAX(activation_time)
+                                       FROM fixing_rate
+                                       WHERE activation_date = (SELECT MAX(b.activation_date)
+                                                                FROM fixing_rate b
+                                                                WHERE b.activation_date <= CURRENT_DATE)
+                                       GROUP BY fk_currencyid_curr, activation_date)) fx
+                               ON fx.fk_currencyid_curr = curr.ID_CURRENCY
+            WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
+        ) AS numbered
+        WHERE rn > {offset} AND rn <= {offset + self.batch_size}
+        ORDER BY rn
         """
         
         return query
@@ -120,6 +136,23 @@ class BalancesBotStreamingPipeline:
                       ON c.CUST_ID = gte.CUST_ID
                  LEFT JOIN CURRENCY cu
                            ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
+                 LEFT JOIN CURRENCY curr
+                           ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+                 JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
+                    AND pa.PRFT_SYSTEM = 3
+                 LEFT JOIN (SELECT fr.fk_currencyid_curr,
+                                   fr.rate
+                            FROM fixing_rate fr
+                            WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN
+                                  (SELECT fk_currencyid_curr,
+                                          activation_date,
+                                          MAX(activation_time)
+                                   FROM fixing_rate
+                                   WHERE activation_date = (SELECT MAX(b.activation_date)
+                                                            FROM fixing_rate b
+                                                            WHERE b.activation_date <= CURRENT_DATE)
+                                   GROUP BY fk_currencyid_curr, activation_date)) fx
+                           ON fx.fk_currencyid_curr = curr.ID_CURRENCY
         WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
         """
     
@@ -181,24 +214,24 @@ class BalancesBotStreamingPipeline:
             raise
 
     def process_record(self, row):
-        """Process a single record"""
-        # Remove cursor field (last one)
-        row_data = row[:-1]
+        """Process a single record - skip the last field which is row number"""
+        # Row has 14 fields: 13 data fields + 1 row number field (rn)
+        # We only need the first 13 fields
         
         return BalancesBotRecord(
-            reportingDate=str(row_data[0]) if row_data[0] else None,
-            accountNumber=str(row_data[1]).strip() if row_data[1] else None,
-            accountName=str(row_data[2]).strip() if row_data[2] else None,
-            accountType=str(row_data[3]).strip() if row_data[3] else None,
-            subAccountType=str(row_data[4]).strip() if row_data[4] else None,
-            currency=str(row_data[5]).strip() if row_data[5] else None,
-            orgAmount=Decimal(str(row_data[6])) if row_data[6] is not None else None,
-            usdAmount=Decimal(str(row_data[7])) if row_data[7] is not None else None,
-            tzsAmount=Decimal(str(row_data[8])) if row_data[8] is not None else None,
-            transactionDate=str(row_data[9]) if row_data[9] else None,
-            maturityDate=str(row_data[10]) if row_data[10] else None,
-            allowanceProbableLoss=int(row_data[11]) if row_data[11] is not None else 0,
-            botProvision=int(row_data[12]) if row_data[12] is not None else 0
+            reportingDate=str(row[0]) if row[0] else None,
+            accountNumber=str(row[1]).strip() if row[1] else None,
+            accountName=str(row[2]).strip() if row[2] else None,
+            accountType=str(row[3]).strip() if row[3] else None,
+            subAccountType=str(row[4]).strip() if row[4] else None,
+            currency=str(row[5]).strip() if row[5] else None,
+            orgAmount=Decimal(str(row[6])) if row[6] is not None else None,
+            usdAmount=Decimal(str(row[7])) if row[7] is not None else None,
+            tzsAmount=Decimal(str(row[8])) if row[8] is not None else None,
+            transactionDate=str(row[9]) if row[9] else None,
+            maturityDate=str(row[10]) if row[10] else None,
+            allowanceProbableLoss=int(row[11]) if row[11] is not None else 0,
+            botProvision=int(row[12]) if row[12] is not None else 0
         )
     
     def insert_to_postgres(self, record: BalancesBotRecord, cursor):
@@ -245,7 +278,7 @@ class BalancesBotStreamingPipeline:
             
             # Process batches
             batch_number = 1
-            last_account_number = None
+            current_offset = 0
             
             while True:
                 batch_start_time = time.time()
@@ -256,7 +289,7 @@ class BalancesBotStreamingPipeline:
                     try:
                         with self.db2_conn.get_connection(log_connection=False) as conn:
                             cursor = conn.cursor()
-                            batch_query = self.get_query(last_account_number)
+                            batch_query = self.get_query(current_offset)
                             cursor.execute(batch_query)
                             rows = cursor.fetchall()
                         break
@@ -274,7 +307,6 @@ class BalancesBotStreamingPipeline:
                 # Process and publish
                 batch_published = 0
                 for row in rows:
-                    last_account_number = row[-1]  # cursor_account_number
                     
                     record = self.process_record(row)
                     message = json.dumps(asdict(record), default=str)
@@ -310,6 +342,7 @@ class BalancesBotStreamingPipeline:
                 
                 self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} records, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
                 
+                current_offset += len(rows)
                 batch_number += 1
                 time.sleep(0.1)
             

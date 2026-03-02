@@ -1,14 +1,46 @@
 #!/usr/bin/env python3
 """
-Create PostgreSQL table for share capital records
+Create shareCapital table in PostgreSQL
 """
 
 import psycopg2
+import logging
 from config import Config
 
 def create_share_capital_table():
-    """Create the shareCapital table in PostgreSQL with camelCase fields"""
+    """Create the shareCapital table"""
     config = Config()
+    
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger(__name__)
+    
+    create_table_sql = """
+    DROP TABLE IF EXISTS "shareCapital";
+    
+    CREATE TABLE "shareCapital" (
+        id SERIAL,
+        "reportingDate" VARCHAR(50),
+        "capitalCategory" VARCHAR(255),
+        "capitalSubCategory" VARCHAR(255),
+        "transactionDate" VARCHAR(50),
+        "transactionType" VARCHAR(255),
+        "shareholderNames" VARCHAR(500),
+        "clientType" VARCHAR(255),
+        "shareholderCountry" VARCHAR(255),
+        "numberOfShares" NUMERIC(18, 2),
+        "sharePriceBookValue" NUMERIC(18, 2),
+        currency VARCHAR(10),
+        "orgAmount" NUMERIC(18, 2),
+        "tzsAmount" NUMERIC(18, 2),
+        "sectorSnaClassification" VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE INDEX idx_share_capital_reporting_date ON "shareCapital"("reportingDate");
+    CREATE INDEX idx_share_capital_transaction_date ON "shareCapital"("transactionDate");
+    CREATE INDEX idx_share_capital_capital_category ON "shareCapital"("capitalCategory");
+    CREATE INDEX idx_share_capital_shareholder_names ON "shareCapital"("shareholderNames");
+    """
     
     try:
         conn = psycopg2.connect(
@@ -20,66 +52,16 @@ def create_share_capital_table():
         )
         
         cursor = conn.cursor()
-        
-        # Drop table if exists
-        cursor.execute('DROP TABLE IF EXISTS "shareCapital" CASCADE')
-        
-        # Create share capital table with all 14 fields using camelCase (quoted identifiers)
-        create_table_query = """
-        CREATE TABLE "shareCapital" (
-            "id" SERIAL PRIMARY KEY,
-            "reportingDate" VARCHAR(20) NOT NULL,
-            "capitalCategory" VARCHAR(100),
-            "capitalSubCategory" VARCHAR(100),
-            "transactionDate" DATE,
-            "transactionType" VARCHAR(50),
-            "shareholderName" VARCHAR(255),
-            "clientType" VARCHAR(100),
-            "shareholderCountry" VARCHAR(100),
-            "numberOfShares" INTEGER,
-            "sharePriceBookValue" DECIMAL(15,4),
-            "currency" VARCHAR(10),
-            "orgAmount" DECIMAL(18,2),
-            "tzsAmount" DECIMAL(18,2),
-            "sectorSnaClassification" VARCHAR(100),
-            "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-        
-        cursor.execute(create_table_query)
-        
-        # Create indexes for better performance using camelCase (quoted identifiers)
-        cursor.execute('CREATE INDEX "idxShareCapitalReportingDate" ON "shareCapital"("reportingDate")')
-        cursor.execute('CREATE INDEX "idxShareCapitalTransactionDate" ON "shareCapital"("transactionDate")')
-        cursor.execute('CREATE INDEX "idxShareCapitalCategory" ON "shareCapital"("capitalCategory")')
-        cursor.execute('CREATE INDEX "idxShareCapitalSubCategory" ON "shareCapital"("capitalSubCategory")')
-        cursor.execute('CREATE INDEX "idxShareCapitalTransactionType" ON "shareCapital"("transactionType")')
-        cursor.execute('CREATE INDEX "idxShareCapitalCurrency" ON "shareCapital"("currency")')
-        cursor.execute('CREATE INDEX "idxShareCapitalShareholderName" ON "shareCapital"("shareholderName")')
-        cursor.execute('CREATE INDEX "idxShareCapitalCreatedAt" ON "shareCapital"("createdAt")')
-        
+        cursor.execute(create_table_sql)
         conn.commit()
-        print("Share Capital table created successfully with indexes")
         
-        # Show table info
-        cursor.execute("""
-            SELECT column_name, data_type, is_nullable, column_default
-            FROM information_schema.columns 
-            WHERE table_name = 'shareCapital' 
-            ORDER BY ordinal_position
-        """)
+        logger.info("Table 'shareCapital' created successfully")
         
-        columns = cursor.fetchall()
-        print(f"\nTable structure ({len(columns)} columns):")
-        for col in columns:
-            nullable = 'NULL' if col[2] == 'YES' else 'NOT NULL'
-            default = f" DEFAULT {col[3]}" if col[3] else ""
-            print(f"  {col[0]}: {col[1]} ({nullable}){default}")
-        
+        cursor.close()
         conn.close()
         
     except Exception as e:
-        print(f"Error creating share capital table: {e}")
+        logger.error(f"Error creating table: {e}")
         raise
 
 if __name__ == "__main__":

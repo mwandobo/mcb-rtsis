@@ -9,18 +9,36 @@ import json
 import logging
 import threading
 import time
-from dataclasses import asdict
+from dataclasses import dataclass, asdict
 from contextlib import contextmanager
+from typing import Optional
+from decimal import Decimal
 
 from config import Config
 from db2_connection import DB2Connection
-from processors.share_capital_processor import ShareCapitalProcessor, ShareCapitalRecord
+
+@dataclass
+class ShareCapitalRecord:
+    reportingDate: str
+    capitalCategory: str
+    capitalSubCategory: str
+    transactionDate: str
+    transactionType: str
+    shareholderNames: str
+    clientType: str
+    shareholderCountry: str
+    numberOfShares: Optional[Decimal]
+    sharePriceBookValue: Optional[Decimal]
+    currency: str
+    orgAmount: Optional[Decimal]
+    tzsAmount: Optional[Decimal]
+    sectorSnaClassification: str
+
 
 class ShareCapitalStreamingPipeline:
-    def __init__(self, batch_size=50):
+    def __init__(self, batch_size=500):
         self.config = Config()
         self.db2_conn = DB2Connection()
-        self.processor = ShareCapitalProcessor()
         self.batch_size = batch_size
         
         # Threading control
@@ -36,59 +54,50 @@ class ShareCapitalStreamingPipeline:
         
         # Retry settings
         self.max_retries = 3
-        self.retry_delay = 5  # seconds
+        self.retry_delay = 2
         
         # Setup logging
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
         
         self.logger.info("Share Capital STREAMING Pipeline initialized")
-        self.logger.info(f"Batch size: {self.batch_size} records per batch (optimized with cursor pagination)")
+        self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
-        self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_share_capital_query(self, last_transaction_date=None, last_shareholder_name=None):
-        """Get the share capital query with cursor-based pagination for better performance"""
+    def get_query(self, last_shareholder_name=None):
+        """Get the share capital query with cursor-based pagination using shareholder name"""
         
-        # Use cursor-based pagination instead of ROW_NUMBER() for much better performance
         where_clause = ""
         
-        if last_transaction_date and last_shareholder_name:
-            where_clause = f"""
-            WHERE (sc.TRANSACTION_DATE > '{last_transaction_date}' 
-                   OR (sc.TRANSACTION_DATE = '{last_transaction_date}' AND sc.SHAREHOLDER_NAME > '{last_shareholder_name}'))
-            """
+        if last_shareholder_name:
+            where_clause = f"WHERE sc.SHAREHOLDER_NAME > '{last_shareholder_name}'"
         
         query = f"""
-        SELECT
-            TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') as reportingDate,
-            sc.CAPITAL_CATEGORY                                          AS CAPITAL_CATEGORY,
-            sc.CAPITAL_SUBCATEGORY                                          AS CAPITAL_SUBCATEGORY,
-            sc.TRANSACTION_DATE                                          AS TRANSACTION_DATE,
-            sc.TRANSACTION_TYPE                                          AS TRANSACTION_TYPE,
-            sc.SHAREHOLDER_NAME                                          AS SHAREHOLDER_NAME,
-            sc.CLIENT_TYPE                                          AS CLIENT_TYPE,
-            sc.SHAREHOLDER_COUNTRY                                          AS SHAREHOLDER_COUNTRY,
-            sc.NUMBER_OF_SHARES                                          AS NUMBER_OF_SHARES,
-            sc.SHARE_PRICE_BOOK_VALUE                                          AS SHARE_PRICE_BOOK_VALUE,
-            sc.CURRENCY                                          AS CURRENCY,
-            sc.ORG_AMOUNT                                          AS ORG_AMOUNT,
-            sc.TZS_AMOUNT                                          AS TZS_AMOUNT,
-            sc.SECTOR_SNA_CLASSIFICATION                                          AS SECTOR_SNA_CLASSIFICATION,
-            
-            sc.TRANSACTION_DATE as cursor_transaction_date,
-            sc.SHAREHOLDER_NAME as cursor_shareholder_name
-
+        SELECT TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') as reportingDate,
+               sc.CAPITAL_CATEGORY                          AS capitalCategory,
+               sc.CAPITAL_SUBCATEGORY                       AS capitalSubCategory,
+               sc.TRANSACTION_DATE                          AS transactionDate,
+               sc.TRANSACTION_TYPE                          AS transactionType,
+               sc.SHAREHOLDER_NAME                          AS shareholderNames,
+               sc.CLIENT_TYPE                               AS clientType,
+               sc.SHAREHOLDER_COUNTRY                       AS shareholderCountry,
+               sc.NUMBER_OF_SHARES                          AS numberOfShares,
+               sc.SHARE_PRICE_BOOK_VALUE                    AS sharePriceBookValue,
+               sc.CURRENCY                                  AS currency,
+               sc.ORG_AMOUNT                                AS orgAmount,
+               sc.TZS_AMOUNT                                AS tzsAmount,
+               sc.SECTOR_SNA_CLASSIFICATION                 AS sectorSnaClassification,
+               sc.SHAREHOLDER_NAME                          AS cursor_shareholder_name
         FROM SHARE_CAPITAL sc
         {where_clause}
-        ORDER BY sc.TRANSACTION_DATE ASC, sc.SHAREHOLDER_NAME ASC
+        ORDER BY sc.SHAREHOLDER_NAME ASC
         FETCH FIRST {self.batch_size} ROWS ONLY
         """
         
         return query
-    
+
     def get_total_count_query(self):
-        """Get total count of available share capital records"""
+        """Get total count of available records"""
         return """
         SELECT COUNT(*) as total_count
         FROM SHARE_CAPITAL sc
@@ -126,8 +135,8 @@ class ShareCapitalStreamingPipeline:
                     host=self.config.message_queue.rabbitmq_host,
                     port=self.config.message_queue.rabbitmq_port,
                     credentials=credentials,
-                    heartbeat=600,  # 10 minutes heartbeat
-                    blocked_connection_timeout=300,  # 5 minutes timeout
+                    heartbeat=600,
+                    blocked_connection_timeout=300,
                 )
                 connection = pika.BlockingConnection(parameters)
                 channel = connection.channel()
@@ -136,60 +145,101 @@ class ShareCapitalStreamingPipeline:
             except Exception as e:
                 self.logger.warning(f"RabbitMQ connection attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
-                    self.logger.info(f"Retrying in {self.retry_delay} seconds...")
                     time.sleep(self.retry_delay)
                 else:
-                    self.logger.error(f"Failed to connect to RabbitMQ after {max_retries} attempts")
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for share capital"""
+        """Setup RabbitMQ queue"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
-            
-            # Declare queue with durability
             channel.queue_declare(queue='share_capital_queue', durable=True)
-            
             connection.close()
             self.logger.info("RabbitMQ queue 'share_capital_queue' setup complete")
-            
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
             raise
+
+    def process_record(self, row):
+        """Process a single record"""
+        # Remove cursor field (last one)
+        row_data = row[:-1]
+        
+        return ShareCapitalRecord(
+            reportingDate=str(row_data[0]) if row_data[0] else None,
+            capitalCategory=str(row_data[1]).strip() if row_data[1] else None,
+            capitalSubCategory=str(row_data[2]).strip() if row_data[2] else None,
+            transactionDate=str(row_data[3]) if row_data[3] else None,
+            transactionType=str(row_data[4]).strip() if row_data[4] else None,
+            shareholderNames=str(row_data[5]).strip() if row_data[5] else None,
+            clientType=str(row_data[6]).strip() if row_data[6] else None,
+            shareholderCountry=str(row_data[7]).strip() if row_data[7] else None,
+            numberOfShares=Decimal(str(row_data[8])) if row_data[8] is not None else None,
+            sharePriceBookValue=Decimal(str(row_data[9])) if row_data[9] is not None else None,
+            currency=str(row_data[10]).strip() if row_data[10] else None,
+            orgAmount=Decimal(str(row_data[11])) if row_data[11] is not None else None,
+            tzsAmount=Decimal(str(row_data[12])) if row_data[12] is not None else None,
+            sectorSnaClassification=str(row_data[13]).strip() if row_data[13] else None
+        )
     
+    def insert_to_postgres(self, record: ShareCapitalRecord, cursor):
+        """Insert record to PostgreSQL"""
+        insert_sql = """
+        INSERT INTO "shareCapital" (
+            "reportingDate", "capitalCategory", "capitalSubCategory", "transactionDate",
+            "transactionType", "shareholderNames", "clientType", "shareholderCountry",
+            "numberOfShares", "sharePriceBookValue", currency, "orgAmount", "tzsAmount",
+            "sectorSnaClassification"
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        
+        cursor.execute(insert_sql, (
+            record.reportingDate,
+            record.capitalCategory,
+            record.capitalSubCategory,
+            record.transactionDate,
+            record.transactionType,
+            record.shareholderNames,
+            record.clientType,
+            record.shareholderCountry,
+            record.numberOfShares,
+            record.sharePriceBookValue,
+            record.currency,
+            record.orgAmount,
+            record.tzsAmount,
+            record.sectorSnaClassification
+        ))
+
     def producer_thread(self):
-        """Producer thread - reads from DB2 and sends to RabbitMQ with cursor-based pagination"""
+        """Producer thread - reads from DB2 and sends to RabbitMQ"""
         try:
             self.logger.info("Producer thread started")
             
-            # Get total count first
-            with self.db2_conn.get_connection(log_connection=True) as conn:        cursor = conn.cursor()
+            # Get total count
+            with self.db2_conn.get_connection(log_connection=True) as conn:
+                cursor = conn.cursor()
                 cursor.execute(self.get_total_count_query())
                 self.total_available = cursor.fetchone()[0]
             
             self.logger.info(f"Total share capital records available: {self.total_available:,}")
-            estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
-            self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
-            # Setup RabbitMQ connection with retry
+            # Setup RabbitMQ
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Process batches using cursor-based pagination
+            # Process batches
             batch_number = 1
-            last_transaction_date = None
             last_shareholder_name = None
-            last_progress_report = time.time()
             
             while True:
                 batch_start_time = time.time()
                 
-                # Fetch batch with retry logic using cursor pagination
+                # Fetch batch
                 rows = None
                 for attempt in range(self.max_retries):
                     try:
                         with self.db2_conn.get_connection(log_connection=False) as conn:
                             cursor = conn.cursor()
-                            batch_query = self.get_share_capital_query(last_transaction_date, last_shareholder_name)
+                            batch_query = self.get_query(last_shareholder_name)
                             cursor.execute(batch_query)
                             rows = cursor.fetchall()
                         break
@@ -204,104 +254,75 @@ class ShareCapitalStreamingPipeline:
                     self.logger.info("No more records to process")
                     break
                 
-                # Process and publish with retry logic
+                # Process and publish
                 batch_published = 0
                 for row in rows:
-                    # Extract cursor values for next batch (last two fields)
-                    last_transaction_date = row[-2]  # cursor_transaction_date
                     last_shareholder_name = row[-1]  # cursor_shareholder_name
                     
-                    # Remove cursor fields before processing
-                    row_without_cursor = row[:-2]
-                    record = self.processor.process_record(row_without_cursor, 'share_capital')
+                    record = self.process_record(row)
+                    message = json.dumps(asdict(record), default=str)
                     
-                    if self.processor.validate_record(record):
-                        message = json.dumps(asdict(record), default=str)
-                        
-                        # Publish with retry
-                        published = False
-                        for attempt in range(self.max_retries):
-                            try:
-                                channel.basic_publish(
-                                    exchange='',
-                                    routing_key='share_capital_queue',
-                                    body=message,
-                                    properties=pika.BasicProperties(delivery_mode=2)
-                                )
-                                published = True
-                                break
-                            except Exception as e:
-                                self.logger.warning(f"RabbitMQ publish attempt {attempt + 1} failed: {e}")
-                                if attempt < self.max_retries - 1:
-                                    # Reconnect and retry
-                                    try:
-                                        connection.close()
-                                    except:
-                                        pass
-                                    connection, channel = self.setup_rabbitmq_connection()
-                                    time.sleep(self.retry_delay)
-                                else:
-                                    self.logger.error(f"Failed to publish message after {self.max_retries} attempts")
-                        
-                        if published:
-                            batch_published += 1
-                            self.total_produced += 1
+                    # Publish
+                    published = False
+                    for attempt in range(self.max_retries):
+                        try:
+                            channel.basic_publish(
+                                exchange='',
+                                routing_key='share_capital_queue',
+                                body=message,
+                                properties=pika.BasicProperties(delivery_mode=2)
+                            )
+                            published = True
+                            break
+                        except Exception as e:
+                            self.logger.warning(f"RabbitMQ publish attempt {attempt + 1} failed: {e}")
+                            if attempt < self.max_retries - 1:
+                                try:
+                                    connection.close()
+                                except:
+                                    pass
+                                connection, channel = self.setup_rabbitmq_connection()
+                                time.sleep(self.retry_delay)
+                    
+                    if published:
+                        batch_published += 1
+                        self.total_produced += 1
                 
                 batch_time = time.time() - batch_start_time
                 progress_percent = self.total_produced / self.total_available * 100 if self.total_available > 0 else 0
                 
                 self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} records, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
                 
-                # Progress report every 5 minutes
-                current_time = time.time()
-                if current_time - last_progress_report >= 300:  # 5 minutes
-                    elapsed_time = current_time - self.start_time
-                    rate = self.total_produced / elapsed_time if elapsed_time > 0 else 0
-                    remaining_records = self.total_available - self.total_produced
-                    eta_seconds = remaining_records / rate if rate > 0 else 0
-                    eta_hours = eta_seconds / 3600
-                    
-                    self.logger.info(f"PROGRESS REPORT: {self.total_produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
-                    last_progress_report = current_time
-                
-                # Move to next batch
                 batch_number += 1
-                
-                # Small delay to prevent overwhelming
                 time.sleep(0.1)
             
             connection.close()
-            self.logger.info(f"Producer finished: {self.total_produced:,} records published out of {self.total_available:,} available")
+            self.logger.info(f"Producer finished: {self.total_produced:,} records published")
             self.producer_finished.set()
             
         except Exception as e:
             self.logger.error(f"Producer error: {e}")
             self.producer_finished.set()
-    
+
     def consumer_thread(self):
-        """Consumer thread - processes messages from queue with retry logic"""
+        """Consumer thread - processes messages from queue"""
         try:
-            self.logger.info("Consumer thread started")
+            self.logger.info("Consumer thread started - waiting for messages...")
             
-            # Setup RabbitMQ connection with retry
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Initialize progress tracking variable
-            last_progress_report = time.time()
-            
             def process_message(ch, method, properties, body):
-                nonlocal last_progress_report  # Allow modification of the outer variable
                 try:
                     record_data = json.loads(body)
                     record = ShareCapitalRecord(**record_data)
                     
-                    # Insert to PostgreSQL with retry
+                    # Insert to PostgreSQL
                     inserted = False
                     for attempt in range(self.max_retries):
                         try:
                             with self.get_postgres_connection() as conn:
                                 cursor = conn.cursor()
-                                self.processor.insert_to_postgres(record, cursor)
+                                self.insert_to_postgres(record, cursor)
                                 conn.commit()
                             inserted = True
                             break
@@ -309,51 +330,30 @@ class ShareCapitalStreamingPipeline:
                             self.logger.warning(f"PostgreSQL insert attempt {attempt + 1} failed: {e}")
                             if attempt < self.max_retries - 1:
                                 time.sleep(self.retry_delay)
-                            else:
-                                self.logger.error(f"Failed to insert record after {self.max_retries} attempts")
                     
                     if inserted:
                         self.total_consumed += 1
                         
-                        # Progress monitoring
-                        if self.total_consumed % (self.batch_size * 2) == 0:  # Every 2 batches
+                        if self.total_consumed % 10 == 0:
                             elapsed_time = time.time() - self.start_time
                             rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
                             progress_percent = (self.total_consumed / self.total_available * 100) if self.total_available > 0 else 0
-                            
-                            self.logger.info(f"Consumer: Processed {self.total_consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
-                        
-                        # Detailed progress report every 5 minutes
-                        current_time = time.time()
-                        if current_time - last_progress_report >= 300:  # 5 minutes
-                            elapsed_time = current_time - self.start_time
-                            rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
-                            remaining_records = self.total_available - self.total_consumed if self.total_available > 0 else 0
-                            eta_seconds = remaining_records / rate if rate > 0 else 0
-                            eta_hours = eta_seconds / 3600
-                            
-                            self.logger.info(f"CONSUMER PROGRESS: {self.total_consumed:,}/{self.total_available:,} records - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
-                            last_progress_report = current_time
+                            self.logger.info(f"Consumer: Processed {self.total_consumed:,} records ({progress_percent:.2f}%) - Rate: {rate:.1f} rec/sec")
                     
-                    # Acknowledge message
                     ch.basic_ack(delivery_tag=method.delivery_tag)
                     
                 except Exception as e:
                     self.logger.error(f"Consumer error processing message: {e}")
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             
-            # Set QoS for controlled processing
             channel.basic_qos(prefetch_count=10)
             channel.basic_consume(queue='share_capital_queue', on_message_callback=process_message)
             
-            # Keep consuming until producer is done and queue is empty
             while not self.stop_consumer.is_set():
                 try:
                     connection.process_data_events(time_limit=1)
                     
-                    # Check if we should stop
                     if self.producer_finished.is_set():
-                        # Producer is done, check if queue is empty
                         method = channel.queue_declare(queue='share_capital_queue', durable=True, passive=True)
                         if method.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
@@ -361,7 +361,6 @@ class ShareCapitalStreamingPipeline:
                         
                 except Exception as e:
                     self.logger.error(f"Consumer processing error: {e}")
-                    # Try to reconnect
                     try:
                         connection.close()
                     except:
@@ -377,35 +376,30 @@ class ShareCapitalStreamingPipeline:
         except Exception as e:
             self.logger.error(f"Consumer error: {e}")
             self.consumer_finished.set()
-    
+
     def run_streaming_pipeline(self):
-        """Run the streaming pipeline with simultaneous producer and consumer"""
+        """Run the streaming pipeline"""
         self.logger.info("Starting Share Capital STREAMING pipeline...")
         
         try:
-            # Setup queue
             self.setup_rabbitmq_queue()
             
-            # Start consumer thread first
+            # Start consumer first
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")
             consumer_thread.start()
-            
-            # Small delay to let consumer start
             time.sleep(1)
             
-            # Start producer thread
+            # Start producer
             producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
             producer_thread.start()
             
-            # Wait for producer to finish
+            # Wait for completion
             producer_thread.join()
             self.logger.info("Producer thread completed")
             
-            # Wait for consumer to finish processing remaining messages
-            consumer_thread.join(timeout=60)  # Wait up to 60 seconds
+            consumer_thread.join(timeout=60)
             
             if consumer_thread.is_alive():
-                self.logger.info("Stopping consumer thread...")
                 self.stop_consumer.set()
                 consumer_thread.join(timeout=30)
             
@@ -422,7 +416,7 @@ class ShareCapitalStreamingPipeline:
             Records produced: {self.total_produced:,}
             Records consumed: {self.total_consumed:,}
             Success rate: {success_rate:.1f}%
-            Total processing time: {total_time/3600:.2f} hours
+            Total processing time: {total_time/60:.2f} minutes
             Average rate: {avg_rate:.1f} records/second
             ==========================================
             """)
@@ -436,23 +430,14 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Share Capital Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=50, help='Batch size for processing')
-    parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
-                       help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--batch-size', type=int, default=500, help='Batch size for processing')
     
     args = parser.parse_args()
     
-    # Create pipeline
     pipeline = ShareCapitalStreamingPipeline(batch_size=args.batch_size)
     
     try:
-        if args.mode == 'producer':
-            pipeline.producer_thread()
-        elif args.mode == 'consumer':
-            pipeline.consumer_thread()
-        else:  # streaming
-            pipeline.run_streaming_pipeline()
-            
+        pipeline.run_streaming_pipeline()
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")
     except Exception as e:
