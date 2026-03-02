@@ -360,9 +360,21 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
                LEFT JOIN COUNTRIES_LOOKUP cl
                          ON cl.COUNTRY_NAME = id_country.description
 
-               LEFT JOIN LOAN_ACCOUNT la
-                         ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
-                             AND la.CUST_ID = gte.CUST_ID
+--                LEFT JOIN LOAN_ACCOUNT la
+--                          ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
+--                              AND la.CUST_ID = gte.CUST_ID
+
+
+               INNER JOIN (SELECT la.*,
+                                  ROW_NUMBER() OVER (
+                                      PARTITION BY la.CUST_ID, la.FK_LOANFK_PRODUCTI
+                                      ORDER BY la.TMSTAMP DESC, la.ACC_OPEN_DT DESC
+                                      ) AS rn
+                           FROM LOAN_ACCOUNT la) la
+                          ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
+                              AND la.CUST_ID = gte.CUST_ID
+                              AND la.rn = 1 -- Only the most recent loan
+
                LEFT JOIN CollateralAgg ON CollateralAgg.COLLTBL_CUST_ID = la.CUST_ID
                JOIN AGREEMENT ag
                     ON ag.FK_UNITCODE = la.FK_AGREEMENTFK_UNI
