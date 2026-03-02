@@ -1,19 +1,3 @@
--- Income Statement Report for BOT API (Production-Ready)
--- Uses INCOME_STATEMENT_GL_LOOKUP table for fast categorization
--- Single table scan for optimal performance
---
--- PERFORMANCE TUNING:
--- - Adjust the date filter based on your reporting period
--- - Last 30 days: ~0.13 seconds
--- - Last 6 months: ~30-60 seconds  
--- - Full year: ~2-5 minutes
--- - All data (no filter): ~5+ minutes
---
--- RECOMMENDATION: Always use a date filter matching your reporting period
--- For monthly reports: Use first and last day of the month
--- For quarterly reports: Use first and last day of the quarter
--- For annual reports: Use first and last day of the year
-
 WITH all_transactions AS (
     -- Single scan of GLI_TRX_EXTRACT with date filtering
     SELECT 
