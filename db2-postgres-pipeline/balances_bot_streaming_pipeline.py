@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Share Capital Streaming Pipeline - Producer and Consumer run simultaneously
+Balances BOT Streaming Pipeline - Producer and Consumer run simultaneously
 """
 
 import pika
@@ -18,24 +18,23 @@ from config import Config
 from db2_connection import DB2Connection
 
 @dataclass
-class ShareCapitalRecord:
+class BalancesBotRecord:
     reportingDate: str
-    capitalCategory: str
-    capitalSubCategory: str
-    transactionDate: str
-    transactionType: str
-    shareholderNames: str
-    clientType: str
-    shareholderCountry: str
-    numberOfShares: Optional[Decimal]
-    sharePriceBookValue: Optional[Decimal]
+    accountNumber: str
+    accountName: str
+    accountType: str
+    subAccountType: Optional[str]
     currency: str
     orgAmount: Optional[Decimal]
+    usdAmount: Optional[Decimal]
     tzsAmount: Optional[Decimal]
-    sectorSnaClassification: str
+    transactionDate: str
+    maturityDate: str
+    allowanceProbableLoss: int
+    botProvision: int
 
 
-class ShareCapitalStreamingPipeline:
+class BalancesBotStreamingPipeline:
     def __init__(self, batch_size=500):
         self.config = Config()
         self.db2_conn = DB2Connection()
@@ -60,38 +59,68 @@ class ShareCapitalStreamingPipeline:
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Share Capital STREAMING Pipeline initialized")
+        self.logger.info("Balances BOT STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
     
-    def get_query(self, last_shareholder_name=None):
-        """Get the share capital query with cursor-based pagination using shareholder name"""
-        
-        where_clause = ""
-        
-        if last_shareholder_name:
-            where_clause = f"WHERE sc.SHAREHOLDER_NAME > '{last_shareholder_name}'"
+    def get_query(self, offset=0):
+        """Get the balances-bot query with offset-based pagination using ROW_NUMBER"""
         
         query = f"""
-        SELECT TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') as reportingDate,
-               sc.CAPITAL_CATEGORY                          AS capitalCategory,
-               sc.CAPITAL_SUBCATEGORY                       AS capitalSubCategory,
-               sc.TRANSACTION_DATE                          AS transactionDate,
-               sc.TRANSACTION_TYPE                          AS transactionType,
-               sc.SHAREHOLDER_NAME                          AS shareholderNames,
-               sc.CLIENT_TYPE                               AS clientType,
-               sc.SHAREHOLDER_COUNTRY                       AS shareholderCountry,
-               sc.NUMBER_OF_SHARES                          AS numberOfShares,
-               sc.SHARE_PRICE_BOOK_VALUE                    AS sharePriceBookValue,
-               sc.CURRENCY                                  AS currency,
-               sc.ORG_AMOUNT                                AS orgAmount,
-               sc.TZS_AMOUNT                                AS tzsAmount,
-               sc.SECTOR_SNA_CLASSIFICATION                 AS sectorSnaClassification,
-               sc.SHAREHOLDER_NAME                          AS cursor_shareholder_name
-        FROM SHARE_CAPITAL sc
-        {where_clause}
-        ORDER BY sc.SHAREHOLDER_NAME ASC
-        FETCH FIRST {self.batch_size} ROWS ONLY
+        SELECT * FROM (
+            SELECT 
+                   VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
+                   pa.ACCOUNT_NUMBER                                 as accountNumber,
+                   'BANK OF TANZANIA'                                as accountName,
+                   'TIPS'                                            as accountType,
+                   null                                              as subAccountType,
+                   gte.CURRENCY_SHORT_DES                            as currency,
+                   gte.DC_AMOUNT                                     AS orgAmount,
+                   CASE
+                       WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                           THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+                       WHEN gte.CURRENCY_SHORT_DES <> 'USD'
+                           THEN DECIMAL(gte.DC_AMOUNT / fx.rate, 18, 2)
+                       ELSE NULL
+                       END                                           AS usdAmount,
+                   CASE
+                       WHEN gte.CURRENCY_SHORT_DES = 'USD'
+                           THEN DECIMAL(gte.DC_AMOUNT * fx.rate, 18, 2)
+                       ELSE DECIMAL(gte.DC_AMOUNT, 18, 2)
+                       END                                           AS tzsAmount,
+                   VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')      as transactionDate,
+                   VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as maturityDate,
+                   0                                                 as allowanceProbableLoss,
+                   0                                                 as botProvision,
+                   ROW_NUMBER() OVER (ORDER BY pa.ACCOUNT_NUMBER ASC, gte.TRN_DATE ASC) as rn
+            FROM GLI_TRX_EXTRACT AS gte
+                     JOIN
+                 GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                     JOIN CUSTOMER c
+                          ON c.CUST_ID = gte.CUST_ID
+                     LEFT JOIN CURRENCY cu
+                               ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
+                     LEFT JOIN CURRENCY curr
+                               ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+                     JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
+                        AND pa.PRFT_SYSTEM = 3
+                     LEFT JOIN (SELECT fr.fk_currencyid_curr,
+                                       fr.rate
+                                FROM fixing_rate fr
+                                WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN
+                                      (SELECT fk_currencyid_curr,
+                                              activation_date,
+                                              MAX(activation_time)
+                                       FROM fixing_rate
+                                       WHERE activation_date = (SELECT MAX(b.activation_date)
+                                                                FROM fixing_rate b
+                                                                WHERE b.activation_date <= CURRENT_DATE)
+                                       GROUP BY fk_currencyid_curr, activation_date)) fx
+                               ON fx.fk_currencyid_curr = curr.ID_CURRENCY
+            WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
+        ) AS numbered
+        WHERE rn > {offset} AND rn <= {offset + self.batch_size}
+        ORDER BY rn
         """
         
         return query
@@ -100,7 +129,31 @@ class ShareCapitalStreamingPipeline:
         """Get total count of available records"""
         return """
         SELECT COUNT(*) as total_count
-        FROM SHARE_CAPITAL sc
+        FROM GLI_TRX_EXTRACT AS gte
+                 JOIN
+             GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                 JOIN CUSTOMER c
+                      ON c.CUST_ID = gte.CUST_ID
+                 LEFT JOIN CURRENCY cu
+                           ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
+                 LEFT JOIN CURRENCY curr
+                           ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+                 JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
+                    AND pa.PRFT_SYSTEM = 3
+                 LEFT JOIN (SELECT fr.fk_currencyid_curr,
+                                   fr.rate
+                            FROM fixing_rate fr
+                            WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN
+                                  (SELECT fk_currencyid_curr,
+                                          activation_date,
+                                          MAX(activation_time)
+                                   FROM fixing_rate
+                                   WHERE activation_date = (SELECT MAX(b.activation_date)
+                                                            FROM fixing_rate b
+                                                            WHERE b.activation_date <= CURRENT_DATE)
+                                   GROUP BY fk_currencyid_curr, activation_date)) fx
+                           ON fx.fk_currencyid_curr = curr.ID_CURRENCY
+        WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
         """
     
     @contextmanager
@@ -153,61 +206,58 @@ class ShareCapitalStreamingPipeline:
         """Setup RabbitMQ queue"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
-            channel.queue_declare(queue='share_capital_queue', durable=True)
+            channel.queue_declare(queue='balances_bot_queue', durable=True)
             connection.close()
-            self.logger.info("RabbitMQ queue 'share_capital_queue' setup complete")
+            self.logger.info("RabbitMQ queue 'balances_bot_queue' setup complete")
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
             raise
 
     def process_record(self, row):
-        """Process a single record"""
-        # Remove cursor field (last one)
-        row_data = row[:-1]
+        """Process a single record - skip the last field which is row number"""
+        # Row has 14 fields: 13 data fields + 1 row number field (rn)
+        # We only need the first 13 fields
         
-        return ShareCapitalRecord(
-            reportingDate=str(row_data[0]) if row_data[0] else None,
-            capitalCategory=str(row_data[1]).strip() if row_data[1] else None,
-            capitalSubCategory=str(row_data[2]).strip() if row_data[2] else None,
-            transactionDate=str(row_data[3]) if row_data[3] else None,
-            transactionType=str(row_data[4]).strip() if row_data[4] else None,
-            shareholderNames=str(row_data[5]).strip() if row_data[5] else None,
-            clientType=str(row_data[6]).strip() if row_data[6] else None,
-            shareholderCountry=str(row_data[7]).strip() if row_data[7] else None,
-            numberOfShares=Decimal(str(row_data[8])) if row_data[8] is not None else None,
-            sharePriceBookValue=Decimal(str(row_data[9])) if row_data[9] is not None else None,
-            currency=str(row_data[10]).strip() if row_data[10] else None,
-            orgAmount=Decimal(str(row_data[11])) if row_data[11] is not None else None,
-            tzsAmount=Decimal(str(row_data[12])) if row_data[12] is not None else None,
-            sectorSnaClassification=str(row_data[13]).strip() if row_data[13] else None
+        return BalancesBotRecord(
+            reportingDate=str(row[0]) if row[0] else None,
+            accountNumber=str(row[1]).strip() if row[1] else None,
+            accountName=str(row[2]).strip() if row[2] else None,
+            accountType=str(row[3]).strip() if row[3] else None,
+            subAccountType=str(row[4]).strip() if row[4] else None,
+            currency=str(row[5]).strip() if row[5] else None,
+            orgAmount=Decimal(str(row[6])) if row[6] is not None else None,
+            usdAmount=Decimal(str(row[7])) if row[7] is not None else None,
+            tzsAmount=Decimal(str(row[8])) if row[8] is not None else None,
+            transactionDate=str(row[9]) if row[9] else None,
+            maturityDate=str(row[10]) if row[10] else None,
+            allowanceProbableLoss=int(row[11]) if row[11] is not None else 0,
+            botProvision=int(row[12]) if row[12] is not None else 0
         )
     
-    def insert_to_postgres(self, record: ShareCapitalRecord, cursor):
+    def insert_to_postgres(self, record: BalancesBotRecord, cursor):
         """Insert record to PostgreSQL"""
         insert_sql = """
-        INSERT INTO "shareCapital" (
-            "reportingDate", "capitalCategory", "capitalSubCategory", "transactionDate",
-            "transactionType", "shareholderNames", "clientType", "shareholderCountry",
-            "numberOfShares", "sharePriceBookValue", currency, "orgAmount", "tzsAmount",
-            "sectorSnaClassification"
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO "balancesBot" (
+            "reportingDate", "accountNumber", "accountName", "accountType",
+            "subAccountType", currency, "orgAmount", "usdAmount", "tzsAmount",
+            "transactionDate", "maturityDate", "allowanceProbableLoss", "botProvision"
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         
         cursor.execute(insert_sql, (
             record.reportingDate,
-            record.capitalCategory,
-            record.capitalSubCategory,
-            record.transactionDate,
-            record.transactionType,
-            record.shareholderNames,
-            record.clientType,
-            record.shareholderCountry,
-            record.numberOfShares,
-            record.sharePriceBookValue,
+            record.accountNumber,
+            record.accountName,
+            record.accountType,
+            record.subAccountType,
             record.currency,
             record.orgAmount,
+            record.usdAmount,
             record.tzsAmount,
-            record.sectorSnaClassification
+            record.transactionDate,
+            record.maturityDate,
+            record.allowanceProbableLoss,
+            record.botProvision
         ))
 
     def producer_thread(self):
@@ -221,14 +271,14 @@ class ShareCapitalStreamingPipeline:
                 cursor.execute(self.get_total_count_query())
                 self.total_available = cursor.fetchone()[0]
             
-            self.logger.info(f"Total share capital records available: {self.total_available:,}")
+            self.logger.info(f"Total balances BOT records available: {self.total_available:,}")
             
             # Setup RabbitMQ
             connection, channel = self.setup_rabbitmq_connection()
             
             # Process batches
             batch_number = 1
-            last_shareholder_name = None
+            current_offset = 0
             
             while True:
                 batch_start_time = time.time()
@@ -239,7 +289,7 @@ class ShareCapitalStreamingPipeline:
                     try:
                         with self.db2_conn.get_connection(log_connection=False) as conn:
                             cursor = conn.cursor()
-                            batch_query = self.get_query(last_shareholder_name)
+                            batch_query = self.get_query(current_offset)
                             cursor.execute(batch_query)
                             rows = cursor.fetchall()
                         break
@@ -257,7 +307,6 @@ class ShareCapitalStreamingPipeline:
                 # Process and publish
                 batch_published = 0
                 for row in rows:
-                    last_shareholder_name = row[-1]  # cursor_shareholder_name
                     
                     record = self.process_record(row)
                     message = json.dumps(asdict(record), default=str)
@@ -268,7 +317,7 @@ class ShareCapitalStreamingPipeline:
                         try:
                             channel.basic_publish(
                                 exchange='',
-                                routing_key='share_capital_queue',
+                                routing_key='balances_bot_queue',
                                 body=message,
                                 properties=pika.BasicProperties(delivery_mode=2)
                             )
@@ -293,6 +342,7 @@ class ShareCapitalStreamingPipeline:
                 
                 self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} records, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
                 
+                current_offset += len(rows)
                 batch_number += 1
                 time.sleep(0.1)
             
@@ -314,7 +364,7 @@ class ShareCapitalStreamingPipeline:
             def process_message(ch, method, properties, body):
                 try:
                     record_data = json.loads(body)
-                    record = ShareCapitalRecord(**record_data)
+                    record = BalancesBotRecord(**record_data)
                     
                     # Insert to PostgreSQL
                     inserted = False
@@ -347,14 +397,14 @@ class ShareCapitalStreamingPipeline:
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             
             channel.basic_qos(prefetch_count=10)
-            channel.basic_consume(queue='share_capital_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='balances_bot_queue', on_message_callback=process_message)
             
             while not self.stop_consumer.is_set():
                 try:
                     connection.process_data_events(time_limit=1)
                     
                     if self.producer_finished.is_set():
-                        method = channel.queue_declare(queue='share_capital_queue', durable=True, passive=True)
+                        method = channel.queue_declare(queue='balances_bot_queue', durable=True, passive=True)
                         if method.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
@@ -367,7 +417,7 @@ class ShareCapitalStreamingPipeline:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
                     channel.basic_qos(prefetch_count=10)
-                    channel.basic_consume(queue='share_capital_queue', on_message_callback=process_message)
+                    channel.basic_consume(queue='balances_bot_queue', on_message_callback=process_message)
             
             connection.close()
             self.logger.info(f"Consumer finished: {self.total_consumed:,} records processed")
@@ -379,7 +429,7 @@ class ShareCapitalStreamingPipeline:
 
     def run_streaming_pipeline(self):
         """Run the streaming pipeline"""
-        self.logger.info("Starting Share Capital STREAMING pipeline...")
+        self.logger.info("Starting Balances BOT STREAMING pipeline...")
         
         try:
             self.setup_rabbitmq_queue()
@@ -410,7 +460,7 @@ class ShareCapitalStreamingPipeline:
             
             self.logger.info(f"""
             ==========================================
-            Share Capital Pipeline Summary:
+            Balances BOT Pipeline Summary:
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -429,12 +479,12 @@ def main():
     """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Share Capital Streaming Pipeline')
+    parser = argparse.ArgumentParser(description='Balances BOT Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=500, help='Batch size for processing')
     
     args = parser.parse_args()
     
-    pipeline = ShareCapitalStreamingPipeline(batch_size=args.batch_size)
+    pipeline = BalancesBotStreamingPipeline(batch_size=args.batch_size)
     
     try:
         pipeline.run_streaming_pipeline()

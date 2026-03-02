@@ -1,45 +1,43 @@
 #!/usr/bin/env python3
 """
-Create shareCapital table in PostgreSQL
+Create balancesBot table in PostgreSQL
 """
 
 import psycopg2
 import logging
 from config import Config
 
-def create_share_capital_table():
-    """Create the shareCapital table"""
+def create_balances_bot_table():
+    """Create the balancesBot table"""
     config = Config()
     
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
     
     create_table_sql = """
-    DROP TABLE IF EXISTS "shareCapital";
+    DROP TABLE IF EXISTS "balancesBot";
     
-    CREATE TABLE "shareCapital" (
+    CREATE TABLE "balancesBot" (
         id SERIAL,
         "reportingDate" VARCHAR(50),
-        "capitalCategory" VARCHAR(255),
-        "capitalSubCategory" VARCHAR(255),
-        "transactionDate" VARCHAR(50),
-        "transactionType" VARCHAR(255),
-        "shareholderNames" VARCHAR(500),
-        "clientType" VARCHAR(255),
-        "shareholderCountry" VARCHAR(255),
-        "numberOfShares" NUMERIC(18, 2),
-        "sharePriceBookValue" NUMERIC(18, 2),
+        "accountNumber" VARCHAR(100),
+        "accountName" VARCHAR(255),
+        "accountType" VARCHAR(100),
+        "subAccountType" VARCHAR(100),
         currency VARCHAR(10),
         "orgAmount" NUMERIC(18, 2),
+        "usdAmount" NUMERIC(18, 2),
         "tzsAmount" NUMERIC(18, 2),
-        "sectorSnaClassification" VARCHAR(255),
+        "transactionDate" VARCHAR(50),
+        "maturityDate" VARCHAR(50),
+        "allowanceProbableLoss" INTEGER,
+        "botProvision" INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     
-    CREATE INDEX idx_share_capital_reporting_date ON "shareCapital"("reportingDate");
-    CREATE INDEX idx_share_capital_transaction_date ON "shareCapital"("transactionDate");
-    CREATE INDEX idx_share_capital_capital_category ON "shareCapital"("capitalCategory");
-    CREATE INDEX idx_share_capital_shareholder_names ON "shareCapital"("shareholderNames");
+    CREATE INDEX idx_balances_bot_account_number ON "balancesBot"("accountNumber");
+    CREATE INDEX idx_balances_bot_reporting_date ON "balancesBot"("reportingDate");
+    CREATE INDEX idx_balances_bot_transaction_date ON "balancesBot"("transactionDate");
     """
     
     try:
@@ -55,7 +53,7 @@ def create_share_capital_table():
         cursor.execute(create_table_sql)
         conn.commit()
         
-        logger.info("Table 'shareCapital' created successfully")
+        logger.info("Table 'balancesBot' created successfully")
         
         cursor.close()
         conn.close()
@@ -65,4 +63,4 @@ def create_share_capital_table():
         raise
 
 if __name__ == "__main__":
-    create_share_capital_table()
+    create_balances_bot_table()

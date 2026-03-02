@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Runner script for Share Capital Streaming Pipeline
+Runner script for Balances BOT Streaming Pipeline
 """
 
 import sys
 import logging
-from share_capital_streaming_pipeline import ShareCapitalStreamingPipeline
+from balances_bot_streaming_pipeline import BalancesBotStreamingPipeline
 
 def main():
     """Main function to run the pipeline"""
@@ -13,11 +13,11 @@ def main():
     logger = logging.getLogger(__name__)
     
     logger.info("=" * 60)
-    logger.info("Starting Share Capital Streaming Pipeline")
+    logger.info("Starting Balances BOT Streaming Pipeline")
     logger.info("=" * 60)
     
     try:
-        pipeline = ShareCapitalStreamingPipeline(batch_size=500)
+        pipeline = BalancesBotStreamingPipeline(batch_size=500)
         pipeline.run_streaming_pipeline()
         
         logger.info("=" * 60)

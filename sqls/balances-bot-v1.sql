@@ -1,10 +1,10 @@
 select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
-       gte.FK_GLG_ACCOUNTACCO                            as accountNumber,
+       pa.ACCOUNT_NUMBER                                 as accountNumber,
        'BANK OF TANZANIA'                                as accountName,
        'TIPS'                                            as accountType,
        null                                              as subAccountType,
        gte.CURRENCY_SHORT_DES                            as currency,
-       gte.DC_AMOUNT                                      AS orgAmount,
+       gte.DC_AMOUNT                                     AS orgAmount,
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
@@ -13,14 +13,14 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
                THEN DECIMAL(gte.DC_AMOUNT / fx.rate, 18, 2)
 
            ELSE NULL
-           END                                            AS usdAmount,
+           END                                           AS usdAmount,
 
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT * fx.rate, 18, 2)
 
            ELSE DECIMAL(gte.DC_AMOUNT, 18, 2)
-           END                                            AS tzsAmount,
+           END                                           AS tzsAmount,
        VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')      as transactionDate,
        VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as maturityDate,
        0                                                 as allowanceProbableLoss,
@@ -37,6 +37,9 @@ FROM GLI_TRX_EXTRACT AS gte
          LEFT JOIN CURRENCY curr
                    ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
 
+         JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
+    AND pa.PRFT_SYSTEM = 3
+
          LEFT JOIN (SELECT fr.fk_currencyid_curr,
                            fr.rate
                     FROM fixing_rate fr
@@ -51,4 +54,4 @@ FROM GLI_TRX_EXTRACT AS gte
                            GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
 
-WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
+WHERE gl.EXTERNAL_GLACCOUNT = '100028000';
