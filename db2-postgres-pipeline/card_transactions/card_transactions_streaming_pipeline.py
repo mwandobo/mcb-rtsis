@@ -6,13 +6,15 @@ Uses card-transaction-v1.sql query for comprehensive card transaction data extra
 
 import pika
 import psycopg2
+import psycopg2.extras
 import json
 import logging
+import re
 import threading
 import time
 from dataclasses import dataclass, asdict
 from contextlib import contextmanager
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import sys
 import os
@@ -22,6 +24,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from db2_connection import DB2Connection
+
+# Configure logging at module level (should only be called once)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 @dataclass
@@ -36,34 +41,36 @@ class CardTransactionRecord:
     transactionNature: str
     atmCode: Optional[str]
     posNumber: Optional[str]
-    transactionDescription: Optional[str]
-    beneficiaryName: Optional[str]
+    transactionDescription: str
+    beneficiaryName: str
     beneficiaryTradeName: Optional[str]
-    beneficaryCountry: str
+    beneficiaryCountry: str
     transactionPlace: str
     qtyItemsPurchased: Optional[str]
     unitPrice: Optional[str]
-    orgFacilitatorCommissionAmount: Optional[float]
-    usdFacilitatorCommissionAmount: Optional[float]
-    tzsFacilitatorCommissionAmount: Optional[float]
+    orgFacilitatorCommissionAmount: Optional[str]
+    usdFacilitatorCommissionAmount: Optional[str]
+    tzsFacilitatorCommissionAmount: Optional[str]
     currency: str
-    orgTransactionAmount: Optional[float]
-    usdTransactionAmount: Optional[float]
-    tzsTransactionAmount: Optional[float]
+    orgTransactionAmount: str
+    usdTransactionAmount: str
+    tzsTransactionAmount: str
 
 
 class CardTransactionsStreamingPipeline:
-    def __init__(self, batch_size=1000):
+    def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
+        self.consumer_batch_size = consumer_batch_size
         
         # Threading control
         self.producer_finished = threading.Event()
         self.consumer_finished = threading.Event()
         self.stop_consumer = threading.Event()
         
-        # Statistics
+        # Thread-safe statistics
+        self._stats_lock = threading.Lock()
         self.total_produced = 0
         self.total_consumed = 0
         self.total_available = 0
@@ -73,58 +80,46 @@ class CardTransactionsStreamingPipeline:
         self.max_retries = 3
         self.retry_delay = 5  # seconds
         
-        # Setup logging
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
         
         self.logger.info("Card Transactions STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
+        self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_card_transactions_query(self, last_row_number=None):
-        """Get the card transactions query using card-transaction-v1.sql with cursor-based pagination"""
+    def get_card_transactions_query(self):
+        """Get the full card transactions query from card-transaction-v1.sql.
         
-        # Read the card-transaction-v1.sql file
-        sql_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'sqls', 'card-transaction-v1.sql')
+        The query is executed ONCE and results are streamed via cursor.fetchmany().
+        No pagination modifications are made to the original SQL.
+        
+        Returns:
+            str: The complete SQL query
+        """
+        sql_file_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            'sqls', 'card-transaction-v1.sql'
+        )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            base_query = f.read()
-        
-        # Build cursor-based pagination condition using ROW_NUMBER
-        cursor_condition = ""
-        if last_row_number:
-            cursor_condition = f" WHERE ce.rn > {last_row_number}"
-        
-        # Insert cursor condition before the final ORDER BY
-        if cursor_condition:
-            # Add WHERE clause after the FROM clause and before any existing WHERE
-            base_query = base_query.replace(
-                "FROM ce_numbered ce",
-                f"FROM ce_numbered ce{cursor_condition}"
-            )
-        
-        # Add ORDER BY and FETCH FIRST for pagination
-        query = base_query.rstrip(';') + f"""
-        ORDER BY ce.rn ASC
-        FETCH FIRST {self.batch_size} ROWS ONLY
-        """
-        
-        return query
+            return f.read()
     
-    def get_total_count_query(self):
-        """Get total count of available card transaction records"""
-        return """
-        SELECT COUNT(*) as total_count
-        FROM CMS_CARD_EXTRAIT ce
-        LEFT JOIN CMS_CARD ca ON ca.CARD_SN = ce.CARD_SN
-        LEFT JOIN (SELECT ISO_CODE, MIN(DESCRIPTION) AS DESCRIPTION
-                   FROM ATM_PROCESS_CODE
-                   GROUP BY ISO_CODE) pc ON pc.ISO_CODE = ce.PROCESS_CD
-        JOIN CMS_CARD_ACCOUNT card_acc ON ce.CARD_SN = card_acc.FK_CARD_SN
-        JOIN PROFITS_ACCOUNT pa ON pa.PRFT_SYSTEM = card_acc.PRFT_SYSTEM
-        JOIN CURRENCY curr ON curr.ID_CURRENCY = pa.MOVEMENT_CURRENCY
+    def get_total_count(self):
+        """Get approximate total count of card transaction records from DB2.
+        Uses the base table count for a fast estimate. Actual joined count may differ.
         """
+        try:
+            with self.db2_conn.get_connection(log_connection=False) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM CMS_CARD_EXTRAIT")
+                result = cursor.fetchone()
+                count = result[0] if result else 0
+                self.logger.info(f"Estimated record count from CMS_CARD_EXTRAIT: {count:,}")
+                return count
+        except Exception as e:
+            self.logger.warning(f"Could not fetch record count, progress %% unavailable: {e}")
+            return 0
     
     @contextmanager
     def get_postgres_connection(self):
@@ -175,15 +170,41 @@ class CardTransactionsStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for card transactions"""
+        """Setup RabbitMQ queue for card transactions with dead-letter exchange for failed messages"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Declare queue with durability
-            channel.queue_declare(queue='card_transactions_queue', durable=True)
+            # Declare dead-letter exchange and queue for failed messages
+            channel.exchange_declare(exchange='card_transactions_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='card_transactions_dead_letter', durable=True)
+            channel.queue_bind(
+                queue='card_transactions_dead_letter',
+                exchange='card_transactions_dlx',
+                routing_key='card_transactions_queue'
+            )
+            
+            # Declare main queue with dead-letter exchange routing
+            try:
+                channel.queue_declare(
+                    queue='card_transactions_queue',
+                    durable=True,
+                    arguments={
+                        'x-dead-letter-exchange': 'card_transactions_dlx',
+                        'x-dead-letter-routing-key': 'card_transactions_queue'
+                    }
+                )
+                self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
+            except Exception:
+                # Queue may already exist with different arguments; reconnect and use as-is
+                self.logger.warning(
+                    "Queue 'card_transactions_queue' already exists with different args. "
+                    "Delete and recreate it to enable dead-letter support."
+                )
+                connection, channel = self.setup_rabbitmq_connection()
+                channel.queue_declare(queue='card_transactions_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'card_transactions_queue' setup complete (without DLX)")
             
             connection.close()
-            self.logger.info("RabbitMQ queue 'card_transactions_queue' setup complete")
             
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
@@ -199,41 +220,32 @@ class CardTransactionsStreamingPipeline:
                     return None
                 return str(value).strip()
             
-            def safe_float(value):
-                """Safely convert to float"""
-                if value is None:
-                    return None
-                try:
-                    return float(value)
-                except (ValueError, TypeError):
-                    return None
-            
             # Map the fields from the SQL query to the dataclass
-            # Based on the exact field order in card-transaction-v1.sql
+            # Based on the exact field order in card-transaction-v1.sql:
             record = CardTransactionRecord(
-                reportingDate=safe_string(row[0]),                    # VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')
-                cardNumber=safe_string(row[1]),                       # ca.FULL_CARD_NO
-                binNumber=safe_string(row[2]),                        # RIGHT(TRIM(ca.FULL_CARD_NO), 10)
-                transactingBankName=safe_string(row[3]),              # 'Mwalimu Commercial Bank Plc'
-                transactionId=safe_string(row[4]),                    # Composite ID
-                transactionDate=safe_string(row[5]),                  # VARCHAR_FORMAT(ce.TUN_DATE, 'DDMMYYYYHHMM')
-                transactionNature=safe_string(row[6]),                # 'Local Transactions by Locally Issued Cards'
-                atmCode=safe_string(row[7]),                          # null
-                posNumber=safe_string(row[8]),                        # null
-                transactionDescription=safe_string(row[9]),           # pc.DESCRIPTION
-                beneficiaryName=safe_string(row[10]),                 # ca.CARD_NAME_LATIN
-                beneficiaryTradeName=safe_string(row[11]),            # null
-                beneficaryCountry=safe_string(row[12]),               # 'TANZANIA, UNITED REPUBLIC OF'
-                transactionPlace=safe_string(row[13]),                # 'TANZANIA, UNITED REPUBLIC OF'
-                qtyItemsPurchased=safe_string(row[14]),               # null
-                unitPrice=safe_string(row[15]),                       # null
-                orgFacilitatorCommissionAmount=safe_float(row[16]),   # null
-                usdFacilitatorCommissionAmount=safe_float(row[17]),   # null
-                tzsFacilitatorCommissionAmount=safe_float(row[18]),   # null
-                currency=safe_string(row[19]),                        # curr.SHORT_DESCR
-                orgTransactionAmount=safe_float(row[20]),             # ce.TRANSACTION_AMNT
-                usdTransactionAmount=safe_float(row[21]),             # Currency conversion logic
-                tzsTransactionAmount=safe_float(row[22])              # Currency conversion logic
+                reportingDate=safe_string(row[0]),                      # VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')
+                cardNumber=safe_string(row[1]),                         # ca.FULL_CARD_NO
+                binNumber=safe_string(row[2]),                          # RIGHT(TRIM(ca.FULL_CARD_NO), 10) - last 10 digits (not standard BIN)
+                transactingBankName=safe_string(row[3]),                # 'Mwalimu Commercial Bank Plc'
+                transactionId=safe_string(row[4]),                      # ISO_REF_NUM-CARD_SN-TUN_DATE
+                transactionDate=safe_string(row[5]),                    # VARCHAR_FORMAT(ce.TUN_DATE, 'DDMMYYYYHHMM')
+                transactionNature=safe_string(row[6]),                  # 'Local Transactions by Locally Issued Cards'
+                atmCode=safe_string(row[7]) if row[7] else None,        # null
+                posNumber=safe_string(row[8]) if row[8] else None,      # null
+                transactionDescription=safe_string(row[9]),             # pc.DESCRIPTION
+                beneficiaryName=safe_string(row[10]),                   # ca.CARD_NAME_LATIN
+                beneficiaryTradeName=safe_string(row[11]) if row[11] else None,  # null
+                beneficiaryCountry=safe_string(row[12]),                # 'TANZANIA, UNITED REPUBLIC OF'
+                transactionPlace=safe_string(row[13]),                  # 'TANZANIA, UNITED REPUBLIC OF'
+                qtyItemsPurchased=safe_string(row[14]) if row[14] else None,     # null
+                unitPrice=safe_string(row[15]) if row[15] else None,             # null
+                orgFacilitatorCommissionAmount=safe_string(row[16]) if row[16] else None,  # null
+                usdFacilitatorCommissionAmount=safe_string(row[17]) if row[17] else None,  # null
+                tzsFacilitatorCommissionAmount=safe_string(row[18]) if row[18] else None,  # null
+                currency=safe_string(row[19]),                          # curr.SHORT_DESCR
+                orgTransactionAmount=safe_string(row[20]),              # ce.TRANSACTION_AMNT
+                usdTransactionAmount=safe_string(row[21]),              # USD conversion
+                tzsTransactionAmount=safe_string(row[22])               # TZS conversion
             )
             
             return record
@@ -263,121 +275,109 @@ class CardTransactionsStreamingPipeline:
             return False
     
     def producer_thread(self):
-        """Producer thread - reads from DB2 and sends to RabbitMQ with cursor-based pagination"""
+        """Producer thread - executes v1 query ONCE and streams results via fetchmany().
+        
+        Instead of re-executing the expensive CTE query for every batch,
+        we run it once and use the DB2 server-side cursor to fetch rows
+        in chunks. This avoids recomputing ROW_NUMBER() 897 times.
+        """
         try:
             self.logger.info("Producer thread started")
             
-            # Get total count first
-            with self.db2_conn.get_connection(log_connection=True) as conn:
-                cursor = conn.cursor()
-                cursor.execute(self.get_total_count_query())
-                self.total_available = cursor.fetchone()[0]
+            # Get dynamic record count
+            self.total_available = self.get_total_count()
             
-            self.logger.info(f"Total card transaction records available: {self.total_available:,}")
+            self.logger.info(f"Total card transaction records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
             # Setup RabbitMQ connection with retry
-            connection, channel = self.setup_rabbitmq_connection()
+            rmq_connection, channel = self.setup_rabbitmq_connection()
             
-            # Process batches using cursor-based pagination
-            batch_number = 1
-            last_row_number = None
-            last_progress_report = time.time()
+            # Execute the v1 query ONCE and stream results
+            query = self.get_card_transactions_query()
+            self.logger.info("Executing card transactions query (single execution, streaming results)...")
             
-            while True:
-                batch_start_time = time.time()
+            with self.db2_conn.get_connection(log_connection=True) as db2_conn:
+                db2_cursor = db2_conn.cursor()
+                db2_cursor.execute(query)
+                self.logger.info("Query executed successfully, streaming results via fetchmany()...")
                 
-                # Fetch batch with retry logic using cursor pagination
-                rows = None
-                for attempt in range(self.max_retries):
-                    try:
-                        with self.db2_conn.get_connection(log_connection=False) as conn:
-                            cursor = conn.cursor()
-                            batch_query = self.get_card_transactions_query(last_row_number)
-                            cursor.execute(batch_query)
-                            rows = cursor.fetchall()
+                batch_number = 1
+                last_progress_report = time.time()
+                
+                while True:
+                    batch_start_time = time.time()
+                    
+                    # Fetch next chunk from the already-running query
+                    rows = db2_cursor.fetchmany(self.batch_size)
+                    
+                    if not rows:
+                        self.logger.info("No more records to fetch")
                         break
-                    except Exception as e:
-                        self.logger.warning(f"DB2 query attempt {attempt + 1} failed: {e}")
-                        if attempt < self.max_retries - 1:
-                            time.sleep(self.retry_delay)
-                        else:
-                            raise
-                
-                if not rows:
-                    self.logger.info("No more records to process")
-                    break
-                
-                # Process and publish with retry logic
-                batch_published = 0
-                for row in rows:
-                    # Extract cursor value - we need to get the row number from the CTE
-                    # Since the row number is generated in the CTE, we'll track it manually
-                    if last_row_number is None:
-                        last_row_number = 0
-                    last_row_number += 1
                     
-                    # Process the full row
-                    record = self.process_record(row)
-                    
-                    if self.validate_record(record):
-                        message = json.dumps(asdict(record), default=str)
+                    # Process and publish
+                    batch_published = 0
+                    for row in rows:
+                        record = self.process_record(row)
                         
-                        # Publish with retry
-                        published = False
-                        for attempt in range(self.max_retries):
-                            try:
-                                channel.basic_publish(
-                                    exchange='',
-                                    routing_key='card_transactions_queue',
-                                    body=message,
-                                    properties=pika.BasicProperties(delivery_mode=2)
-                                )
-                                published = True
-                                break
-                            except Exception as e:
-                                self.logger.warning(f"RabbitMQ publish attempt {attempt + 1} failed: {e}")
-                                if attempt < self.max_retries - 1:
-                                    # Reconnect and retry
-                                    try:
-                                        connection.close()
-                                    except:
-                                        pass
-                                    connection, channel = self.setup_rabbitmq_connection()
-                                    time.sleep(self.retry_delay)
-                                else:
-                                    self.logger.error(f"Failed to publish message after {self.max_retries} attempts")
-                        
-                        if published:
-                            batch_published += 1
-                            self.total_produced += 1
-                
-                batch_time = time.time() - batch_start_time
-                progress_percent = self.total_produced / self.total_available * 100 if self.total_available > 0 else 0
-                
-                self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} records, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
-                
-                # Progress report every 5 minutes
-                current_time = time.time()
-                if current_time - last_progress_report >= 300:  # 5 minutes
-                    elapsed_time = current_time - self.start_time
-                    rate = self.total_produced / elapsed_time if elapsed_time > 0 else 0
-                    remaining_records = self.total_available - self.total_produced
-                    eta_seconds = remaining_records / rate if rate > 0 else 0
-                    eta_hours = eta_seconds / 3600
+                        if self.validate_record(record):
+                            message = json.dumps(asdict(record), default=str)
+                            
+                            # Publish with retry
+                            published = False
+                            for attempt in range(self.max_retries):
+                                try:
+                                    channel.basic_publish(
+                                        exchange='',
+                                        routing_key='card_transactions_queue',
+                                        body=message,
+                                        properties=pika.BasicProperties(delivery_mode=2)
+                                    )
+                                    published = True
+                                    break
+                                except Exception as e:
+                                    self.logger.warning(f"RabbitMQ publish attempt {attempt + 1} failed: {e}")
+                                    if attempt < self.max_retries - 1:
+                                        try:
+                                            rmq_connection.close()
+                                        except Exception:
+                                            pass
+                                        rmq_connection, channel = self.setup_rabbitmq_connection()
+                                        time.sleep(self.retry_delay)
+                                    else:
+                                        self.logger.error(f"Failed to publish message after {self.max_retries} attempts")
+                            
+                            if published:
+                                batch_published += 1
+                                with self._stats_lock:
+                                    self.total_produced += 1
                     
-                    self.logger.info(f"PROGRESS REPORT: {self.total_produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
-                    last_progress_report = current_time
-                
-                # Move to next batch
-                batch_number += 1
-                
-                # Small delay to prevent overwhelming
-                time.sleep(0.1)
+                    batch_time = time.time() - batch_start_time
+                    with self._stats_lock:
+                        produced = self.total_produced
+                    progress_percent = produced / self.total_available * 100 if self.total_available > 0 else 0
+                    
+                    self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} rows fetched, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
+                    
+                    # Progress report every 5 minutes
+                    current_time = time.time()
+                    if current_time - last_progress_report >= 300:
+                        elapsed_time = current_time - self.start_time
+                        rate = produced / elapsed_time if elapsed_time > 0 else 0
+                        remaining_records = self.total_available - produced
+                        eta_seconds = remaining_records / rate if rate > 0 else 0
+                        eta_hours = eta_seconds / 3600
+                        
+                        self.logger.info(f"PROGRESS REPORT: {produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
+                        last_progress_report = current_time
+                    
+                    batch_number += 1
             
-            connection.close()
-            self.logger.info(f"Producer finished: {self.total_produced:,} records published out of {self.total_available:,} available")
+            rmq_connection.close()
+            with self._stats_lock:
+                produced = self.total_produced
+            self.logger.info(f"Producer finished: {produced:,} records published out of {self.total_available:,} available")
             self.producer_finished.set()
             
         except Exception as e:
@@ -385,71 +385,137 @@ class CardTransactionsStreamingPipeline:
             self.producer_finished.set()
     
     def consumer_thread(self):
-        """Consumer thread - processes messages from queue with retry logic"""
+        """Consumer thread - processes messages from queue with batch inserts and persistent connection"""
+        pg_conn = None
         try:
             self.logger.info("Consumer thread started")
+            
+            # Setup persistent PostgreSQL connection (reused across all messages)
+            pg_conn = psycopg2.connect(
+                host=self.config.database.pg_host,
+                port=self.config.database.pg_port,
+                database=self.config.database.pg_database,
+                user=self.config.database.pg_user,
+                password=self.config.database.pg_password
+            )
+            self.logger.info("Consumer: Persistent PostgreSQL connection established")
             
             # Setup RabbitMQ connection with retry
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Initialize progress tracking variable
+            # Batch insert buffer
+            insert_buffer: List[CardTransactionRecord] = []
+            pending_tags: List[int] = []
+            last_flush_time = time.time()
+            flush_interval = 5  # seconds
             last_progress_report = time.time()
             
+            def flush_buffer(ch):
+                """Flush buffered records to PostgreSQL in a single batch insert"""
+                nonlocal insert_buffer, pending_tags, last_flush_time, pg_conn
+                if not insert_buffer:
+                    return
+                
+                batch_size = len(insert_buffer)
+                try:
+                    self.insert_batch_to_postgres(insert_buffer, pg_conn)
+                    
+                    # Batch acknowledge all messages at once
+                    if pending_tags:
+                        ch.basic_ack(delivery_tag=pending_tags[-1], multiple=True)
+                    
+                    with self._stats_lock:
+                        self.total_consumed += batch_size
+                    
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+                    
+                except psycopg2.OperationalError as e:
+                    self.logger.error(f"PostgreSQL connection lost during batch insert: {e}")
+                    # Reconnect PostgreSQL
+                    try:
+                        pg_conn.close()
+                    except Exception:
+                        pass
+                    pg_conn = psycopg2.connect(
+                        host=self.config.database.pg_host,
+                        port=self.config.database.pg_port,
+                        database=self.config.database.pg_database,
+                        user=self.config.database.pg_user,
+                        password=self.config.database.pg_password
+                    )
+                    # Nack all to requeue for retry
+                    for tag in pending_tags:
+                        try:
+                            ch.basic_nack(delivery_tag=tag, requeue=True)
+                        except Exception:
+                            pass
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+                    
+                except Exception as e:
+                    self.logger.error(f"Batch insert failed: {e}")
+                    try:
+                        pg_conn.rollback()
+                    except Exception:
+                        pass
+                    # Nack all messages - they go to dead-letter queue
+                    for tag in pending_tags:
+                        try:
+                            ch.basic_nack(delivery_tag=tag, requeue=False)
+                        except Exception:
+                            pass
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+            
             def process_message(ch, method, properties, body):
-                nonlocal last_progress_report  # Allow modification of the outer variable
+                nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
                     record = CardTransactionRecord(**record_data)
                     
-                    # Insert to PostgreSQL with retry
-                    inserted = False
-                    for attempt in range(self.max_retries):
-                        try:
-                            with self.get_postgres_connection() as conn:
-                                cursor = conn.cursor()
-                                self.insert_to_postgres(record, cursor)
-                                conn.commit()
-                            inserted = True
-                            break
-                        except Exception as e:
-                            self.logger.warning(f"PostgreSQL insert attempt {attempt + 1} failed: {e}")
-                            if attempt < self.max_retries - 1:
-                                time.sleep(self.retry_delay)
-                            else:
-                                self.logger.error(f"Failed to insert record after {self.max_retries} attempts")
+                    insert_buffer.append(record)
+                    pending_tags.append(method.delivery_tag)
                     
-                    if inserted:
-                        self.total_consumed += 1
-                        
-                        # Progress monitoring
-                        if self.total_consumed % (self.batch_size // 10) == 0:  # Every 10% of batch size
-                            elapsed_time = time.time() - self.start_time
-                            rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
-                            progress_percent = (self.total_consumed / self.total_available * 100) if self.total_available > 0 else 0
-                            
-                            self.logger.info(f"Consumer: Processed {self.total_consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
-                        
-                        # Detailed progress report every 5 minutes
-                        current_time = time.time()
-                        if current_time - last_progress_report >= 300:  # 5 minutes
-                            elapsed_time = current_time - self.start_time
-                            rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
-                            remaining_records = self.total_available - self.total_consumed if self.total_available > 0 else 0
-                            eta_seconds = remaining_records / rate if rate > 0 else 0
-                            eta_hours = eta_seconds / 3600
-                            
-                            self.logger.info(f"CONSUMER PROGRESS: {self.total_consumed:,}/{self.total_available:,} records - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
-                            last_progress_report = current_time
+                    # Flush if buffer is full or time interval exceeded
+                    if len(insert_buffer) >= self.consumer_batch_size or \
+                       time.time() - last_flush_time >= flush_interval:
+                        flush_buffer(ch)
                     
-                    # Acknowledge message
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    # Progress monitoring
+                    with self._stats_lock:
+                        consumed = self.total_consumed
+                    
+                    if consumed > 0 and consumed % self.batch_size == 0:
+                        elapsed_time = time.time() - self.start_time
+                        rate = consumed / elapsed_time if elapsed_time > 0 else 0
+                        progress_percent = (consumed / self.total_available * 100) if self.total_available > 0 else 0
+                        
+                        self.logger.info(f"Consumer: Processed {consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
+                    
+                    # Detailed progress report every 5 minutes
+                    current_time = time.time()
+                    if current_time - last_progress_report >= 300:
+                        elapsed_time = current_time - self.start_time
+                        with self._stats_lock:
+                            consumed = self.total_consumed
+                        rate = consumed / elapsed_time if elapsed_time > 0 else 0
+                        remaining_records = self.total_available - consumed if self.total_available > 0 else 0
+                        eta_seconds = remaining_records / rate if rate > 0 else 0
+                        eta_hours = eta_seconds / 3600
+                        
+                        self.logger.info(f"CONSUMER PROGRESS: {consumed:,}/{self.total_available:,} records - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
+                        last_progress_report = current_time
                     
                 except Exception as e:
                     self.logger.error(f"Consumer error processing message: {e}")
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             
-            # Set QoS for controlled processing
-            channel.basic_qos(prefetch_count=10)
+            # Set QoS to match consumer batch size for efficient batching
+            channel.basic_qos(prefetch_count=self.consumer_batch_size)
             channel.basic_consume(queue='card_transactions_queue', on_message_callback=process_message)
             
             # Keep consuming until producer is done and queue is empty
@@ -457,77 +523,101 @@ class CardTransactionsStreamingPipeline:
                 try:
                     connection.process_data_events(time_limit=1)
                     
+                    # Flush any remaining buffered records on timeout
+                    if insert_buffer and time.time() - last_flush_time >= flush_interval:
+                        flush_buffer(channel)
+                    
                     # Check if we should stop
                     if self.producer_finished.is_set():
+                        # Flush remaining buffer before checking queue
+                        flush_buffer(channel)
+                        
                         # Producer is done, check if queue is empty
-                        method = channel.queue_declare(queue='card_transactions_queue', durable=True, passive=True)
-                        if method.method.message_count == 0:
+                        queue_state = channel.queue_declare(queue='card_transactions_queue', durable=True, passive=True)
+                        if queue_state.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
                         
                 except Exception as e:
                     self.logger.error(f"Consumer processing error: {e}")
-                    # Try to reconnect
+                    # Try to reconnect RabbitMQ
                     try:
                         connection.close()
-                    except:
+                    except Exception:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
-                    channel.basic_qos(prefetch_count=10)
+                    channel.basic_qos(prefetch_count=self.consumer_batch_size)
                     channel.basic_consume(queue='card_transactions_queue', on_message_callback=process_message)
             
             connection.close()
-            self.logger.info(f"Consumer finished: {self.total_consumed:,} records processed")
+            with self._stats_lock:
+                consumed = self.total_consumed
+            self.logger.info(f"Consumer finished: {consumed:,} records processed")
             self.consumer_finished.set()
             
         except Exception as e:
             self.logger.error(f"Consumer error: {e}")
             self.consumer_finished.set()
+        finally:
+            if pg_conn:
+                try:
+                    pg_conn.close()
+                except Exception:
+                    pass
     
-    def insert_to_postgres(self, record, cursor):
-        """Insert card transaction record to PostgreSQL"""
+    def insert_batch_to_postgres(self, records: List[CardTransactionRecord], pg_conn):
+        """Batch insert card transaction records to PostgreSQL with duplicate prevention.
+        
+        Uses psycopg2.extras.execute_values for efficient batch inserts and
+        ON CONFLICT to skip duplicate transactionIds.
+        """
         try:
+            cursor = pg_conn.cursor()
+            
             insert_query = """
             INSERT INTO "cardTransactions" (
                 "reportingDate", "cardNumber", "binNumber", "transactingBankName", "transactionId",
                 "transactionDate", "transactionNature", "atmCode", "posNumber", "transactionDescription",
-                "beneficiaryName", "beneficiaryTradeName", "beneficaryCountry", "transactionPlace",
+                "beneficiaryName", "beneficiaryTradeName", "beneficiaryCountry", "transactionPlace",
                 "qtyItemsPurchased", "unitPrice", "orgFacilitatorCommissionAmount", "usdFacilitatorCommissionAmount",
                 "tzsFacilitatorCommissionAmount", "currency", "orgTransactionAmount", "usdTransactionAmount",
                 "tzsTransactionAmount"
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            )
+            ) VALUES %s
+            ON CONFLICT ("transactionId") DO NOTHING
             """
             
-            cursor.execute(insert_query, (
-                record.reportingDate,
-                record.cardNumber,
-                record.binNumber,
-                record.transactingBankName,
-                record.transactionId,
-                record.transactionDate,
-                record.transactionNature,
-                record.atmCode,
-                record.posNumber,
-                record.transactionDescription,
-                record.beneficiaryName,
-                record.beneficiaryTradeName,
-                record.beneficaryCountry,
-                record.transactionPlace,
-                record.qtyItemsPurchased,
-                record.unitPrice,
-                record.orgFacilitatorCommissionAmount,
-                record.usdFacilitatorCommissionAmount,
-                record.tzsFacilitatorCommissionAmount,
-                record.currency,
-                record.orgTransactionAmount,
-                record.usdTransactionAmount,
-                record.tzsTransactionAmount
-            ))
+            values = [
+                (
+                    r.reportingDate, r.cardNumber, r.binNumber, r.transactingBankName, r.transactionId,
+                    r.transactionDate, r.transactionNature, r.atmCode, r.posNumber, r.transactionDescription,
+                    r.beneficiaryName, r.beneficiaryTradeName, r.beneficiaryCountry, r.transactionPlace,
+                    r.qtyItemsPurchased, r.unitPrice, r.orgFacilitatorCommissionAmount,
+                    r.usdFacilitatorCommissionAmount, r.tzsFacilitatorCommissionAmount,
+                    r.currency, r.orgTransactionAmount, r.usdTransactionAmount, r.tzsTransactionAmount
+                )
+                for r in records
+            ]
+            
+            psycopg2.extras.execute_values(cursor, insert_query, values, page_size=len(values))
+            pg_conn.commit()
             
         except Exception as e:
-            self.logger.error(f"Error inserting card transaction record to PostgreSQL: {e}")
+            self.logger.error(f"Error batch inserting {len(records)} card transaction records: {e}")
+            raise
+    
+    def ensure_unique_index(self):
+        """Ensure unique index on transactionId exists for ON CONFLICT duplicate prevention"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_cardtransactions_txn_id_unique
+                    ON "cardTransactions" ("transactionId")
+                """)
+                conn.commit()
+                self.logger.info("Unique index on transactionId verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create unique index on transactionId: {e}")
             raise
     
     def run_streaming_pipeline(self):
@@ -535,6 +625,9 @@ class CardTransactionsStreamingPipeline:
         self.logger.info("Starting Card Transactions STREAMING pipeline...")
         
         try:
+            # Ensure unique index for duplicate prevention
+            self.ensure_unique_index()
+            
             # Setup queue
             self.setup_rabbitmq_queue()
             
@@ -589,14 +682,15 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Card Transactions Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for processing')
+    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
+    parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
     
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = CardTransactionsStreamingPipeline(batch_size=args.batch_size)
+    pipeline = CardTransactionsStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
     
     try:
         if args.mode == 'producer':
