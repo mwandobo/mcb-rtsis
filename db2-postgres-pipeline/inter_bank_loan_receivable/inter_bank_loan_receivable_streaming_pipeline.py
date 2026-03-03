@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Overdraft Streaming Pipeline - Producer and Consumer run simultaneously
+Inter-Bank Loan Receivable Streaming Pipeline - Producer and Consumer run simultaneously
+Uses inter-bank-loan-receivable-v4.sql query for comprehensive inter-bank loan receivable data extraction
 """
 
 import pika
@@ -9,18 +10,56 @@ import json
 import logging
 import threading
 import time
-from dataclasses import asdict
+from dataclasses import dataclass, asdict
 from contextlib import contextmanager
+from typing import Optional
+from decimal import Decimal
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from db2_connection import DB2Connection
-from processors.overdraft_processor import OverdraftProcessor, OverdraftRecord
 
-class OverdraftStreamingPipeline:
-    def __init__(self, batch_size=50):
+
+@dataclass
+class InterBankLoanReceivableRecord:
+    """Data class for inter-bank loan receivable records based on inter-bank-loan-receivable-v4.sql"""
+    reportingDate: str
+    borrowersInstitutionCode: str
+    borrowerCountry: Optional[str]
+    relationshipType: str
+    ratingStatus: int
+    externalRatingCorrespondentBorrower: str
+    gradesUnratedBorrower: str
+    loanNumber: str
+    loanType: str
+    issueDate: str
+    loanMaturityDate: Optional[str]
+    currency: str
+    orgLoanAmount: Optional[Decimal]
+    usdLoanAmount: Optional[Decimal]
+    tzsLoanAmount: Optional[Decimal]
+    interestRate: Optional[Decimal]
+    orgAccruedInterestAmount: Optional[Decimal]
+    usdAccruedInterestAmount: Optional[Decimal]
+    tzsAccruedInterestAmount: Optional[Decimal]
+    orgSuspendedInterest: Optional[Decimal]
+    usdSuspendedInterest: Optional[Decimal]
+    tzsSuspendedInterest: Optional[Decimal]
+    ovExpDt: Optional[str]  # New field from v4.sql
+    pastDueDays: int
+    allowanceProbableLoss: int
+    botProvision: int
+    assetClassificationCategory: str
+
+
+class InterBankLoanReceivableStreamingPipeline:
+    def __init__(self, batch_size=500):
         self.config = Config()
         self.db2_conn = DB2Connection()
-        self.processor = OverdraftProcessor()
         self.batch_size = batch_size
         
         # Threading control
@@ -42,303 +81,55 @@ class OverdraftStreamingPipeline:
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Overdraft STREAMING Pipeline initialized")
-        self.logger.info(f"Batch size: {self.batch_size} records per batch (optimized with cursor pagination)")
+        self.logger.info("Inter-Bank Loan Receivable STREAMING Pipeline initialized")
+        self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_overdraft_query(self, last_cust_id=None, last_account_number=None):
-        """Get the overdraft query with cursor-based pagination for better performance"""
+    def get_inter_bank_loan_receivable_query(self, last_loan_number=None):
+        """Get the inter-bank loan receivable query using inter-bank-loan-receivable-v4.sql with cursor-based pagination"""
         
-        # Use cursor-based pagination instead of ROW_NUMBER() for much better performance
-        where_clause = "WHERE gte.FK_GLG_ACCOUNTACCO IN ('1.1.0.05.0001', '1.1.0.05.0002', '1.1.0.05.0005')"
+        # Read the inter-bank-loan-receivable-v4.sql file
+        sql_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'sqls', 'inter-bank-loan-receivable-v4.sql')
         
-        if last_cust_id and last_account_number:
-            where_clause += f"""
-            AND (gte.CUST_ID > '{last_cust_id}' 
-                 OR (gte.CUST_ID = '{last_cust_id}' AND LTRIM(RTRIM(pa.ACCOUNT_NUMBER)) > '{last_account_number}'))
-            """
+        with open(sql_file_path, 'r', encoding='utf-8') as f:
+            base_query = f.read()
         
-        query = f"""
-        SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') AS reportingDate,
-               gte.CUST_ID,
-               LTRIM(RTRIM(pa.ACCOUNT_NUMBER)) AS accountNumber,
-               LTRIM(RTRIM(id.ID_NO)) AS customerIdentificationNumber,
-               TRIM(
-                       COALESCE(TRIM(c.FIRST_NAME), '') ||
-                       CASE
-                           WHEN c.MIDDLE_NAME IS NOT NULL AND TRIM(c.MIDDLE_NAME) <> ''
-                               THEN ' ' || c.MIDDLE_NAME
-                           ELSE ''
-                           END ||
-                       CASE
-                           WHEN c.SURNAME IS NOT NULL AND TRIM(c.SURNAME) <> ''
-                               THEN ' ' || c.SURNAME
-                           ELSE ''
-                           END
-               ) AS clientName,
-               ctl.CUSTOMER_TYPE as clientType,
-               cl.COUNTRY_CODE as borrowerCountry,
-               CAST(0 AS SMALLINT) as ratingStatus,
-               CASE c.CUST_TYPE WHEN 2 THEN 'Unrated' END as crRatingBorrower,
-               CASE c.CUST_TYPE WHEN 2 THEN 'Grade B' END as gradesUnratedBanks,
-               null as groupCode,
-               null as relatedEntityName,
-               null as relatedParty,
-               null as relationshipCategory,
-               p.DESCRIPTION as loanProductType,
-               gte.ID_PRODUCT as ID_PRODUCT,
-               'OtherServices' as overdraftEconomicActivity,
-
-               CASE la.ACC_STATUS
-                   WHEN '1' THEN 'Existing'
-                   WHEN '2' THEN 'TerminatedInAdvanceCorrectly'
-                   WHEN '3' THEN 'TerminatedAccordingTheContract'
-                   WHEN '4' THEN 'TerminatedInAdvanceIncorrectly'
-                   WHEN '5' THEN 'TerminatedInAdvanceIncorrectly'
-                   WHEN '6' THEN 'TerminatedInAdvanceIncorrectly'
-                   ELSE 'TerminatedAccordingTheContract'
-                   END AS loanPhase,
-               'NotSpecified' AS transferStatus,
-
-               CASE p.DESCRIPTION
-                   WHEN 'STAFF CURRENT ACCOUNT OVERDRAFT' THEN 'StaffLoan'
-                   WHEN 'OVERDRAFT-CORPORATE' THEN 'Business'
-                   WHEN 'NGO/CLUB ACCOUNT OVERDRAFT' THEN 'Development'
-                   ELSE 'Other'
-                   END AS purposeOtherLoans,
-               la.ACC_OPEN_DT as contractDate,
-               la.FK_UNITCODE as branchCode,
-               TRIM(
-                       COALESCE(TRIM(be.FIRST_NAME), '') ||
-                       CASE
-                           WHEN TRIM(be.FATHER_NAME) IS NOT NULL AND TRIM(be.FATHER_NAME) <> ''
-                               THEN ' ' || TRIM(be.FATHER_NAME)
-                           ELSE ''
-                           END ||
-                       CASE
-                           WHEN TRIM(be.LAST_NAME) IS NOT NULL AND TRIM(be.LAST_NAME) <> ''
-                               THEN ' ' || TRIM(be.LAST_NAME)
-                           ELSE ''
-                           END
-               ) AS loanOfficer,
-               TRIM(
-                       COALESCE(TRIM(be.FIRST_NAME), '') ||
-                       CASE
-                           WHEN TRIM(be.FATHER_NAME) IS NOT NULL AND TRIM(be.FATHER_NAME) <> ''
-                               THEN ' ' || TRIM(be.FATHER_NAME)
-                           ELSE ''
-                           END ||
-                       CASE
-                           WHEN TRIM(be.LAST_NAME) IS NOT NULL AND TRIM(be.LAST_NAME) <> ''
-                               THEN ' ' || TRIM(be.LAST_NAME)
-                           ELSE ''
-                           END
-               ) AS loanSupervisor,
-
-               gte.CURRENCY_SHORT_DES as currency,
-               ag.AGR_LIMIT as orgSanctionedAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN ag.AGR_LIMIT
-                   ELSE NULL
-                   END AS usdSanctionedAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN ag.AGR_LIMIT * 2500
-                   ELSE
-                       ag.AGR_LIMIT
-                   END AS tzsSanctionedAmount,
-               la.TOT_DRAWDOWN_AMN as orgUtilisedAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN la.TOT_DRAWDOWN_AMN
-                   ELSE NULL
-                   END AS usdUtilisedAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN la.TOT_DRAWDOWN_AMN * 2500
-                   ELSE
-                       la.TOT_DRAWDOWN_AMN
-                   END AS tzsUtilisedAmount,
-               gte.DC_AMOUNT as orgCrUsageLast30DaysAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN gte.DC_AMOUNT
-                   ELSE NULL
-                   END AS usdCrUsageLast30DaysAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN gte.DC_AMOUNT * 2500
-                   ELSE
-                       gte.DC_AMOUNT
-                   END AS tzsCrUsageLast30DaysAmount,
-               la.DRAWDOWN_FST_DT AS disbursementDate,
-               la.ACC_EXP_DT AS expiryDate,
-               COALESCE(la.OV_EXP_DT, la.ACC_EXP_DT) AS realEndDate,
-               (la.NRM_CAP_BAL + la.OV_CAP_BAL)
-                   + (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) AS orgOutstandingAmount,
-
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
-                       + (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
-                   ELSE NULL
-                   END AS usdOutstandingAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
-                       + (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) * 2500
-                   ELSE (la.NRM_CAP_BAL + la.OV_CAP_BAL)
-                       + (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
-                   END AS tzsOutstandingAmount,
-               (
-                   la.NRM_CAP_BAL + la.OV_CAP_BAL
-                   ) AS orgOutstandingPrincipalAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
-                   ELSE NULL
-                   END AS usdOutstandingPrincipalAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD'
-                       THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL) * 2500
-                   ELSE (la.NRM_CAP_BAL + la.OV_CAP_BAL)
-                   END AS tzsOutstandingPrincipalAmount,
-               la.DRAWDOWN_FST_DT AS latestCustomerCreditDate,
-               la.DRAWDOWN_FST_AMN AS latestCreditAmount,
-               la.INTER_RATE_SPRD AS primeLendingRate,
-               la.MORATOR_NRM_RATE AS annualInterestRate,
-               null AS collateralPledged,
-               null AS orgCollateralValue,
-               null AS usdCollateralValue,
-               null AS tzsCollateralValue,
-               0 AS restructuredLoans,
-               la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL AS orgAccruedInterestAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL
-                   ELSE NULL
-                   END AS usdAccruedInterestAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN
-                       (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) *
-                       2500
-                   ELSE la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL
-                   END AS tzsAccruedInterestAmount,
-
-               la.OV_RL_PNL_INT_BAL + la.OV_URL_PNL_INT_BAL AS orgPenaltyChargedAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.OV_RL_PNL_INT_BAL + la.OV_URL_PNL_INT_BAL
-                   ELSE NULL
-                   END AS usdPenaltyChargedAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.OV_RL_PNL_INT_BAL + la.OV_URL_PNL_INT_BAL) * 2500
-                   ELSE la.OV_RL_PNL_INT_BAL + la.OV_URL_PNL_INT_BAL
-                   END AS tzsPenaltyChargedAmount,
-               COALESCE(la.OV_RL_PNL_INT_BAL, 0) AS orgPenaltyPaidAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN COALESCE(la.OV_RL_PNL_INT_BAL, 0)
-                   ELSE NULL
-                   END AS usdPenaltyPaidAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN COALESCE(la.OV_RL_PNL_INT_BAL, 0) * 2500
-                   ELSE COALESCE(la.OV_RL_PNL_INT_BAL, 0)
-                   END AS tzsPenaltyPaidAmount,
-
-
-               la.TOT_COMMISSION_AMN AS orgLoanFeesChargedAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.TOT_COMMISSION_AMN
-                   ELSE NULL
-                   END AS usdLoanFeesChargedAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.TOT_COMMISSION_AMN * 2500
-                   ELSE la.TOT_COMMISSION_AMN
-                   END AS tzsLoanFeesChargedAmount,
-
-               la.TOT_EXPENSE_AMN AS orgLoanFeesPaidAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.TOT_EXPENSE_AMN
-                   ELSE NULL
-                   END AS usdLoanFeesPaidAmount,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.TOT_EXPENSE_AMN * 2500
-                   ELSE la.TOT_EXPENSE_AMN
-                   END AS tzsLoanFeesPaidAmount,
-
-               0.00 AS orgTotMonthlyPaymentAmount,
-               0.00 AS usdTotMonthlyPaymentAmount,
-               0.00 AS tzsTotMonthlyPaymentAmount,
-
-               la.TOT_NRM_INT_AMN + la.TOT_PNL_INT_AMN AS orgInterestPaidTotal,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN la.TOT_NRM_INT_AMN + la.TOT_PNL_INT_AMN
-                   ELSE NULL
-                   END AS usdInterestPaidTotal,
-               CASE
-                   WHEN gte.CURRENCY_SHORT_DES = 'USD' THEN (la.TOT_NRM_INT_AMN + la.TOT_PNL_INT_AMN) * 2500
-                   ELSE la.TOT_NRM_INT_AMN + la.TOT_PNL_INT_AMN
-                   END AS tzsInterestPaidTotal,
-               'Current' AS assetClassificationCategory,
-               'Other financial Corporations' AS sectorSnaClassification,
-               la.ACC_STATUS AS negStatusContract,
-               'N/A' AS customerRole,
-               0 AS allowanceProbableLoss,
-               0 AS botProvision,
-               
-               gte.CUST_ID as cursor_cust_id,
-               LTRIM(RTRIM(pa.ACCOUNT_NUMBER)) as cursor_account_number
-
-        FROM GLI_TRX_EXTRACT gte
-                 LEFT JOIN CUSTOMER c
-                           ON gte.CUST_ID = c.CUST_ID
-                 LEFT JOIN CUSTOMER_TYPES_LOOKUP ctl ON ctl.CUSTOMER_TYPE_CODE = c.CUST_TYPE
-                 LEFT JOIN PROFITS_ACCOUNT pa
-                           ON pa.CUST_ID = gte.CUST_ID
-                 LEFT JOIN PRODUCT p
-                           ON p.ID_PRODUCT = gte.ID_PRODUCT
-                 LEFT JOIN other_id id ON (CASE WHEN (id.serial_no IS NULL) THEN '1' ELSE id.main_flag END = '1' AND
-                                           id.fk_customercust_id = c.cust_id)
-
-                 LEFT JOIN cust_address ca
-                           ON (ca.fk_customercust_id = c.cust_id AND ca.communication_addr = '1' AND
-                               ca.entry_status = '1')
-                 LEFT JOIN generic_detail id_country ON (id.fkgh_has_been_issu = id_country.fk_generic_headpar AND
-                                                         id.fkgd_has_been_issu = id_country.serial_num)
-                 LEFT JOIN COUNTRIES_LOOKUP cl ON cl.COUNTRY_NAME = id_country.description
-
-
-                 LEFT JOIN LOAN_ACCOUNT la
-                           ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
-                               AND la.CUST_ID = gte.CUST_ID
-
-                 JOIN AGREEMENT ag
-                      ON ag.FK_UNITCODE = la.FK_AGREEMENTFK_UNI
-                          AND ag.AGR_YEAR = la.FK_AGREEMENTAGR_YE
-                          AND ag.AGR_SN = la.FK_AGREEMENTAGR_SN
-                          AND ag.AGR_MEMBERSHIP_SN = la.FK_AGREEMENTAGR_ME
-
-                 LEFT JOIN BANKEMPLOYEE be
-                           ON be.STAFF_NO = la.USR
-        {where_clause}
-        ORDER BY gte.CUST_ID ASC, LTRIM(RTRIM(pa.ACCOUNT_NUMBER)) ASC
+        # Build cursor-based pagination condition
+        cursor_condition = ""
+        if last_loan_number:
+            cursor_condition = f" AND la.ACC_SN > '{last_loan_number}'"
+        
+        # Insert cursor condition into the WHERE clause
+        if cursor_condition:
+            base_query = base_query.replace(
+                "WHERE gte.FK_GLG_ACCOUNTACCO IN ('7.0.5.19.0001', '7.0.5.19.0002', '7.0.5.19.0003')",
+                f"WHERE gte.FK_GLG_ACCOUNTACCO IN ('7.0.5.19.0001', '7.0.5.19.0002', '7.0.5.19.0003'){cursor_condition}"
+            )
+        
+        # Add ORDER BY and FETCH FIRST for pagination
+        query = base_query.rstrip(';') + f"""
+        ORDER BY la.ACC_SN ASC
         FETCH FIRST {self.batch_size} ROWS ONLY
         """
         
         return query
     
     def get_total_count_query(self):
-        """Get total count of available overdraft records"""
+        """Get total count of available inter-bank loan receivable records"""
         return """
         SELECT COUNT(*) as total_count
-        FROM GLI_TRX_EXTRACT gte
-                 LEFT JOIN CUSTOMER c ON gte.CUST_ID = c.CUST_ID
-                 LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
-                 LEFT JOIN PRODUCT p ON p.ID_PRODUCT = gte.ID_PRODUCT
-                 LEFT JOIN LOAN_ACCOUNT la ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI AND la.CUST_ID = gte.CUST_ID
-                 JOIN AGREEMENT ag ON ag.FK_UNITCODE = la.FK_AGREEMENTFK_UNI
-                          AND ag.AGR_YEAR = la.FK_AGREEMENTAGR_YE
-                          AND ag.AGR_SN = la.FK_AGREEMENTAGR_SN
-                          AND ag.AGR_MEMBERSHIP_SN = la.FK_AGREEMENTAGR_ME
-        WHERE gte.FK_GLG_ACCOUNTACCO IN ('1.1.0.05.0001', '1.1.0.05.0002', '1.1.0.05.0005')
+        from GLI_TRX_EXTRACT as gte
+                 INNER JOIN (SELECT la.*,
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY la.CUST_ID, la.FK_LOANFK_PRODUCTI
+                                        ORDER BY la.TMSTAMP DESC, la.ACC_OPEN_DT DESC
+                                        ) AS rn
+                             FROM LOAN_ACCOUNT la) la
+                            ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
+                                AND la.CUST_ID = gte.CUST_ID
+                                AND la.rn = 1
+        WHERE gte.FK_GLG_ACCOUNTACCO IN ('7.0.5.19.0001', '7.0.5.19.0002', '7.0.5.19.0003')
         """
     
     @contextmanager
@@ -390,19 +181,104 @@ class OverdraftStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for overdraft"""
+        """Setup RabbitMQ queue for inter-bank loan receivable"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Declare queue with durability
-            channel.queue_declare(queue='overdraft_queue', durable=True)
+            channel.queue_declare(queue='inter_bank_loan_receivable_queue', durable=True)
             
             connection.close()
-            self.logger.info("RabbitMQ queue 'overdraft_queue' setup complete")
+            self.logger.info("RabbitMQ queue 'inter_bank_loan_receivable_queue' setup complete")
             
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
             raise
+    
+    def process_record(self, row):
+        """Process a single inter-bank loan receivable record from DB2"""
+        try:
+            # Helper function to safely convert values
+            def safe_string(value):
+                """Safely convert to string"""
+                if value is None:
+                    return None
+                return str(value).strip()
+            
+            def safe_decimal(value):
+                """Safely convert to Decimal"""
+                if value is None:
+                    return None
+                try:
+                    return Decimal(str(value))
+                except (ValueError, TypeError):
+                    return None
+            
+            def safe_int(value):
+                """Safely convert to int"""
+                if value is None:
+                    return 0
+                try:
+                    return int(value)
+                except (ValueError, TypeError):
+                    return 0
+            
+            # Map the fields from the SQL query to the dataclass (based on v4.sql field order)
+            record = InterBankLoanReceivableRecord(
+                reportingDate=safe_string(row[0]),
+                borrowersInstitutionCode=safe_string(row[1]),
+                borrowerCountry=safe_string(row[2]),
+                relationshipType=safe_string(row[3]),
+                ratingStatus=safe_int(row[4]),
+                externalRatingCorrespondentBorrower=safe_string(row[5]),
+                gradesUnratedBorrower=safe_string(row[6]),
+                loanNumber=safe_string(row[7]),
+                loanType=safe_string(row[8]),
+                issueDate=safe_string(row[9]),
+                loanMaturityDate=safe_string(row[10]),
+                currency=safe_string(row[11]),
+                orgLoanAmount=safe_decimal(row[12]),
+                usdLoanAmount=safe_decimal(row[13]),
+                tzsLoanAmount=safe_decimal(row[14]),
+                interestRate=safe_decimal(row[15]),
+                orgAccruedInterestAmount=safe_decimal(row[16]),
+                usdAccruedInterestAmount=safe_decimal(row[17]),
+                tzsAccruedInterestAmount=safe_decimal(row[18]),
+                orgSuspendedInterest=safe_decimal(row[19]),
+                usdSuspendedInterest=safe_decimal(row[20]),
+                tzsSuspendedInterest=safe_decimal(row[21]),
+                ovExpDt=safe_string(row[22]),  # New field from v4.sql
+                pastDueDays=safe_int(row[23]),
+                allowanceProbableLoss=safe_int(row[24]),
+                botProvision=safe_int(row[25]),
+                assetClassificationCategory=safe_string(row[26])
+            )
+            
+            return record
+            
+        except Exception as e:
+            self.logger.error(f"Error processing inter-bank loan receivable record: {e}")
+            self.logger.error(f"Row data: {row}")
+            self.logger.error(f"Row length: {len(row)}")
+            raise
+    
+    def validate_record(self, record):
+        """Validate inter-bank loan receivable record"""
+        try:
+            # Basic validation
+            if not record.loanNumber:
+                self.logger.warning("Missing loan number")
+                return False
+            
+            if not record.borrowersInstitutionCode:
+                self.logger.warning("Missing borrowers institution code")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error validating inter-bank loan receivable record: {e}")
+            return False
     
     def producer_thread(self):
         """Producer thread - reads from DB2 and sends to RabbitMQ with cursor-based pagination"""
@@ -410,11 +286,12 @@ class OverdraftStreamingPipeline:
             self.logger.info("Producer thread started")
             
             # Get total count first
-            with self.db2_conn.get_connection(log_connection=True) as conn:        cursor = conn.cursor()
+            with self.db2_conn.get_connection(log_connection=True) as conn:
+                cursor = conn.cursor()
                 cursor.execute(self.get_total_count_query())
                 self.total_available = cursor.fetchone()[0]
             
-            self.logger.info(f"Total overdraft records available: {self.total_available:,}")
+            self.logger.info(f"Total inter-bank loan receivable records available: {self.total_available:,}")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
@@ -423,8 +300,7 @@ class OverdraftStreamingPipeline:
             
             # Process batches using cursor-based pagination
             batch_number = 1
-            last_cust_id = None
-            last_account_number = None
+            last_loan_number = None
             last_progress_report = time.time()
             
             while True:
@@ -436,7 +312,7 @@ class OverdraftStreamingPipeline:
                     try:
                         with self.db2_conn.get_connection(log_connection=False) as conn:
                             cursor = conn.cursor()
-                            batch_query = self.get_overdraft_query(last_cust_id, last_account_number)
+                            batch_query = self.get_inter_bank_loan_receivable_query(last_loan_number)
                             cursor.execute(batch_query)
                             rows = cursor.fetchall()
                         break
@@ -454,15 +330,13 @@ class OverdraftStreamingPipeline:
                 # Process and publish with retry logic
                 batch_published = 0
                 for row in rows:
-                    # Extract cursor values for next batch (last two fields)
-                    last_cust_id = row[-2]  # cursor_cust_id
-                    last_account_number = row[-1]  # cursor_account_number
+                    # Extract cursor value from the loan number field
+                    last_loan_number = row[7]  # loanNumber field
                     
-                    # Remove cursor fields before processing
-                    row_without_cursor = row[:-2]
-                    record = self.processor.process_record(row_without_cursor, 'overdraft')
+                    # Process the full row
+                    record = self.process_record(row)
                     
-                    if self.processor.validate_record(record):
+                    if self.validate_record(record):
                         message = json.dumps(asdict(record), default=str)
                         
                         # Publish with retry
@@ -471,7 +345,7 @@ class OverdraftStreamingPipeline:
                             try:
                                 channel.basic_publish(
                                     exchange='',
-                                    routing_key='overdraft_queue',
+                                    routing_key='inter_bank_loan_receivable_queue',
                                     body=message,
                                     properties=pika.BasicProperties(delivery_mode=2)
                                 )
@@ -540,7 +414,7 @@ class OverdraftStreamingPipeline:
                 nonlocal last_progress_report  # Allow modification of the outer variable
                 try:
                     record_data = json.loads(body)
-                    record = OverdraftRecord(**record_data)
+                    record = InterBankLoanReceivableRecord(**record_data)
                     
                     # Insert to PostgreSQL with retry
                     inserted = False
@@ -548,7 +422,7 @@ class OverdraftStreamingPipeline:
                         try:
                             with self.get_postgres_connection() as conn:
                                 cursor = conn.cursor()
-                                self.processor.insert_to_postgres(record, cursor)
+                                self.insert_to_postgres(record, cursor)
                                 conn.commit()
                             inserted = True
                             break
@@ -563,7 +437,7 @@ class OverdraftStreamingPipeline:
                         self.total_consumed += 1
                         
                         # Progress monitoring
-                        if self.total_consumed % (self.batch_size * 2) == 0:  # Every 2 batches
+                        if self.total_consumed % (self.batch_size // 10) == 0:  # Every 10% of batch size
                             elapsed_time = time.time() - self.start_time
                             rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
                             progress_percent = (self.total_consumed / self.total_available * 100) if self.total_available > 0 else 0
@@ -591,7 +465,7 @@ class OverdraftStreamingPipeline:
             
             # Set QoS for controlled processing
             channel.basic_qos(prefetch_count=10)
-            channel.basic_consume(queue='overdraft_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='inter_bank_loan_receivable_queue', on_message_callback=process_message)
             
             # Keep consuming until producer is done and queue is empty
             while not self.stop_consumer.is_set():
@@ -601,7 +475,7 @@ class OverdraftStreamingPipeline:
                     # Check if we should stop
                     if self.producer_finished.is_set():
                         # Producer is done, check if queue is empty
-                        method = channel.queue_declare(queue='overdraft_queue', durable=True, passive=True)
+                        method = channel.queue_declare(queue='inter_bank_loan_receivable_queue', durable=True, passive=True)
                         if method.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
@@ -615,7 +489,7 @@ class OverdraftStreamingPipeline:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
                     channel.basic_qos(prefetch_count=10)
-                    channel.basic_consume(queue='overdraft_queue', on_message_callback=process_message)
+                    channel.basic_consume(queue='inter_bank_loan_receivable_queue', on_message_callback=process_message)
             
             connection.close()
             self.logger.info(f"Consumer finished: {self.total_consumed:,} records processed")
@@ -625,9 +499,60 @@ class OverdraftStreamingPipeline:
             self.logger.error(f"Consumer error: {e}")
             self.consumer_finished.set()
     
+    def insert_to_postgres(self, record, cursor):
+        """Insert inter-bank loan receivable record to PostgreSQL"""
+        try:
+            insert_query = """
+            INSERT INTO "interBankLoanReceivable" (
+                "reportingDate", "borrowersInstitutionCode", "borrowerCountry", "relationshipType",
+                "ratingStatus", "externalRatingCorrespondentBorrower", "gradesUnratedBorrower",
+                "loanNumber", "loanType", "issueDate", "loanMaturityDate", currency,
+                "orgLoanAmount", "usdLoanAmount", "tzsLoanAmount", "interestRate",
+                "orgAccruedInterestAmount", "usdAccruedInterestAmount", "tzsAccruedInterestAmount",
+                "orgSuspendedInterest", "usdSuspendedInterest", "tzsSuspendedInterest",
+                "ovExpDt", "pastDueDays", "allowanceProbableLoss", "botProvision", "assetClassificationCategory"
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            )
+            """
+            
+            cursor.execute(insert_query, (
+                record.reportingDate,
+                record.borrowersInstitutionCode,
+                record.borrowerCountry,
+                record.relationshipType,
+                record.ratingStatus,
+                record.externalRatingCorrespondentBorrower,
+                record.gradesUnratedBorrower,
+                record.loanNumber,
+                record.loanType,
+                record.issueDate,
+                record.loanMaturityDate,
+                record.currency,
+                record.orgLoanAmount,
+                record.usdLoanAmount,
+                record.tzsLoanAmount,
+                record.interestRate,
+                record.orgAccruedInterestAmount,
+                record.usdAccruedInterestAmount,
+                record.tzsAccruedInterestAmount,
+                record.orgSuspendedInterest,
+                record.usdSuspendedInterest,
+                record.tzsSuspendedInterest,
+                record.ovExpDt,
+                record.pastDueDays,
+                record.allowanceProbableLoss,
+                record.botProvision,
+                record.assetClassificationCategory
+            ))
+            
+        except Exception as e:
+            self.logger.error(f"Error inserting inter-bank loan receivable record to PostgreSQL: {e}")
+            raise
+    
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Overdraft STREAMING pipeline...")
+        self.logger.info("Starting Inter-Bank Loan Receivable STREAMING pipeline...")
         
         try:
             # Setup queue
@@ -663,7 +588,7 @@ class OverdraftStreamingPipeline:
             
             self.logger.info(f"""
             ==========================================
-            Overdraft Pipeline Summary:
+            Inter-Bank Loan Receivable Pipeline Summary:
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -678,19 +603,20 @@ class OverdraftStreamingPipeline:
             self.logger.error(f"Pipeline error: {e}")
             raise
 
+
 def main():
     """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Overdraft Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=50, help='Batch size for processing')
+    parser = argparse.ArgumentParser(description='Inter-Bank Loan Receivable Streaming Pipeline')
+    parser.add_argument('--batch-size', type=int, default=500, help='Batch size for processing')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
     
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = OverdraftStreamingPipeline(batch_size=args.batch_size)
+    pipeline = InterBankLoanReceivableStreamingPipeline(batch_size=args.batch_size)
     
     try:
         if args.mode == 'producer':
@@ -706,6 +632,7 @@ def main():
         pipeline.logger.error(f"Pipeline failed: {e}")
         import sys
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

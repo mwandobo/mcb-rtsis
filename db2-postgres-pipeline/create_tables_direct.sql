@@ -15,7 +15,6 @@
 -- DROP TABLE IF EXISTS "balanceMno" CASCADE;
 -- DROP TABLE IF EXISTS "balanceBot" CASCADE;
 -- DROP TABLE IF EXISTS "otherAsset" CASCADE;
--- DROP TABLE IF EXISTS "overdraft" CASCADE;
 -- DROP TABLE IF EXISTS "balanceOtherBanks" CASCADE;
 -- DROP TABLE IF EXISTS "loanTransaction" CASCADE;
 -- DROP TABLE IF EXISTS "loan" CASCADE;
@@ -100,85 +99,6 @@ CREATE TABLE IF NOT EXISTS "balanceOtherBanks" (
 );
 
 \echo 'Created balanceOtherBanks table'
-
--- Overdraft
-CREATE TABLE IF NOT EXISTS "overdraft" (
-    "reportingDate" VARCHAR(20),
-    "accountNumber" VARCHAR(50),
-    "customerIdentificationNumber" VARCHAR(50),
-    "clientName" VARCHAR(200),
-    "clientType" VARCHAR(50),
-    "borrowerCountry" VARCHAR(10),
-    "ratingStatus" VARCHAR(50),
-    "crRatingBorrower" VARCHAR(50),
-    "gradesUnratedBanks" VARCHAR(50),
-    "groupCode" VARCHAR(50),
-    "relatedEntityName" VARCHAR(200),
-    "relatedParty" VARCHAR(50),
-    "relationshipCategory" VARCHAR(50),
-    "loanProductType" VARCHAR(100),
-    "overdraftEconomicActivity" VARCHAR(100),
-    "loanPhase" VARCHAR(50),
-    "transferStatus" VARCHAR(50),
-    "purposeOtherLoans" VARCHAR(100),
-    "contractDate" DATE,
-    "branchCode" VARCHAR(20),
-    "loanOfficer" VARCHAR(200),
-    "loanSupervisor" VARCHAR(200),
-    "currency" VARCHAR(10),
-    "orgSanctionedAmount" DECIMAL(15,2),
-    "usdSanctionedAmount" DECIMAL(15,2),
-    "tzsSanctionedAmount" DECIMAL(15,2),
-    "orgUtilisedAmount" DECIMAL(15,2),
-    "usdUtilisedAmount" DECIMAL(15,2),
-    "tzsUtilisedAmount" DECIMAL(15,2),
-    "orgCrUsageLast30DaysAmount" DECIMAL(15,2),
-    "usdCrUsageLast30DaysAmount" DECIMAL(15,2),
-    "tzsCrUsageLast30DaysAmount" DECIMAL(15,2),
-    "disbursementDate" DATE,
-    "expiryDate" DATE,
-    "realEndDate" DATE,
-    "orgOutstandingAmount" DECIMAL(15,2),
-    "usdOutstandingAmount" DECIMAL(15,2),
-    "tzsOutstandingAmount" DECIMAL(15,2),
-    "latestCustomerCreditDate" DATE,
-    "latestCreditAmount" DECIMAL(15,2),
-    "primeLendingRate" DECIMAL(8,4),
-    "annualInterestRate" DECIMAL(8,4),
-    "collateralPledged" DECIMAL(15,2),
-    "orgCollateralValue" DECIMAL(15,2),
-    "usdCollateralValue" DECIMAL(15,2),
-    "tzsCollateralValue" DECIMAL(15,2),
-    "restructuredLoans" INTEGER,
-    "pastDueDays" INTEGER,
-    "pastDueAmount" DECIMAL(15,2),
-    "orgAccruedInterestAmount" DECIMAL(15,2),
-    "usdAccruedInterestAmount" DECIMAL(15,2),
-    "tzsAccruedInterestAmount" DECIMAL(15,2),
-    "orgPenaltyChargedAmount" DECIMAL(15,2),
-    "usdPenaltyChargedAmount" DECIMAL(15,2),
-    "tzsPenaltyChargedAmount" DECIMAL(15,2),
-    "orgLoanFeesChargedAmount" DECIMAL(15,2),
-    "usdLoanFeesChargedAmount" DECIMAL(15,2),
-    "tzsLoanFeesChargedAmount" DECIMAL(15,2),
-    "orgLoanFeesPaidAmount" DECIMAL(15,2),
-    "usdLoanFeesPaidAmount" DECIMAL(15,2),
-    "tzsLoanFeesPaidAmount" DECIMAL(15,2),
-    "orgTotMonthlyPaymentAmount" DECIMAL(15,2),
-    "usdTotMonthlyPaymentAmount" DECIMAL(15,2),
-    "tzsTotMonthlyPaymentAmount" DECIMAL(15,2),
-    "orgInterestPaidTotal" DECIMAL(15,2),
-    "usdInterestPaidTotal" DECIMAL(15,2),
-    "tzsInterestPaidTotal" DECIMAL(15,2),
-    "assetClassificationCategory" VARCHAR(50),
-    "sectorSnaClassification" VARCHAR(100),
-    "negStatusContract" VARCHAR(50),
-    "customerRole" VARCHAR(50),
-    "allowanceProbableLoss" DECIMAL(15,2),
-    "botProvision" DECIMAL(15,2)
-);
-
-\echo 'Created overdraft table'
 
 -- Other Assets
 CREATE TABLE IF NOT EXISTS "otherAsset" (
@@ -384,8 +304,6 @@ CREATE INDEX IF NOT EXISTS idx_loan_info_status ON "loan"("loanStatus");
 CREATE INDEX IF NOT EXISTS idx_loan_trx_date ON "loanTransaction"("transactionDate");
 CREATE INDEX IF NOT EXISTS idx_other_assets_type ON "otherAsset"("assetType");
 CREATE INDEX IF NOT EXISTS idx_cheque_settlement ON "cheques"("settlementDate");
-CREATE INDEX IF NOT EXISTS idx_overdraft_contract ON "overdraft"("contractDate");
-CREATE INDEX IF NOT EXISTS idx_overdraft_account ON "overdraft"("accountNumber");
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_type ON "investmentDebtSecurities"("securityType");
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_issuer ON "investmentDebtSecurities"("securityIssuerName");
 CREATE INDEX IF NOT EXISTS idx_inv_debt_sec_maturity ON "investmentDebtSecurities"("maturityDate");

@@ -1,216 +1,297 @@
--- Income Statement Report for BOT API (DB2 Optimized - Fixed)
--- Single scan with proper aggregation
+-- =============================================================================
+-- INCOME STATEMENT REPORT FOR BOT API - FINAL WORKING VERSION
+-- List fields format: [{"1": 5823000.00}, {"2": 120000.00}]
+-- =============================================================================
+-- USAGE: Update the 4 date values below (search for ← SET DATE)
+--        All 4 must always be kept in sync.
+-- =============================================================================
 
-SELECT 
-    -- Reporting Date
-    TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') as reportingDate,
-    
-    -- D46: Interest Income - Build comma-separated string
-    RTRIM(
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('400010001','400010005','400020001','400020012','400030001','400030002','400030003','400030005','400040001','400040002','400040003','400040006','400030007','400030009') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '1:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('400010001','400010005','400020001','400020012','400030001','400030002','400030003','400030005','400040001','400040002','400040003','400040006','400030007','400030009') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '408010001' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '2:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '408010001' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '404020001' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '3:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '404020001' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('400060001','400060002','400060005','400060004','400061001','400070003') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '6:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('400060001','400060002','400060005','400060004','400061001','400070003') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT LIKE '401%' OR gl.EXTERNAL_GLACCOUNT LIKE '402%' OR gl.EXTERNAL_GLACCOUNT LIKE '403%' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '11:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT LIKE '401%' OR gl.EXTERNAL_GLACCOUNT LIKE '402%' OR gl.EXTERNAL_GLACCOUNT LIKE '403%' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END,
+WITH categorized_amounts AS (
+    SELECT
+        lookup.CATEGORY,
+        lookup.ITEM_CODE,
+        SUM(COALESCE(gte.DC_AMOUNT, 0)) AS total_amount
+    FROM GLI_TRX_EXTRACT gte
+    INNER JOIN GLG_ACCOUNT gl
+        ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
+    INNER JOIN INCOME_STATEMENT_GL_LOOKUP lookup
+        ON gl.EXTERNAL_GLACCOUNT = lookup.GL_ACCOUNT
+    WHERE gte.TRN_DATE >= DATE('2016-01-01')    -- ← SET DATE: period start
+      AND gte.TRN_DATE <= CURRENT_DATE    -- ← SET DATE: period end
+      AND gl.EXTERNAL_GLACCOUNT NOT LIKE '401%'
+      AND gl.EXTERNAL_GLACCOUNT NOT LIKE '402%'
+      AND gl.EXTERNAL_GLACCOUNT NOT LIKE '403%'
+      AND gl.EXTERNAL_GLACCOUNT NOT IN ('705190001','705190002','705190003')
+    GROUP BY lookup.CATEGORY, lookup.ITEM_CODE
+),
+
+pattern_accounts AS (
+    SELECT
+        'INTEREST_INCOME' AS CATEGORY,
+        11                AS ITEM_CODE,
+        SUM(COALESCE(gte.DC_AMOUNT, 0)) AS total_amount
+    FROM GLI_TRX_EXTRACT gte
+    INNER JOIN GLG_ACCOUNT gl
+        ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
+    WHERE gte.TRN_DATE >= DATE('2016-01-01')    -- ← SET DATE: period start
+      AND gte.TRN_DATE <= CURRENT_DATE    -- ← SET DATE: period end
+      AND (   gl.EXTERNAL_GLACCOUNT LIKE '401%'
+           OR gl.EXTERNAL_GLACCOUNT LIKE '402%'
+           OR gl.EXTERNAL_GLACCOUNT LIKE '403%')
+),
+
+ecl_for_d49 AS (
+    SELECT
+        'NON_INTEREST_EXPENSE' AS CATEGORY,
+        33                     AS ITEM_CODE,
+        SUM(COALESCE(gte.DC_AMOUNT, 0)) AS total_amount
+    FROM GLI_TRX_EXTRACT gte
+    INNER JOIN GLG_ACCOUNT gl
+        ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
+    WHERE gte.TRN_DATE >= DATE('2016-01-01')    -- ← SET DATE: period start
+      AND gte.TRN_DATE <= CURRENT_DATE    -- ← SET DATE: period end
+      AND gl.EXTERNAL_GLACCOUNT IN ('705190001','705190002','705190003')
+),
+
+provision_standalone AS (
+    SELECT
+        'PROVISION' AS CATEGORY,
+        1           AS ITEM_CODE,
+        SUM(COALESCE(gte.DC_AMOUNT, 0)) AS total_amount
+    FROM GLI_TRX_EXTRACT gte
+    INNER JOIN GLG_ACCOUNT gl
+        ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
+    WHERE gte.TRN_DATE >= DATE('2016-01-01')    -- ← SET DATE: period start
+      AND gte.TRN_DATE <= CURRENT_DATE    -- ← SET DATE: period end
+      AND gl.EXTERNAL_GLACCOUNT IN ('705190001','705190002')
+),
+
+impairment_standalone AS (
+    SELECT
+        'IMPAIRMENT' AS CATEGORY,
+        1            AS ITEM_CODE,
+        SUM(COALESCE(gte.DC_AMOUNT, 0)) AS total_amount
+    FROM GLI_TRX_EXTRACT gte
+    INNER JOIN GLG_ACCOUNT gl
+        ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
+    WHERE gte.TRN_DATE >= DATE('2016-01-01')    -- ← SET DATE: period start
+      AND gte.TRN_DATE <= CURRENT_DATE   -- ← SET DATE: period end
+      AND gl.EXTERNAL_GLACCOUNT IN ('705190003')
+),
+
+all_amounts AS (
+    SELECT * FROM categorized_amounts
+    UNION ALL
+    SELECT * FROM pattern_accounts
+    UNION ALL
+    SELECT * FROM ecl_for_d49
+    UNION ALL
+    SELECT * FROM provision_standalone
+    UNION ALL
+    SELECT * FROM impairment_standalone
+)
+
+SELECT
+    TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') AS reportingDate,
+
+    -- -------------------------------------------------------------------------
+    -- D46: Interest Income
+    -- Format: [{"1": 5000000.00}, {"2": 200000.00}, ...]
+    -- -------------------------------------------------------------------------
+    '[' || RTRIM(
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 1  AND total_amount != 0
+            THEN '{"1":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 2  AND total_amount != 0
+            THEN '{"2":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 3  AND total_amount != 0
+            THEN '{"3":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 4  AND total_amount != 0
+            THEN '{"4":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 5  AND total_amount != 0
+            THEN '{"5":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 6  AND total_amount != 0
+            THEN '{"6":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 7  AND total_amount != 0
+            THEN '{"7":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 8  AND total_amount != 0
+            THEN '{"8":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 9  AND total_amount != 0
+            THEN '{"9":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 10 AND total_amount != 0
+            THEN '{"10":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_INCOME' AND ITEM_CODE = 11 AND total_amount != 0
+            THEN '{"11":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), ''),
         ','
-    ) as interestIncome,
-    
-    -- Total Interest Income Value
-    SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('400010001','400010005','400020001','400020012','400030001','400030002','400030003','400030005','400040001','400040002','400040003','400040006','400030007','400030009','408010001','404020001','400060001','400060002','400060005','400060004','400061001','400070003')
-        OR gl.EXTERNAL_GLACCOUNT LIKE '401%' OR gl.EXTERNAL_GLACCOUNT LIKE '402%' OR gl.EXTERNAL_GLACCOUNT LIKE '403%'
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) as interestIncomeValue,
-    
+    ) || ']' AS interestIncome,
+
+    COALESCE(SUM(CASE WHEN CATEGORY = 'INTEREST_INCOME'
+                 THEN total_amount ELSE 0 END), 0) AS interestIncomeValue,
+
+    -- -------------------------------------------------------------------------
     -- D47: Interest Expenses
-    RTRIM(
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('600220001','600220002','600220003','600220004','600220005','600220006','600220009','600220010') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '1:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('600220001','600220002','600220003','600220004','600220005','600220006','600220009','600220010') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '602010001' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '5:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '602010001' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('600230001','600230002','600230003','600230004','600230005','600230006','600240001','601060001') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '11:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('600230001','600230002','600230003','600230004','600230005','600230006','600240001','601060001') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END,
+    -- Format: [{"1": 3000000.00}, {"5": 100000.00}, ...]
+    -- -------------------------------------------------------------------------
+    '[' || RTRIM(
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 1  AND total_amount != 0
+            THEN '{"1":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 2  AND total_amount != 0
+            THEN '{"2":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 3  AND total_amount != 0
+            THEN '{"3":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 4  AND total_amount != 0
+            THEN '{"4":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 5  AND total_amount != 0
+            THEN '{"5":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 6  AND total_amount != 0
+            THEN '{"6":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 7  AND total_amount != 0
+            THEN '{"7":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 8  AND total_amount != 0
+            THEN '{"8":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 9  AND total_amount != 0
+            THEN '{"9":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 10 AND total_amount != 0
+            THEN '{"10":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'INTEREST_EXPENSE' AND ITEM_CODE = 11 AND total_amount != 0
+            THEN '{"11":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), ''),
         ','
-    ) as interestExpenses,
-    
-    -- Total Interest Expenses Value
-    SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('600220001','600220002','600220003','600220004','600220005','600220006','600220009','600220010','602010001','600230001','600230002','600230003','600230004','600230005','600230006','600240001','601060001')
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) as interestExpensesValue,
-    
-    -- Single value fields
-    COALESCE(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '705190003' 
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END), 0) as badDebtsWrittenOffNotProvided,
-    
-    COALESCE(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '705190002' 
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END), 0) as provisionBadDoubtfulDebts,
-    
-    COALESCE(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '705190001' 
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END), 0) as impairmentsInvestments,
-    
-    COALESCE(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('704010001','704020001','704020002','704020004','704020007','704020012','704020013','704030004') 
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END), 0) as incomeTaxProvision,
-    
-    COALESCE(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '505000000' 
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END), 0) as extraordinaryCreditsCharge,
-    
-    -- D50: Non-Core Credits and Charges
-    RTRIM(
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '505070001' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '1:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '505070001' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '505010001' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '3:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '505010001' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END,
-        ','
-    ) as nonCoreCreditsCharges,
-    
-    -- Total Non-Core Credits and Charges Value
-    SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('505070001','505010001')
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) as nonCoreCreditsChargesValue,
-    
-    -- D48: Non-Interest Income
-    RTRIM(
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('505040001','505040002','505040006','505040009') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '1:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('505040001','505040002','505040006','505040009') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('500020055','500020056','500020058') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '4:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('500020055','500020056','500020058') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('500010009','500010010','500010015','500020001','500020003','500020010','500020011','500020014','500020015','500020016','500020018','500020019','500020020','500020027','500020030','500020036','500020038','500020062','500020065','500020070','502010001','503010001','503010011','503010012','504040001','504040002','504050001','504060001','504080001','504100001','504110001','504120002','504130001') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '5:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('500010009','500010010','500010015','500020001','500020003','500020010','500020011','500020014','500020015','500020016','500020018','500020019','500020020','500020027','500020030','500020036','500020038','500020062','500020065','500020070','502010001','503010001','503010011','503010012','504040001','504040002','504050001','504060001','504080001','504100001','504110001','504120002','504130001') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '500020017' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '20:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '500020017' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END,
-        ','
-    ) as nonInterestIncome,
-    
-    -- Total Non-Interest Income Value
-    SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('505040001','505040002','505040006','505040009','500020055','500020056','500020058','500010009','500010010','500010015','500020001','500020003','500020010','500020011','500020014','500020015','500020016','500020018','500020019','500020020','500020027','500020030','500020036','500020038','500020062','500020065','500020070','502010001','503010001','503010011','503010012','504040001','504040002','504050001','504060001','504080001','504100001','504110001','504120002','504130001','500020017')
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) as nonInterestIncomeValue,
-    
-    -- D49: Non-Interest Expenses
-    RTRIM(
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('700010001','700010004','700010005','700020002','700030001','700040002','700050001','700060001','700090001','700090005','700090009','700090006','700090011','700090013','700090015','701020001','701020005','701020006') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '1:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('700010001','700010004','700010005','700020002','700030001','700040002','700050001','700060001','700090001','700090005','700090009','700090006','700090011','700090013','700090015','701020001','701020005','701020006') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '701010001' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '5:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '701010001' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '703020001' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '7:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '703020001' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('703020004','703020006','703020008','703020011') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '8:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('703020004','703020006','703020008','703020011') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '701010009' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '9:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '701010009' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '705020001' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '12:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '705020001' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705070001','705100004','705110003','705100003','705110002','705110004','705110005','705110006','705110007') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '13:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705070001','705100004','705110003','705100003','705110002','705110004','705110005','705110006','705110007') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '705080002' 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '23:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT = '705080002' 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705040001','705040009','705040011') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '24:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705040001','705040009','705040011') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('700090003','700090004','701010002','701010003','701010006','701010008','701010012','701010013','701010010','702010002','702030001','702030003','702030004','702040002','702040004','702040006') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '25:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('700090003','700090004','701010002','701010003','701010006','701010008','701010012','701010013','701010010','702010002','702030001','702030003','702030004','702040002','702040004','702040006') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705050001','705060002','705060004','705090001') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '36:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705050001','705060002','705060004','705090001') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705010001','705010002','705010003') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '37:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705010001','705010002','705010003') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705120001','705120005','705120006') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '39:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705120001','705120005','705120006') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END ||
-        CASE WHEN SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705160001','705160002','705160003','705170001') 
-            THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) > 0 
-            THEN '40:' || CAST(SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('705160001','705160002','705160003','705170001') 
-                THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) AS VARCHAR(50)) || ',' ELSE '' END,
-        ','
-    ) as nonInterestExpenses,
-    
-    -- Total Non-Interest Expenses Value
-    SUM(CASE WHEN gl.EXTERNAL_GLACCOUNT IN ('700010001','700010004','700010005','700020002','700030001','700040002','700050001','700060001','700090001','700090005','700090009','700090006','700090011','700090013','700090015','701020001','701020005','701020006','701010001','703020001','703020004','703020006','703020008','703020011','701010009','705020001','705070001','705100004','705110003','705100003','705110002','705110004','705110005','705110006','705110007','705080002','705040001','705040009','705040011','700090003','700090004','701010002','701010003','701010006','701010008','701010012','701010013','701010010','702010002','702030001','702030003','702030004','702040002','702040004','702040006','705050001','705060002','705060004','705090001','705010001','705010002','705010003','705120001','705120005','705120006','705160001','705160002','705160003','705170001')
-        THEN COALESCE(gte.DC_AMOUNT, 0) ELSE 0 END) as nonInterestExpensesValue
+    ) || ']' AS interestExpenses,
 
-FROM GLI_TRX_EXTRACT gte
-INNER JOIN GLG_ACCOUNT gl ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
-WHERE (
-    gl.EXTERNAL_GLACCOUNT IN (
-        -- Interest Income accounts
-        '400010001','400010005','400020001','400020012','400030001','400030002','400030003','400030005',
-        '400040001','400040002','400040003','400040006','400060001','400060002','400060004','400060005',
-        '400061001','400070003','404020001','408010001','400030007','400030009',
-        -- Interest Expense accounts
-        '600220001','600220002','600220003','600220004','600220005','600220006','600220009','600220010',
-        '600230001','600230002','600230003','600230004','600230005','600230006','600240001','601060001',
-        '602010001',
-        -- Non-Interest Income accounts
-        '500010009','500010010','500010015','500020001','500020003','500020010','500020011','500020014',
-        '500020015','500020016','500020017','500020018','500020019','500020020','500020027','500020030',
-        '500020036','500020038','500020055','500020056','500020058','500020062','500020065','500020070',
-        '502010001','503010001','503010011','503010012','504040001','504040002','504050001','504060001',
-        '504080001','504100001','504110001','504120002','504130001','505000000','505010001','505040001',
-        '505040002','505040006','505040009','505070001',
-        -- Non-Interest Expense accounts
-        '700010001','700010004','700010005','700020002','700030001','700040002','700050001','700060001',
-        '700090001','700090003','700090004','700090005','700090006','700090009','700090011','700090013',
-        '700090015','701010001','701010002','701010003','701010006','701010008','701010009','701010010',
-        '701010012','701010013','701020001','701020005','701020006','702010002','702030001','702030003',
-        '702030004','702040002','702040004','702040006','703020001','703020004','703020006','703020008',
-        '703020011','704010001','704020001','704020002','704020004','704020007','704020012','704020013',
-        '704030004','705010001','705010002','705010003','705020001','705040001','705040009','705040011',
-        '705050001','705060002','705060004','705070001','705080002','705090001','705100003','705100004',
-        '705110002','705110003','705110004','705110005','705110006','705110007','705120001','705120005',
-        '705120006','705160001','705160002','705160003','705170001','705190001','705190002','705190003'
-    )
-    OR gl.EXTERNAL_GLACCOUNT LIKE '401%' 
-    OR gl.EXTERNAL_GLACCOUNT LIKE '402%' 
-    OR gl.EXTERNAL_GLACCOUNT LIKE '403%'
-);
+    COALESCE(SUM(CASE WHEN CATEGORY = 'INTEREST_EXPENSE'
+                 THEN total_amount ELSE 0 END), 0) AS interestExpensesValue,
+
+    -- -------------------------------------------------------------------------
+    -- Standalone provision / impairment fields (numeric only, no list format)
+    -- -------------------------------------------------------------------------
+    0 AS badDebtsWrittenOffNotProvided,
+
+    COALESCE(SUM(CASE WHEN CATEGORY = 'PROVISION'
+                 THEN total_amount ELSE 0 END), 0) AS provisionBadDoubtfulDebts,
+
+    COALESCE(SUM(CASE WHEN CATEGORY = 'IMPAIRMENT'
+                 THEN total_amount ELSE 0 END), 0) AS impairmentsInvestments,
+
+    0 AS incomeTaxProvision,
+
+    0 AS extraordinaryCreditsCharge,
+
+    -- -------------------------------------------------------------------------
+    -- D50: Non-Core Credits & Charges
+    -- Format: [{"1": 50000.00}, {"3": 120000.00}]
+    -- -------------------------------------------------------------------------
+    '[' || RTRIM(
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_CORE_CREDITS' AND ITEM_CODE = 1 AND total_amount != 0
+            THEN '{"1":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_CORE_CREDITS' AND ITEM_CODE = 2 AND total_amount != 0
+            THEN '{"2":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_CORE_CREDITS' AND ITEM_CODE = 3 AND total_amount != 0
+            THEN '{"3":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), ''),
+        ','
+    ) || ']' AS nonCoreCreditsCharges,
+
+    COALESCE(SUM(CASE WHEN CATEGORY = 'NON_CORE_CREDITS'
+                 THEN total_amount ELSE 0 END), 0) AS nonCoreCreditsChargesValue,
+
+    -- -------------------------------------------------------------------------
+    -- D48: Non-Interest Income
+    -- Format: [{"1": 200000.00}, {"4": 500000.00}, ...]
+    -- -------------------------------------------------------------------------
+    '[' || RTRIM(
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 1  AND total_amount != 0
+            THEN '{"1":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 2  AND total_amount != 0
+            THEN '{"2":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 3  AND total_amount != 0
+            THEN '{"3":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 4  AND total_amount != 0
+            THEN '{"4":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 5  AND total_amount != 0
+            THEN '{"5":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 6  AND total_amount != 0
+            THEN '{"6":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 7  AND total_amount != 0
+            THEN '{"7":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 8  AND total_amount != 0
+            THEN '{"8":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 9  AND total_amount != 0
+            THEN '{"9":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 14 AND total_amount != 0
+            THEN '{"14":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 15 AND total_amount != 0
+            THEN '{"15":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 17 AND total_amount != 0
+            THEN '{"17":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 20 AND total_amount != 0
+            THEN '{"20":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 24 AND total_amount != 0
+            THEN '{"24":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME' AND ITEM_CODE = 28 AND total_amount != 0
+            THEN '{"28":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), ''),
+        ','
+    ) || ']' AS nonInterestIncome,
+
+    COALESCE(SUM(CASE WHEN CATEGORY = 'NON_INTEREST_INCOME'
+                 THEN total_amount ELSE 0 END), 0) AS nonInterestIncomeValue,
+
+    -- -------------------------------------------------------------------------
+    -- D49: Non-Interest Expenses
+    -- Format: [{"1": 800000.00}, {"2": 2000000.00}, ...]
+    -- -------------------------------------------------------------------------
+    '[' || RTRIM(
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 1  AND total_amount != 0
+            THEN '{"1":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 2  AND total_amount != 0
+            THEN '{"2":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 3  AND total_amount != 0
+            THEN '{"3":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 5  AND total_amount != 0
+            THEN '{"5":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 6  AND total_amount != 0
+            THEN '{"6":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 7  AND total_amount != 0
+            THEN '{"7":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 8  AND total_amount != 0
+            THEN '{"8":'  || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 12 AND total_amount != 0
+            THEN '{"12":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 13 AND total_amount != 0
+            THEN '{"13":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 20 AND total_amount != 0
+            THEN '{"20":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 21 AND total_amount != 0
+            THEN '{"21":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 22 AND total_amount != 0
+            THEN '{"22":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 23 AND total_amount != 0
+            THEN '{"23":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 24 AND total_amount != 0
+            THEN '{"24":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 29 AND total_amount != 0
+            THEN '{"29":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 32 AND total_amount != 0
+            THEN '{"32":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 33 AND total_amount != 0
+            THEN '{"33":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 34 AND total_amount != 0
+            THEN '{"34":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 35 AND total_amount != 0
+            THEN '{"35":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 36 AND total_amount != 0
+            THEN '{"36":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 38 AND total_amount != 0
+            THEN '{"38":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 39 AND total_amount != 0
+            THEN '{"39":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 40 AND total_amount != 0
+            THEN '{"40":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 41 AND total_amount != 0
+            THEN '{"41":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), '') ||
+        COALESCE(MAX(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE' AND ITEM_CODE = 55 AND total_amount != 0
+            THEN '{"55":' || CAST(ROUND(total_amount, 2) AS VARCHAR(50)) || '},' ELSE '' END), ''),
+        ','
+    ) || ']' AS nonInterestExpenses,
+
+    COALESCE(SUM(CASE WHEN CATEGORY = 'NON_INTEREST_EXPENSE'
+                 THEN total_amount ELSE 0 END), 0) AS nonInterestExpensesValue
+
+FROM all_amounts;
