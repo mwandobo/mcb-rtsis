@@ -34,9 +34,9 @@ CASE
 LEFT JOIN CURRENCY curr
                    ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
 
-    -- =========================================
+-- =============================================
 -- Latest Fixing Rate Per Currency
--- =========================================
+-- =============================================
          LEFT JOIN (SELECT fr.fk_currencyid_curr,
                            fr.rate
                     FROM fixing_rate fr
