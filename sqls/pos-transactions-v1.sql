@@ -19,7 +19,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
 
 FROM GLI_TRX_EXTRACT gte
          JOIN CUSTOMER as c ON gte.CUST_ID = c.CUST_ID
-         JOIN AGENTS_LIST_V3 al
+         JOIN AGENTS_LIST_V4 al
               ON
                   CASE
                       WHEN LENGTH(REPLACE(gte.TRX_USR, ' ', '')) > 8
