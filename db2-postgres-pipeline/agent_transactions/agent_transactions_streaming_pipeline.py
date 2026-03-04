@@ -1,18 +1,30 @@
 #!/usr/bin/env python3
 """
 Agent Transactions Streaming Pipeline - Producer and Consumer run simultaneously
-Uses agent-transaction-v1.sql query for comprehensive agent transaction data extraction
+Uses agent-transactions-v2.sql query for agent transaction data extraction
+
+Improvements over original pipeline:
+  1. Single query execution + fetchmany() streaming (no re-execute per batch)
+  2. Thread-safe counters with _stats_lock
+  3. Batch inserts via psycopg2.extras.execute_values
+  4. ON CONFLICT duplicate prevention on transactionId
+  5. Consumer batch buffering with flush interval
+  6. Dead-letter queue support with graceful fallback
+  7. Persistent PostgreSQL connection in consumer
+  8. Unique index enforcement at startup
+  9. Module-level logging.basicConfig
 """
 
 import pika
 import psycopg2
+import psycopg2.extras
 import json
 import logging
 import threading
 import time
 from dataclasses import dataclass, asdict
 from contextlib import contextmanager
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import sys
 import os
@@ -23,10 +35,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import Config
 from db2_connection import DB2Connection
 
+# Configure logging at module level (should only be called once)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 @dataclass
 class AgentTransactionRecord:
-    """Data class for agent transaction records based on agent-transaction-v1.sql"""
+    """Data class for agent transaction records based on agent-transactions-v2.sql"""
     reportingDate: str
     agentId: str
     agentStatus: str
@@ -40,92 +55,73 @@ class AgentTransactionRecord:
 
 
 class AgentTransactionsStreamingPipeline:
-    def __init__(self, batch_size=1000):
+    def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
-        
+        self.consumer_batch_size = consumer_batch_size
+
         # Threading control
         self.producer_finished = threading.Event()
         self.consumer_finished = threading.Event()
         self.stop_consumer = threading.Event()
-        
-        # Statistics
+
+        # Thread-safe statistics
+        self._stats_lock = threading.Lock()
         self.total_produced = 0
         self.total_consumed = 0
         self.total_available = 0
         self.start_time = time.time()
-        
+
         # Retry settings
         self.max_retries = 3
         self.retry_delay = 5  # seconds
-        
-        # Setup logging
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
         self.logger = logging.getLogger(__name__)
-        
+
         self.logger.info("Agent Transactions STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
+        self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
-    
-    def get_agent_transactions_query(self, last_transaction_id=None):
-        """Get the agent transactions query using agent-transaction-v1.sql with cursor-based pagination"""
-        
-        # Read the agent-transaction-v1.sql file
-        sql_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'sqls', 'agent-transaction-v1.sql')
-        
+
+    def get_agent_transactions_query(self):
+        """Get the full agent transactions query from agent-transactions-v2.sql.
+
+        The query is executed ONCE and results are streamed via cursor.fetchmany().
+        No pagination modifications are made to the SQL.
+
+        Returns:
+            str: The complete SQL query
+        """
+        sql_file_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            'sqls', 'agent-transactions-v2.sql'
+        )
+
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            base_query = f.read()
-        
-        # Build cursor-based pagination condition using the constructed transactionId
-        cursor_condition = ""
-        if last_transaction_id:
-            cursor_condition = f"""
-            AND (VARCHAR(gte.FK_UNITCODETRXUNIT) || '-' ||
-                 TRIM(gte.FK_USRCODE) || '-' ||
-                 VARCHAR(gte.LINE_NUM) || '-' ||
-                 VARCHAR(gte.TRN_DATE) || '-' ||
-                 VARCHAR(gte.TRN_SNUM)) > '{last_transaction_id}'
-            """
-        
-        # Insert cursor condition into the WHERE clause
-        if cursor_condition:
-            base_query = base_query.replace(
-                "WHERE gl.EXTERNAL_GLACCOUNT IN ('230000079', '144000054')",
-                f"WHERE gl.EXTERNAL_GLACCOUNT IN ('230000079', '144000054'){cursor_condition}"
-            )
-        
-        # Add ORDER BY and FETCH FIRST for pagination
-        # Order by the same fields used in transactionId construction
-        query = base_query.rstrip(';') + f"""
-        ORDER BY gte.FK_UNITCODETRXUNIT ASC, gte.FK_USRCODE ASC, gte.LINE_NUM ASC, gte.TRN_DATE ASC, gte.TRN_SNUM ASC
-        FETCH FIRST {self.batch_size} ROWS ONLY
+            return f.read()
+
+    def get_total_count(self):
+        """Get estimated total count of agent transaction records from DB2.
+        Uses a fast count on the base table filtered by the relevant GL accounts.
         """
-        
-        return query
-    
-    def get_total_count_query(self):
-        """Get total count of available agent transaction records"""
-        return """
-        SELECT COUNT(*) as total_count
-        FROM GLI_TRX_EXTRACT gte
-        INNER JOIN (
-            SELECT DISTINCT
-                CASE
-                    WHEN LENGTH(TRIM(TERMINAL_ID)) >= 8
-                    THEN SUBSTR(TRIM(TERMINAL_ID), LENGTH(TRIM(TERMINAL_ID)) - 7, 8)
-                    ELSE TRIM(TERMINAL_ID)
-                END AS TERMINAL_ID_8,
-                AGENT_ID
-            FROM AGENTS_LIST_V4
-        ) al
-            ON al.TERMINAL_ID_8 = TRIM(gte.TRX_USR)
-        LEFT JOIN GLG_ACCOUNT gl
-            ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
-        WHERE gl.EXTERNAL_GLACCOUNT IN ('230000079', '144000054')
-        """
-    
+        try:
+            with self.db2_conn.get_connection(log_connection=False) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM GLI_TRX_EXTRACT
+                    WHERE FK_GLG_ACCOUNTACCO IN ('2.3.0.00.0079', '1.4.4.00.0054')
+                """)
+                result = cursor.fetchone()
+                count = result[0] if result else 0
+                self.logger.info(f"Estimated record count from GLI_TRX_EXTRACT: {count:,}")
+                return count
+        except Exception as e:
+            self.logger.warning(f"Could not fetch record count, progress %% unavailable: {e}")
+            return 0
+
     @contextmanager
     def get_postgres_connection(self):
         """Get PostgreSQL connection"""
@@ -145,7 +141,7 @@ class AgentTransactionsStreamingPipeline:
         finally:
             if conn:
                 conn.close()
-    
+
     def setup_rabbitmq_connection(self, max_retries=3):
         """Setup RabbitMQ connection with retry logic"""
         for attempt in range(max_retries):
@@ -158,13 +154,13 @@ class AgentTransactionsStreamingPipeline:
                     host=self.config.message_queue.rabbitmq_host,
                     port=self.config.message_queue.rabbitmq_port,
                     credentials=credentials,
-                    heartbeat=600,  # 10 minutes heartbeat
-                    blocked_connection_timeout=300,  # 5 minutes timeout
+                    heartbeat=600,
+                    blocked_connection_timeout=300,
                 )
                 connection = pika.BlockingConnection(parameters)
                 channel = connection.channel()
                 return connection, channel
-                
+
             except Exception as e:
                 self.logger.warning(f"RabbitMQ connection attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
@@ -173,42 +169,67 @@ class AgentTransactionsStreamingPipeline:
                 else:
                     self.logger.error(f"Failed to connect to RabbitMQ after {max_retries} attempts")
                     raise
-    
+
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for agent transactions"""
+        """Setup RabbitMQ queue for agent transactions with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
-            
-            # Declare queue with durability
-            channel.queue_declare(queue='agent_transactions_queue', durable=True)
-            
+
+            # Declare dead-letter exchange and queue for failed messages
+            channel.exchange_declare(exchange='agent_transactions_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='agent_transactions_dead_letter', durable=True)
+            channel.queue_bind(
+                queue='agent_transactions_dead_letter',
+                exchange='agent_transactions_dlx',
+                routing_key='agent_transactions_queue'
+            )
+
+            # Declare main queue with dead-letter exchange routing
+            try:
+                channel.queue_declare(
+                    queue='agent_transactions_queue',
+                    durable=True,
+                    arguments={
+                        'x-dead-letter-exchange': 'agent_transactions_dlx',
+                        'x-dead-letter-routing-key': 'agent_transactions_queue'
+                    }
+                )
+                self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
+            except Exception:
+                # Queue may already exist with different arguments; reconnect and use as-is
+                self.logger.warning(
+                    "Queue 'agent_transactions_queue' already exists with different args. "
+                    "Delete and recreate it to enable dead-letter support."
+                )
+                connection, channel = self.setup_rabbitmq_connection()
+                channel.queue_declare(queue='agent_transactions_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'agent_transactions_queue' setup complete (without DLX)")
+
             connection.close()
-            self.logger.info("RabbitMQ queue 'agent_transactions_queue' setup complete")
-            
+
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
             raise
-    
+
     def process_record(self, row):
         """Process a single agent transaction record from DB2"""
         try:
-            # Helper function to safely convert values
             def safe_string(value):
-                """Safely convert to string"""
                 if value is None:
                     return None
                 return str(value).strip()
-            
+
             def safe_float(value):
-                """Safely convert to float"""
                 if value is None:
                     return None
                 try:
                     return float(value)
                 except (ValueError, TypeError):
                     return None
-            
-            # Map the fields from the SQL query to the dataclass
+
+            # Map fields from agent-transactions-v2.sql output order:
+            # reportingDate, agentId, agentStatus, transactionDate, transactionId,
+            # transactionType, serviceChannel, tillNumber, currency, tzsAmount
             record = AgentTransactionRecord(
                 reportingDate=safe_string(row[0]),
                 agentId=safe_string(row[1]),
@@ -217,321 +238,412 @@ class AgentTransactionsStreamingPipeline:
                 transactionId=safe_string(row[4]),
                 transactionType=safe_string(row[5]),
                 serviceChannel=safe_string(row[6]),
-                tillNumber=safe_string(row[7]),
+                tillNumber=safe_string(row[7]) if row[7] else None,
                 currency=safe_string(row[8]),
                 tzsAmount=safe_float(row[9])
             )
-            
+
             return record
-            
+
         except Exception as e:
             self.logger.error(f"Error processing agent transaction record: {e}")
             self.logger.error(f"Row data: {row}")
             self.logger.error(f"Row length: {len(row)}")
             raise
-    
+
     def validate_record(self, record):
         """Validate agent transaction record"""
         try:
-            # Basic validation
             if not record.transactionId:
                 self.logger.warning("Missing transaction ID")
                 return False
-            
+
             if not record.agentId:
                 self.logger.warning("Missing agent ID")
                 return False
-            
+
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Error validating agent transaction record: {e}")
             return False
-    
+
     def producer_thread(self):
-        """Producer thread - reads from DB2 and sends to RabbitMQ with cursor-based pagination"""
+        """Producer thread - executes v2 query ONCE and streams results via fetchmany().
+
+        Instead of re-executing the query for every batch,
+        we run it once and use the DB2 cursor to fetch rows in chunks.
+        """
         try:
             self.logger.info("Producer thread started")
-            
-            # Get total count first
-            with self.db2_conn.get_connection(log_connection=True) as conn:
-                cursor = conn.cursor()
-                cursor.execute(self.get_total_count_query())
-                self.total_available = cursor.fetchone()[0]
-            
-            self.logger.info(f"Total agent transaction records available: {self.total_available:,}")
+
+            # Get dynamic record count
+            self.total_available = self.get_total_count()
+
+            self.logger.info(f"Total agent transaction records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
-            
+
             # Setup RabbitMQ connection with retry
-            connection, channel = self.setup_rabbitmq_connection()
-            
-            # Process batches using cursor-based pagination
-            batch_number = 1
-            last_transaction_id = None
-            last_progress_report = time.time()
-            
-            while True:
-                batch_start_time = time.time()
-                
-                # Fetch batch with retry logic using cursor pagination
-                rows = None
-                for attempt in range(self.max_retries):
-                    try:
-                        with self.db2_conn.get_connection(log_connection=False) as conn:
-                            cursor = conn.cursor()
-                            batch_query = self.get_agent_transactions_query(last_transaction_id)
-                            cursor.execute(batch_query)
-                            rows = cursor.fetchall()
+            rmq_connection, channel = self.setup_rabbitmq_connection()
+
+            # Execute the v2 query ONCE and stream results
+            query = self.get_agent_transactions_query()
+            self.logger.info("Executing agent transactions query (single execution, streaming results)...")
+
+            with self.db2_conn.get_connection(log_connection=True) as db2_conn:
+                db2_cursor = db2_conn.cursor()
+                db2_cursor.execute(query)
+                self.logger.info("Query executed successfully, streaming results via fetchmany()...")
+
+                batch_number = 1
+                last_progress_report = time.time()
+
+                while True:
+                    batch_start_time = time.time()
+
+                    # Fetch next chunk from the already-running query
+                    rows = db2_cursor.fetchmany(self.batch_size)
+
+                    if not rows:
+                        self.logger.info("No more records to fetch")
                         break
-                    except Exception as e:
-                        self.logger.warning(f"DB2 query attempt {attempt + 1} failed: {e}")
-                        if attempt < self.max_retries - 1:
-                            time.sleep(self.retry_delay)
-                        else:
-                            raise
-                
-                if not rows:
-                    self.logger.info("No more records to process")
-                    break
-                
-                # Process and publish with retry logic
-                batch_published = 0
-                for row in rows:
-                    # Extract cursor value from the transaction ID field
-                    last_transaction_id = row[4]  # transactionId field
-                    
-                    # Process the full row
-                    record = self.process_record(row)
-                    
-                    if self.validate_record(record):
-                        message = json.dumps(asdict(record), default=str)
-                        
-                        # Publish with retry
-                        published = False
-                        for attempt in range(self.max_retries):
-                            try:
-                                channel.basic_publish(
-                                    exchange='',
-                                    routing_key='agent_transactions_queue',
-                                    body=message,
-                                    properties=pika.BasicProperties(delivery_mode=2)
-                                )
-                                published = True
-                                break
-                            except Exception as e:
-                                self.logger.warning(f"RabbitMQ publish attempt {attempt + 1} failed: {e}")
-                                if attempt < self.max_retries - 1:
-                                    # Reconnect and retry
-                                    try:
-                                        connection.close()
-                                    except:
-                                        pass
-                                    connection, channel = self.setup_rabbitmq_connection()
-                                    time.sleep(self.retry_delay)
-                                else:
-                                    self.logger.error(f"Failed to publish message after {self.max_retries} attempts")
-                        
-                        if published:
-                            batch_published += 1
-                            self.total_produced += 1
-                
-                batch_time = time.time() - batch_start_time
-                progress_percent = self.total_produced / self.total_available * 100 if self.total_available > 0 else 0
-                
-                self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} records, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
-                
-                # Progress report every 5 minutes
-                current_time = time.time()
-                if current_time - last_progress_report >= 300:  # 5 minutes
-                    elapsed_time = current_time - self.start_time
-                    rate = self.total_produced / elapsed_time if elapsed_time > 0 else 0
-                    remaining_records = self.total_available - self.total_produced
-                    eta_seconds = remaining_records / rate if rate > 0 else 0
-                    eta_hours = eta_seconds / 3600
-                    
-                    self.logger.info(f"PROGRESS REPORT: {self.total_produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
-                    last_progress_report = current_time
-                
-                # Move to next batch
-                batch_number += 1
-                
-                # Small delay to prevent overwhelming
-                time.sleep(0.1)
-            
-            connection.close()
-            self.logger.info(f"Producer finished: {self.total_produced:,} records published out of {self.total_available:,} available")
+
+                    # Process and publish
+                    batch_published = 0
+                    for row in rows:
+                        record = self.process_record(row)
+
+                        if self.validate_record(record):
+                            message = json.dumps(asdict(record), default=str)
+
+                            # Publish with retry
+                            published = False
+                            for attempt in range(self.max_retries):
+                                try:
+                                    channel.basic_publish(
+                                        exchange='',
+                                        routing_key='agent_transactions_queue',
+                                        body=message,
+                                        properties=pika.BasicProperties(delivery_mode=2)
+                                    )
+                                    published = True
+                                    break
+                                except Exception as e:
+                                    self.logger.warning(f"RabbitMQ publish attempt {attempt + 1} failed: {e}")
+                                    if attempt < self.max_retries - 1:
+                                        try:
+                                            rmq_connection.close()
+                                        except Exception:
+                                            pass
+                                        rmq_connection, channel = self.setup_rabbitmq_connection()
+                                        time.sleep(self.retry_delay)
+                                    else:
+                                        self.logger.error(f"Failed to publish message after {self.max_retries} attempts")
+
+                            if published:
+                                batch_published += 1
+                                with self._stats_lock:
+                                    self.total_produced += 1
+
+                    batch_time = time.time() - batch_start_time
+                    with self._stats_lock:
+                        produced = self.total_produced
+                    progress_percent = produced / self.total_available * 100 if self.total_available > 0 else 0
+
+                    self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} rows fetched, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
+
+                    # Progress report every 5 minutes
+                    current_time = time.time()
+                    if current_time - last_progress_report >= 300:
+                        elapsed_time = current_time - self.start_time
+                        rate = produced / elapsed_time if elapsed_time > 0 else 0
+                        remaining_records = self.total_available - produced
+                        eta_seconds = remaining_records / rate if rate > 0 else 0
+                        eta_hours = eta_seconds / 3600
+
+                        self.logger.info(f"PROGRESS REPORT: {produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
+                        last_progress_report = current_time
+
+                    batch_number += 1
+
+            rmq_connection.close()
+            with self._stats_lock:
+                produced = self.total_produced
+            self.logger.info(f"Producer finished: {produced:,} records published out of {self.total_available:,} available")
             self.producer_finished.set()
-            
+
         except Exception as e:
             self.logger.error(f"Producer error: {e}")
             self.producer_finished.set()
-    
+
     def consumer_thread(self):
-        """Consumer thread - processes messages from queue with retry logic"""
+        """Consumer thread - processes messages from queue with batch inserts and persistent connection"""
+        pg_conn = None
         try:
             self.logger.info("Consumer thread started")
-            
+
+            # Setup persistent PostgreSQL connection (reused across all messages)
+            pg_conn = psycopg2.connect(
+                host=self.config.database.pg_host,
+                port=self.config.database.pg_port,
+                database=self.config.database.pg_database,
+                user=self.config.database.pg_user,
+                password=self.config.database.pg_password
+            )
+            self.logger.info("Consumer: Persistent PostgreSQL connection established")
+
             # Setup RabbitMQ connection with retry
             connection, channel = self.setup_rabbitmq_connection()
-            
-            # Initialize progress tracking variable
+
+            # Batch insert buffer
+            insert_buffer: List[AgentTransactionRecord] = []
+            pending_tags: List[int] = []
+            last_flush_time = time.time()
+            flush_interval = 5  # seconds
             last_progress_report = time.time()
-            
+
+            def flush_buffer(ch):
+                """Flush buffered records to PostgreSQL in a single batch insert"""
+                nonlocal insert_buffer, pending_tags, last_flush_time, pg_conn
+                if not insert_buffer:
+                    return
+
+                batch_size = len(insert_buffer)
+                try:
+                    self.insert_batch_to_postgres(insert_buffer, pg_conn)
+
+                    # Batch acknowledge all messages at once
+                    if pending_tags:
+                        ch.basic_ack(delivery_tag=pending_tags[-1], multiple=True)
+
+                    with self._stats_lock:
+                        self.total_consumed += batch_size
+
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+
+                except psycopg2.OperationalError as e:
+                    self.logger.error(f"PostgreSQL connection lost during batch insert: {e}")
+                    # Reconnect PostgreSQL
+                    try:
+                        pg_conn.close()
+                    except Exception:
+                        pass
+                    pg_conn = psycopg2.connect(
+                        host=self.config.database.pg_host,
+                        port=self.config.database.pg_port,
+                        database=self.config.database.pg_database,
+                        user=self.config.database.pg_user,
+                        password=self.config.database.pg_password
+                    )
+                    # Nack all to requeue for retry
+                    for tag in pending_tags:
+                        try:
+                            ch.basic_nack(delivery_tag=tag, requeue=True)
+                        except Exception:
+                            pass
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+
+                except Exception as e:
+                    self.logger.error(f"Batch insert failed: {e}")
+                    try:
+                        pg_conn.rollback()
+                    except Exception:
+                        pass
+                    # Nack all messages - they go to dead-letter queue
+                    for tag in pending_tags:
+                        try:
+                            ch.basic_nack(delivery_tag=tag, requeue=False)
+                        except Exception:
+                            pass
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+
             def process_message(ch, method, properties, body):
-                nonlocal last_progress_report  # Allow modification of the outer variable
+                nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
                     record = AgentTransactionRecord(**record_data)
-                    
-                    # Insert to PostgreSQL with retry
-                    inserted = False
-                    for attempt in range(self.max_retries):
-                        try:
-                            with self.get_postgres_connection() as conn:
-                                cursor = conn.cursor()
-                                self.insert_to_postgres(record, cursor)
-                                conn.commit()
-                            inserted = True
-                            break
-                        except Exception as e:
-                            self.logger.warning(f"PostgreSQL insert attempt {attempt + 1} failed: {e}")
-                            if attempt < self.max_retries - 1:
-                                time.sleep(self.retry_delay)
-                            else:
-                                self.logger.error(f"Failed to insert record after {self.max_retries} attempts")
-                    
-                    if inserted:
-                        self.total_consumed += 1
-                        
-                        # Progress monitoring
-                        if self.total_consumed % (self.batch_size // 10) == 0:  # Every 10% of batch size
-                            elapsed_time = time.time() - self.start_time
-                            rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
-                            progress_percent = (self.total_consumed / self.total_available * 100) if self.total_available > 0 else 0
-                            
-                            self.logger.info(f"Consumer: Processed {self.total_consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
-                        
-                        # Detailed progress report every 5 minutes
-                        current_time = time.time()
-                        if current_time - last_progress_report >= 300:  # 5 minutes
-                            elapsed_time = current_time - self.start_time
-                            rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
-                            remaining_records = self.total_available - self.total_consumed if self.total_available > 0 else 0
-                            eta_seconds = remaining_records / rate if rate > 0 else 0
-                            eta_hours = eta_seconds / 3600
-                            
-                            self.logger.info(f"CONSUMER PROGRESS: {self.total_consumed:,}/{self.total_available:,} records - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
-                            last_progress_report = current_time
-                    
-                    # Acknowledge message
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    
+
+                    insert_buffer.append(record)
+                    pending_tags.append(method.delivery_tag)
+
+                    # Flush if buffer is full or time interval exceeded
+                    if len(insert_buffer) >= self.consumer_batch_size or \
+                       time.time() - last_flush_time >= flush_interval:
+                        flush_buffer(ch)
+
+                    # Progress monitoring
+                    with self._stats_lock:
+                        consumed = self.total_consumed
+
+                    if consumed > 0 and consumed % self.batch_size == 0:
+                        elapsed_time = time.time() - self.start_time
+                        rate = consumed / elapsed_time if elapsed_time > 0 else 0
+                        progress_percent = (consumed / self.total_available * 100) if self.total_available > 0 else 0
+
+                        self.logger.info(f"Consumer: Processed {consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
+
+                    # Detailed progress report every 5 minutes
+                    current_time = time.time()
+                    if current_time - last_progress_report >= 300:
+                        elapsed_time = current_time - self.start_time
+                        with self._stats_lock:
+                            consumed = self.total_consumed
+                        rate = consumed / elapsed_time if elapsed_time > 0 else 0
+                        remaining_records = self.total_available - consumed if self.total_available > 0 else 0
+                        eta_seconds = remaining_records / rate if rate > 0 else 0
+                        eta_hours = eta_seconds / 3600
+
+                        self.logger.info(f"CONSUMER PROGRESS: {consumed:,}/{self.total_available:,} records - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
+                        last_progress_report = current_time
+
                 except Exception as e:
                     self.logger.error(f"Consumer error processing message: {e}")
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-            
-            # Set QoS for controlled processing
-            channel.basic_qos(prefetch_count=10)
+
+            # Set QoS to match consumer batch size for efficient batching
+            channel.basic_qos(prefetch_count=self.consumer_batch_size)
             channel.basic_consume(queue='agent_transactions_queue', on_message_callback=process_message)
-            
+
             # Keep consuming until producer is done and queue is empty
             while not self.stop_consumer.is_set():
                 try:
                     connection.process_data_events(time_limit=1)
-                    
+
+                    # Flush any remaining buffered records on timeout
+                    if insert_buffer and time.time() - last_flush_time >= flush_interval:
+                        flush_buffer(channel)
+
                     # Check if we should stop
                     if self.producer_finished.is_set():
+                        # Flush remaining buffer before checking queue
+                        flush_buffer(channel)
+
                         # Producer is done, check if queue is empty
-                        method = channel.queue_declare(queue='agent_transactions_queue', durable=True, passive=True)
-                        if method.method.message_count == 0:
+                        queue_state = channel.queue_declare(queue='agent_transactions_queue', durable=True, passive=True)
+                        if queue_state.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
-                        
+
                 except Exception as e:
                     self.logger.error(f"Consumer processing error: {e}")
-                    # Try to reconnect
+                    # Try to reconnect RabbitMQ
                     try:
                         connection.close()
-                    except:
+                    except Exception:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
-                    channel.basic_qos(prefetch_count=10)
+                    channel.basic_qos(prefetch_count=self.consumer_batch_size)
                     channel.basic_consume(queue='agent_transactions_queue', on_message_callback=process_message)
-            
+
             connection.close()
-            self.logger.info(f"Consumer finished: {self.total_consumed:,} records processed")
+            with self._stats_lock:
+                consumed = self.total_consumed
+            self.logger.info(f"Consumer finished: {consumed:,} records processed")
             self.consumer_finished.set()
-            
+
         except Exception as e:
             self.logger.error(f"Consumer error: {e}")
             self.consumer_finished.set()
-    
-    def insert_to_postgres(self, record, cursor):
-        """Insert agent transaction record to PostgreSQL"""
+        finally:
+            if pg_conn:
+                try:
+                    pg_conn.close()
+                except Exception:
+                    pass
+
+    def insert_batch_to_postgres(self, records: List[AgentTransactionRecord], pg_conn):
+        """Batch insert agent transaction records to PostgreSQL with duplicate prevention.
+
+        Uses psycopg2.extras.execute_values for efficient batch inserts and
+        ON CONFLICT to skip duplicate transactionIds.
+        """
         try:
+            cursor = pg_conn.cursor()
+
             insert_query = """
             INSERT INTO "agentTransactions" (
                 "reportingDate", "agentId", "agentStatus", "transactionDate", "transactionId",
                 "transactionType", "serviceChannel", "tillNumber", "currency", "tzsAmount"
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            )
+            ) VALUES %s
+            ON CONFLICT ("transactionId") DO NOTHING
             """
-            
-            cursor.execute(insert_query, (
-                record.reportingDate,
-                record.agentId,
-                record.agentStatus,
-                record.transactionDate,
-                record.transactionId,
-                record.transactionType,
-                record.serviceChannel,
-                record.tillNumber,
-                record.currency,
-                record.tzsAmount
-            ))
-            
+
+            values = [
+                (
+                    r.reportingDate, r.agentId, r.agentStatus, r.transactionDate, r.transactionId,
+                    r.transactionType, r.serviceChannel, r.tillNumber, r.currency, r.tzsAmount
+                )
+                for r in records
+            ]
+
+            psycopg2.extras.execute_values(cursor, insert_query, values, page_size=len(values))
+            pg_conn.commit()
+
         except Exception as e:
-            self.logger.error(f"Error inserting agent transaction record to PostgreSQL: {e}")
+            self.logger.error(f"Error batch inserting {len(records)} agent transaction records: {e}")
             raise
-    
+
+    def ensure_unique_index(self):
+        """Ensure unique index on transactionId exists for ON CONFLICT duplicate prevention"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_agenttransactions_txn_id_unique
+                    ON "agentTransactions" ("transactionId")
+                """)
+                conn.commit()
+                self.logger.info("Unique index on transactionId verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create unique index on transactionId: {e}")
+            raise
+
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
         self.logger.info("Starting Agent Transactions STREAMING pipeline...")
-        
+
         try:
+            # Ensure unique index for duplicate prevention
+            self.ensure_unique_index()
+
             # Setup queue
             self.setup_rabbitmq_queue()
-            
+
             # Start consumer thread first
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")
             consumer_thread.start()
-            
+
             # Small delay to let consumer start
             time.sleep(1)
-            
+
             # Start producer thread
             producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
             producer_thread.start()
-            
+
             # Wait for producer to finish
             producer_thread.join()
             self.logger.info("Producer thread completed")
-            
+
             # Wait for consumer to finish processing remaining messages
-            consumer_thread.join(timeout=60)  # Wait up to 60 seconds
-            
+            consumer_thread.join(timeout=60)
+
             if consumer_thread.is_alive():
                 self.logger.info("Stopping consumer thread...")
                 self.stop_consumer.set()
                 consumer_thread.join(timeout=30)
-            
+
             # Final statistics
             total_time = time.time() - self.start_time
             avg_rate = self.total_consumed / total_time if total_time > 0 else 0
             success_rate = (self.total_consumed / self.total_produced * 100) if self.total_produced > 0 else 0
-            
+
             self.logger.info(f"""
             ==========================================
             Agent Transactions Pipeline Summary:
@@ -544,7 +656,7 @@ class AgentTransactionsStreamingPipeline:
             Average rate: {avg_rate:.1f} records/second
             ==========================================
             """)
-            
+
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
             raise
@@ -553,30 +665,32 @@ class AgentTransactionsStreamingPipeline:
 def main():
     """Main function"""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='Agent Transactions Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for processing')
+    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query streaming')
+    parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
-    
+
     args = parser.parse_args()
-    
-    # Create pipeline
-    pipeline = AgentTransactionsStreamingPipeline(batch_size=args.batch_size)
-    
+
+    pipeline = AgentTransactionsStreamingPipeline(
+        batch_size=args.batch_size,
+        consumer_batch_size=args.consumer_batch_size
+    )
+
     try:
         if args.mode == 'producer':
             pipeline.producer_thread()
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
-        else:  # streaming
+        else:
             pipeline.run_streaming_pipeline()
-            
+
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")
     except Exception as e:
         pipeline.logger.error(f"Pipeline failed: {e}")
-        import sys
         sys.exit(1)
 
 

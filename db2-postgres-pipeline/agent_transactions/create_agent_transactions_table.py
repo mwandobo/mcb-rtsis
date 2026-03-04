@@ -67,7 +67,7 @@ def create_agent_transactions_table():
         indexes = [
             'CREATE INDEX idx_agentTransactions_agent_id ON "agentTransactions"("agentId")',
             'CREATE INDEX idx_agentTransactions_transaction_date ON "agentTransactions"("transactionDate")',
-            'CREATE INDEX idx_agentTransactions_transaction_id ON "agentTransactions"("transactionId")',
+            'CREATE UNIQUE INDEX idx_agentTransactions_transaction_id ON "agentTransactions"("transactionId")',
             'CREATE INDEX idx_agentTransactions_transaction_type ON "agentTransactions"("transactionType")',
             'CREATE INDEX idx_agentTransactions_reporting_date ON "agentTransactions"("reportingDate")',
             'CREATE INDEX idx_agentTransactions_created_at ON "agentTransactions"(created_at)'
