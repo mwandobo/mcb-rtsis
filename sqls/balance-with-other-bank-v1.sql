@@ -16,13 +16,13 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        gte.DC_AMOUNT                                      AS orgAmount,
 
        CASE
+           WHEN gte.CURRENCY_SHORT_DES = 'TZS'
+               THEN  0
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
 
            WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                THEN DECIMAL(gte.DC_AMOUNT / fx.rate, 18, 2)
-
-           ELSE NULL
            END                                            AS usdAmount,
 
        CASE
