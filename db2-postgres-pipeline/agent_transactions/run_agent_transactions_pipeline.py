@@ -24,8 +24,8 @@ def main():
     logger.info("=" * 60)
     
     try:
-        # Create and run pipeline with batch size 1000
-        pipeline = AgentTransactionsStreamingPipeline(batch_size=1000)
+        # Create and run pipeline with batch size 1000, consumer batch 100
+        pipeline = AgentTransactionsStreamingPipeline(batch_size=1000, consumer_batch_size=100)
         pipeline.run_streaming_pipeline()
         
         logger.info("=" * 60)
