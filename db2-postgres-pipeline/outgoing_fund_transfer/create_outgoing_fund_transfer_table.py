@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Create incomingFundTransfer table in PostgreSQL
-Based on incoming-fund-transfer.sql structure
+Create outgoingFundTransfer table in PostgreSQL
+Based on outgoing-fund-transfer.sql structure
 """
 
 import psycopg2
@@ -14,8 +14,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 
-def create_incoming_fund_transfer_table():
-    """Create the incomingFundTransfer table in PostgreSQL"""
+def create_outgoing_fund_transfer_table():
+    """Create the outgoingFundTransfer table in PostgreSQL"""
     
     # Setup logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -36,35 +36,38 @@ def create_incoming_fund_transfer_table():
         cursor = conn.cursor()
         
         # Drop table if exists
-        logger.info("Dropping existing incomingFundTransfer table if it exists...")
-        cursor.execute('DROP TABLE IF EXISTS "incomingFundTransfer" CASCADE')
+        logger.info("Dropping existing outgoingFundTransfer table if it exists...")
+        cursor.execute('DROP TABLE IF EXISTS "outgoingFundTransfer" CASCADE')
         
-        # Create incomingFundTransfer table
-        logger.info("Creating incomingFundTransfer table...")
+        # Create outgoingFundTransfer table
+        logger.info("Creating outgoingFundTransfer table...")
         create_table_sql = """
-        CREATE TABLE "incomingFundTransfer" (
+        CREATE TABLE "outgoingFundTransfer" (
             id SERIAL PRIMARY KEY,
             "reportingDate" VARCHAR(12),
             "transactionId" VARCHAR(255),
             "transactionDate" VARCHAR(12),
             "transferChannel" VARCHAR(50),
             "subCategoryTransferChannel" VARCHAR(100),
-            "recipientName" VARCHAR(255),
-            "senderAccountNumber" VARCHAR(50),
-            "recipientIdentificationType" VARCHAR(50),
-            "recipientIdentificationNumber" VARCHAR(50),
-            "recipientCountry" VARCHAR(100),
             "senderName" VARCHAR(255),
-            "senderBankOrFspCode" VARCHAR(50),
-            "senderAccountOrWalletNumber" VARCHAR(50),
+            "senderAccountNumber" VARCHAR(50),
+            "senderIdentificationType" VARCHAR(50),
+            "senderIdentificationNumber" VARCHAR(50),
+            "recipientName" VARCHAR(255),
+            "recipientMobileNumber" VARCHAR(50),
+            "recipientCountry" VARCHAR(100),
+            "recipientBankOrFspCode" VARCHAR(50),
+            "recipientAccountOrWalletNumber" VARCHAR(50),
+            "serviceChannel" VARCHAR(100),
             "serviceCategory" VARCHAR(100),
             "serviceSubCategory" VARCHAR(100),
             "currency" VARCHAR(10),
             "orgAmount" VARCHAR(50),
             "usdAmount" VARCHAR(50),
             "tzsAmount" VARCHAR(50),
-            "senderInstruction" VARCHAR(255),
             "purposes" TEXT,
+            "senderInstruction" VARCHAR(255),
+            "transactionPlace" VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -76,15 +79,15 @@ def create_incoming_fund_transfer_table():
         logger.info("Creating indexes...")
         
         indexes = [
-            'CREATE INDEX idx_incomingFundTransfer_reporting_date ON "incomingFundTransfer"("reportingDate")',
-            'CREATE UNIQUE INDEX idx_incomingFundTransfer_transaction_id ON "incomingFundTransfer"("transactionId")',
-            'CREATE INDEX idx_incomingFundTransfer_transaction_date ON "incomingFundTransfer"("transactionDate")',
-            'CREATE INDEX idx_incomingFundTransfer_transfer_channel ON "incomingFundTransfer"("transferChannel")',
-            'CREATE INDEX idx_incomingFundTransfer_recipient_name ON "incomingFundTransfer"("recipientName")',
-            'CREATE INDEX idx_incomingFundTransfer_sender_name ON "incomingFundTransfer"("senderName")',
-            'CREATE INDEX idx_incomingFundTransfer_currency ON "incomingFundTransfer"("currency")',
-            'CREATE INDEX idx_incomingFundTransfer_service_category ON "incomingFundTransfer"("serviceCategory")',
-            'CREATE INDEX idx_incomingFundTransfer_created_at ON "incomingFundTransfer"(created_at)'
+            'CREATE INDEX idx_outgoingFundTransfer_reporting_date ON "outgoingFundTransfer"("reportingDate")',
+            'CREATE UNIQUE INDEX idx_outgoingFundTransfer_transaction_id ON "outgoingFundTransfer"("transactionId")',
+            'CREATE INDEX idx_outgoingFundTransfer_transaction_date ON "outgoingFundTransfer"("transactionDate")',
+            'CREATE INDEX idx_outgoingFundTransfer_transfer_channel ON "outgoingFundTransfer"("transferChannel")',
+            'CREATE INDEX idx_outgoingFundTransfer_sender_name ON "outgoingFundTransfer"("senderName")',
+            'CREATE INDEX idx_outgoingFundTransfer_recipient_name ON "outgoingFundTransfer"("recipientName")',
+            'CREATE INDEX idx_outgoingFundTransfer_currency ON "outgoingFundTransfer"("currency")',
+            'CREATE INDEX idx_outgoingFundTransfer_service_category ON "outgoingFundTransfer"("serviceCategory")',
+            'CREATE INDEX idx_outgoingFundTransfer_created_at ON "outgoingFundTransfer"(created_at)'
         ]
         
         for index_sql in indexes:
@@ -100,13 +103,13 @@ def create_incoming_fund_transfer_table():
         cursor.execute("""
             SELECT column_name, data_type, character_maximum_length, is_nullable
             FROM information_schema.columns 
-            WHERE table_name = 'incomingFundTransfer'
+            WHERE table_name = 'outgoingFundTransfer'
             ORDER BY ordinal_position
         """)
         
         columns = cursor.fetchall()
         
-        logger.info("Incoming Fund Transfer table created successfully!")
+        logger.info("Outgoing Fund Transfer table created successfully!")
         logger.info("Table structure:")
         logger.info("-" * 80)
         logger.info(f"{'Column Name':<35} {'Data Type':<20} {'Max Length':<12} {'Nullable':<10}")
@@ -123,11 +126,11 @@ def create_incoming_fund_transfer_table():
         cursor.close()
         conn.close()
         
-        logger.info("incomingFundTransfer table setup completed successfully!")
+        logger.info("outgoingFundTransfer table setup completed successfully!")
         
     except Exception as e:
-        logger.error(f"Error creating incomingFundTransfer table: {e}")
+        logger.error(f"Error creating outgoingFundTransfer table: {e}")
         raise
 
 if __name__ == "__main__":
-    create_incoming_fund_transfer_table()
+    create_outgoing_fund_transfer_table()

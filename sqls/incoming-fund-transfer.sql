@@ -1,7 +1,6 @@
 SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        ORDER_CODE                                        as transactionId,
        VARCHAR_FORMAT(TRX_DATE, 'DDMMYYYYHHMM')          as transactionDate,
-       ORDER_TIMESTAMP                                   as reportingDate,
        'EFT'                                             as transferChannel,
        NULL                                              AS subCategoryTransferChannel,
 
@@ -14,11 +13,28 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
                 ELSE ''
                 END ||
             TRIM(cust.SURNAME))                          as recipientName,
-       NULL                                              AS senderAccountNumber,
+       im.PRFT_ACCOUNT                                   AS senderAccountNumber,
 
        CASE
-           WHEN UPPER(TRIM(id.ISSUE_AUTHORITY)) = 'NIDA' THEN 'NationalIdentityCard'
-           ELSE 'NationalIdentityCard'
+           -- National ID (NIDA) : 20 numeric digits
+           WHEN id.ISSUE_AUTHORITY LIKE 'MD%'
+               OR id.ISSUE_AUTHORITY LIKE 'DED%'
+               OR id.ISSUE_AUTHORITY LIKE 'MKURUGENZI%'
+               OR id.ISSUE_AUTHORITY LIKE '%CITY DIRECTOR%'
+               OR id.ISSUE_AUTHORITY LIKE '%CITY COUNCIL%'
+               THEN 'Employee ID'
+           -- Voter Registration Card : starts with T
+           WHEN id.ISSUE_AUTHORITY LIKE 'NIDA%'
+               THEN 'NationalIdentityCard'
+           -- Taxpayer Identification Number (TIN) : 11 digits
+           WHEN id.ISSUE_AUTHORITY LIKE 'NEC%' OR id.ISSUE_AUTHORITY LIKE 'NATIONAL ELE%'
+               THEN 'VotersRegistrationCard'
+           -- Driving Licence (common TZ pattern)
+           WHEN id.ISSUE_AUTHORITY LIKE 'BREL%'
+               THEN 'Certificate of Incorporation'
+           WHEN id.ISSUE_AUTHORITY LIKE 'TRA%'
+               THEN 'DrivingLicense'
+           ELSE 'Employee ID'
            END
                                                          AS recipientIdentificationType,
        id.ID_NO                                          AS recipientIdentificationNumber,

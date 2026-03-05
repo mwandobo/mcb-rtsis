@@ -5,10 +5,10 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                       A
        'Domestic banks unrelated'                                              as relationshipType,
        CAST(0 AS SMALLINT)                                                     as ratingStatus,
        CASE
-           WHEN la.ACC_EXP_DT IS NULL THEN 'UNRATED'
+           WHEN la.ACC_EXP_DT IS NULL THEN 'Unrated'
            WHEN DAYS(la.ACC_EXP_DT) - DAYS(CURRENT_DATE) <= 90
-               THEN 'SHORT_TERM_UNRATED'
-           ELSE 'UNRATED'
+               THEN 'Unrated'
+           ELSE 'Unrated'
            END                                                                 AS externalRatingCorrespondentBorrower,
        'Grade B'                                                               AS gradesUnratedBorrower,
        la.ACC_SN                                                               AS loanNumber,
@@ -20,6 +20,7 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                       A
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+           WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
            WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                THEN DECIMAL(la.ACC_LIMIT_AMN / fx.rate, 18, 2)
            END                                                                 AS usdLoanAmount,
@@ -33,6 +34,7 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                       A
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+           WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
            WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                THEN DECIMAL(la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL / fx.rate, 18, 2)
            END                                                                 AS usdAccruedInterestAmount,
@@ -46,6 +48,7 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                       A
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
+           WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
            WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                THEN DECIMAL((la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) / fx.rate, 18, 2)
            END                                                                 AS usdSuspendedInterest,

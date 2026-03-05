@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Incoming Fund Transfer Streaming Pipeline - Producer and Consumer run simultaneously
-Based on incoming-fund-transfer.sql query
+Share Capital Streaming Pipeline - Producer and Consumer run simultaneously
+Based on share-capital.sql query
 """
 
 import pika
@@ -29,32 +29,25 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 @dataclass
-class IncomingFundTransferRecord:
-    """Data class for incoming fund transfer records based on incoming-fund-transfer.sql"""
+class ShareCapitalRecord:
+    """Data class for share capital records based on share-capital.sql"""
     reportingDate: str
-    transactionId: str
+    capitalCategory: str
+    capitalSubCategory: Optional[str]
     transactionDate: str
-    transferChannel: str
-    subCategoryTransferChannel: Optional[str]
-    recipientName: str
-    senderAccountNumber: Optional[str]
-    recipientIdentificationType: str
-    recipientIdentificationNumber: str
-    recipientCountry: str
-    senderName: str
-    senderBankOrFspCode: str
-    senderAccountOrWalletNumber: str
-    serviceCategory: str
-    serviceSubCategory: str
+    transactionType: str
+    shareholderNames: str
+    clientType: str
+    shareholderCountry: str
+    numberOfShares: str
+    sharePriceBookValue: str
     currency: str
     orgAmount: str
-    usdAmount: str
     tzsAmount: str
-    senderInstruction: str
-    purposes: str
+    sectorSnaClassification: str
 
 
-class IncomingFundTransferStreamingPipeline:
+class ShareCapitalStreamingPipeline:
     def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
@@ -79,31 +72,31 @@ class IncomingFundTransferStreamingPipeline:
         
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Incoming Fund Transfer STREAMING Pipeline initialized")
+        self.logger.info("Share Capital STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_incoming_fund_transfer_query(self):
-        """Get the incoming fund transfer query from incoming-fund-transfer.sql"""
+    def get_share_capital_query(self):
+        """Get the share capital query from share-capital.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'incoming-fund-transfer.sql'
+            'sqls', 'share-capital.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
             return f.read()
     
     def get_total_count(self):
-        """Get approximate total count of incoming fund transfer records from DB2"""
+        """Get total count of share capital records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM IPS_MESSAGE_HEADER")
+                cursor.execute("SELECT COUNT(*) FROM SHARE_CAPITAL")
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from IPS_MESSAGE_HEADER: {count:,}")
+                self.logger.info(f"Total record count from SHARE_CAPITAL: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -158,39 +151,39 @@ class IncomingFundTransferStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for incoming fund transfers with dead-letter exchange"""
+        """Setup RabbitMQ queue for share capital with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Declare dead-letter exchange and queue for failed messages
-            channel.exchange_declare(exchange='incoming_fund_transfer_dlx', exchange_type='direct', durable=True)
-            channel.queue_declare(queue='incoming_fund_transfer_dead_letter', durable=True)
+            channel.exchange_declare(exchange='share_capital_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='share_capital_dead_letter', durable=True)
             channel.queue_bind(
-                queue='incoming_fund_transfer_dead_letter',
-                exchange='incoming_fund_transfer_dlx',
-                routing_key='incoming_fund_transfer_queue'
+                queue='share_capital_dead_letter',
+                exchange='share_capital_dlx',
+                routing_key='share_capital_queue'
             )
             
             # Declare main queue with dead-letter exchange routing
             try:
                 channel.queue_declare(
-                    queue='incoming_fund_transfer_queue',
+                    queue='share_capital_queue',
                     durable=True,
                     arguments={
-                        'x-dead-letter-exchange': 'incoming_fund_transfer_dlx',
-                        'x-dead-letter-routing-key': 'incoming_fund_transfer_queue'
+                        'x-dead-letter-exchange': 'share_capital_dlx',
+                        'x-dead-letter-routing-key': 'share_capital_queue'
                     }
                 )
                 self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
             except Exception:
                 # Queue may already exist with different arguments
                 self.logger.warning(
-                    "Queue 'incoming_fund_transfer_queue' already exists with different args. "
+                    "Queue 'share_capital_queue' already exists with different args. "
                     "Delete and recreate it to enable dead-letter support."
                 )
                 connection, channel = self.setup_rabbitmq_connection()
-                channel.queue_declare(queue='incoming_fund_transfer_queue', durable=True)
-                self.logger.info("RabbitMQ queue 'incoming_fund_transfer_queue' setup complete (without DLX)")
+                channel.queue_declare(queue='share_capital_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'share_capital_queue' setup complete (without DLX)")
             
             connection.close()
             
@@ -199,7 +192,7 @@ class IncomingFundTransferStreamingPipeline:
             raise
     
     def process_record(self, row):
-        """Process a single incoming fund transfer record from DB2"""
+        """Process a single share capital record from DB2"""
         try:
             # Helper function to safely convert values
             def safe_string(value):
@@ -209,54 +202,47 @@ class IncomingFundTransferStreamingPipeline:
                 return str(value).strip()
             
             # Map the fields from the SQL query to the dataclass
-            record = IncomingFundTransferRecord(
-                reportingDate=safe_string(row[0]),                      # VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')
-                transactionId=safe_string(row[1]),                      # ORDER_CODE
-                transactionDate=safe_string(row[2]),                    # VARCHAR_FORMAT(TRX_DATE, 'DDMMYYYYHHMM')
-                transferChannel=safe_string(row[3]),                    # 'EFT'
-                subCategoryTransferChannel=safe_string(row[4]) if row[4] else None,  # NULL
-                recipientName=safe_string(row[5]),                      # TRIM(TRIM(cust.FIRST_NAME) || ' ' || ...)
-                senderAccountNumber=safe_string(row[6]) if row[6] else None,         # im.PRFT_ACCOUNT
-                recipientIdentificationType=safe_string(row[7]),        # CASE WHEN id.ISSUE_AUTHORITY...
-                recipientIdentificationNumber=safe_string(row[8]),      # id.ID_NO
-                recipientCountry=safe_string(row[9]),                   # 'TANZANIA, UNITED REPUBLIC OF'
-                senderName=safe_string(row[10]),                        # 'Bank Of Tanzania'
-                senderBankOrFspCode=safe_string(row[11]),               # 'TANZTZTXXXX'
-                senderAccountOrWalletNumber=safe_string(row[12]),       # im.BENEF_IBAN_ACC
-                serviceCategory=safe_string(row[13]),                   # 'Mobile Banking Transactions'
-                serviceSubCategory=safe_string(row[14]),                # 'Inter-Bank'
-                currency=safe_string(row[15]),                          # curr.SHORT_DESCR
-                orgAmount=safe_string(row[16]),                         # ORDER_AMOUNT
-                usdAmount=safe_string(row[17]),                         # USD conversion
-                tzsAmount=safe_string(row[18]),                         # TZS conversion
-                senderInstruction=safe_string(row[19]),                 # REMITTANCE_INFO
-                purposes=safe_string(row[20])                           # 'Salaries and wages'
+            record = ShareCapitalRecord(
+                reportingDate=safe_string(row[0]),                      # TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')
+                capitalCategory=safe_string(row[1]),                    # CAPITAL_CATEGORY
+                capitalSubCategory=safe_string(row[2]) if row[2] else None,  # CAPITAL_SUBCATEGORY
+                transactionDate=safe_string(row[3]),                    # TRANSACTION_DATE
+                transactionType=safe_string(row[4]),                    # TRANSACTION_TYPE
+                shareholderNames=safe_string(row[5]),                   # SHAREHOLDER_NAME
+                clientType=safe_string(row[6]),                         # CLIENT_TYPE
+                shareholderCountry=safe_string(row[7]),                 # SHAREHOLDER_COUNTRY
+                numberOfShares=safe_string(row[8]),                     # NUMBER_OF_SHARES
+                sharePriceBookValue=safe_string(row[9]),                # SHARE_PRICE_BOOK_VALUE
+                currency=safe_string(row[10]),                          # CURRENCY
+                orgAmount=safe_string(row[11]),                         # ORG_AMOUNT
+                tzsAmount=safe_string(row[12]),                         # TZS_AMOUNT
+                sectorSnaClassification=safe_string(row[13])            # SECTOR_SNA_CLASSIFICATION
             )
             
             return record
             
         except Exception as e:
-            self.logger.error(f"Error processing incoming fund transfer record: {e}")
+            self.logger.error(f"Error processing share capital record: {e}")
             self.logger.error(f"Row data: {row}")
             self.logger.error(f"Row length: {len(row)}")
             raise
     
     def validate_record(self, record):
-        """Validate incoming fund transfer record"""
+        """Validate share capital record"""
         try:
             # Basic validation
-            if not record.transactionId:
-                self.logger.warning("Missing transaction ID")
+            if not record.capitalCategory:
+                self.logger.warning("Missing capital category")
                 return False
             
-            if not record.recipientName:
-                self.logger.warning("Missing recipient name")
+            if not record.shareholderNames:
+                self.logger.warning("Missing shareholder names")
                 return False
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Error validating incoming fund transfer record: {e}")
+            self.logger.error(f"Error validating share capital record: {e}")
             return False
     
     def producer_thread(self):
@@ -267,7 +253,7 @@ class IncomingFundTransferStreamingPipeline:
             # Get dynamic record count
             self.total_available = self.get_total_count()
             
-            self.logger.info(f"Total incoming fund transfer records available: {self.total_available:,} (estimated)")
+            self.logger.info(f"Total share capital records available: {self.total_available:,}")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
@@ -275,8 +261,8 @@ class IncomingFundTransferStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_incoming_fund_transfer_query()
-            self.logger.info("Executing incoming fund transfer query (single execution, streaming results)...")
+            query = self.get_share_capital_query()
+            self.logger.info("Executing share capital query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -310,7 +296,7 @@ class IncomingFundTransferStreamingPipeline:
                                 try:
                                     channel.basic_publish(
                                         exchange='',
-                                        routing_key='incoming_fund_transfer_queue',
+                                        routing_key='share_capital_queue',
                                         body=message,
                                         properties=pika.BasicProperties(delivery_mode=2)
                                     )
@@ -384,7 +370,7 @@ class IncomingFundTransferStreamingPipeline:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Batch insert buffer
-            insert_buffer: List[IncomingFundTransferRecord] = []
+            insert_buffer: List[ShareCapitalRecord] = []
             pending_tags: List[int] = []
             last_flush_time = time.time()
             flush_interval = 5  # seconds
@@ -455,7 +441,7 @@ class IncomingFundTransferStreamingPipeline:
                 nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
-                    record = IncomingFundTransferRecord(**record_data)
+                    record = ShareCapitalRecord(**record_data)
                     
                     insert_buffer.append(record)
                     pending_tags.append(method.delivery_tag)
@@ -496,7 +482,7 @@ class IncomingFundTransferStreamingPipeline:
             
             # Set QoS to match consumer batch size for efficient batching
             channel.basic_qos(prefetch_count=self.consumer_batch_size)
-            channel.basic_consume(queue='incoming_fund_transfer_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='share_capital_queue', on_message_callback=process_message)
             
             # Keep consuming until producer is done and queue is empty
             while not self.stop_consumer.is_set():
@@ -513,7 +499,7 @@ class IncomingFundTransferStreamingPipeline:
                         flush_buffer(channel)
                         
                         # Producer is done, check if queue is empty
-                        queue_state = channel.queue_declare(queue='incoming_fund_transfer_queue', durable=True, passive=True)
+                        queue_state = channel.queue_declare(queue='share_capital_queue', durable=True, passive=True)
                         if queue_state.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
@@ -527,7 +513,7 @@ class IncomingFundTransferStreamingPipeline:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
                     channel.basic_qos(prefetch_count=self.consumer_batch_size)
-                    channel.basic_consume(queue='incoming_fund_transfer_queue', on_message_callback=process_message)
+                    channel.basic_consume(queue='share_capital_queue', on_message_callback=process_message)
             
             connection.close()
             with self._stats_lock:
@@ -545,31 +531,27 @@ class IncomingFundTransferStreamingPipeline:
                 except Exception:
                     pass
     
-    def insert_batch_to_postgres(self, records: List[IncomingFundTransferRecord], pg_conn):
-        """Batch insert incoming fund transfer records to PostgreSQL with duplicate prevention"""
+    def insert_batch_to_postgres(self, records: List[ShareCapitalRecord], pg_conn):
+        """Batch insert share capital records to PostgreSQL with duplicate prevention"""
         try:
             cursor = pg_conn.cursor()
             
             insert_query = """
-            INSERT INTO "incomingFundTransfer" (
-                "reportingDate", "transactionId", "transactionDate", "transferChannel",
-                "subCategoryTransferChannel", "recipientName", "senderAccountNumber",
-                "recipientIdentificationType", "recipientIdentificationNumber", "recipientCountry",
-                "senderName", "senderBankOrFspCode", "senderAccountOrWalletNumber",
-                "serviceCategory", "serviceSubCategory", "currency", "orgAmount",
-                "usdAmount", "tzsAmount", "senderInstruction", "purposes"
+            INSERT INTO "shareCapital" (
+                "reportingDate", "capitalCategory", "capitalSubCategory", "transactionDate",
+                "transactionType", "shareholderNames", "clientType", "shareholderCountry",
+                "numberOfShares", "sharePriceBookValue", "currency", "orgAmount",
+                "tzsAmount", "sectorSnaClassification"
             ) VALUES %s
-            ON CONFLICT ("transactionId") DO NOTHING
+            ON CONFLICT ("shareholderNames", "transactionDate", "capitalCategory") DO NOTHING
             """
             
             values = [
                 (
-                    r.reportingDate, r.transactionId, r.transactionDate, r.transferChannel,
-                    r.subCategoryTransferChannel, r.recipientName, r.senderAccountNumber,
-                    r.recipientIdentificationType, r.recipientIdentificationNumber, r.recipientCountry,
-                    r.senderName, r.senderBankOrFspCode, r.senderAccountOrWalletNumber,
-                    r.serviceCategory, r.serviceSubCategory, r.currency, r.orgAmount,
-                    r.usdAmount, r.tzsAmount, r.senderInstruction, r.purposes
+                    r.reportingDate, r.capitalCategory, r.capitalSubCategory, r.transactionDate,
+                    r.transactionType, r.shareholderNames, r.clientType, r.shareholderCountry,
+                    r.numberOfShares, r.sharePriceBookValue, r.currency, r.orgAmount,
+                    r.tzsAmount, r.sectorSnaClassification
                 )
                 for r in records
             ]
@@ -578,27 +560,27 @@ class IncomingFundTransferStreamingPipeline:
             pg_conn.commit()
             
         except Exception as e:
-            self.logger.error(f"Error batch inserting {len(records)} incoming fund transfer records: {e}")
+            self.logger.error(f"Error batch inserting {len(records)} share capital records: {e}")
             raise
     
     def ensure_unique_index(self):
-        """Ensure unique index on transactionId exists for ON CONFLICT duplicate prevention"""
+        """Ensure unique index on shareholderNames, transactionDate, capitalCategory exists for ON CONFLICT duplicate prevention"""
         try:
             with self.get_postgres_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_incomingfundtransfer_txn_id_unique
-                    ON "incomingFundTransfer" ("transactionId")
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_sharecapital_unique
+                    ON "shareCapital" ("shareholderNames", "transactionDate", "capitalCategory")
                 """)
                 conn.commit()
-                self.logger.info("Unique index on transactionId verified/created")
+                self.logger.info("Unique index on shareholderNames, transactionDate, capitalCategory verified/created")
         except Exception as e:
-            self.logger.error(f"Failed to create unique index on transactionId: {e}")
+            self.logger.error(f"Failed to create unique index: {e}")
             raise
     
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Incoming Fund Transfer STREAMING pipeline...")
+        self.logger.info("Starting Share Capital STREAMING pipeline...")
         
         try:
             # Ensure unique index for duplicate prevention
@@ -611,7 +593,7 @@ class IncomingFundTransferStreamingPipeline:
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")
             consumer_thread.start()
             
-            # Small delay to let consumer start
+            # Small delay to ensure consumer is ready
             time.sleep(1)
             
             # Start producer thread
@@ -637,7 +619,7 @@ class IncomingFundTransferStreamingPipeline:
             
             self.logger.info(f"""
             ==========================================
-            Incoming Fund Transfer Pipeline Summary:
+            Share Capital Pipeline Summary:
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -657,7 +639,7 @@ def main():
     """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Incoming Fund Transfer Streaming Pipeline')
+    parser = argparse.ArgumentParser(description='Share Capital Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
@@ -666,7 +648,7 @@ def main():
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = IncomingFundTransferStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = ShareCapitalStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
     
     try:
         if args.mode == 'producer':

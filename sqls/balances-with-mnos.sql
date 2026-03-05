@@ -1,12 +1,12 @@
 SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYHHMM')  AS floatBalanceDate,
-       CASE gl.EXTERNAL_GLACCOUNT
-           WHEN '144000058' THEN 'Tigo Pesa'
-           WHEN '144000062' THEN 'M-Pesa'
+       CASE gte.FK_GLG_ACCOUNTACCO
+           WHEN '1.4.4.00.0058' THEN 'Tigo Pesa'
+           WHEN '1.4.4.00.0062' THEN 'M-Pesa'
            END                                           AS mnoCode,
-       CASE gl.EXTERNAL_GLACCOUNT
-           WHEN '144000058' THEN '0710-338790'
-           WHEN '144000062' THEN '711758'
+       CASE gte.FK_GLG_ACCOUNTACCO
+           WHEN '1.4.4.00.0058' THEN '0710-338790'
+           WHEN '1.4.4.00.0062' THEN '711758'
            END                                           AS tillNumber,
        gte.CURRENCY_SHORT_DES                            AS currency,
        0                                                 AS allowanceProbableLoss,
@@ -52,7 +52,5 @@ FROM GLI_TRX_EXTRACT gte
                            GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
 
-         JOIN GLG_ACCOUNT gl
-              ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
          LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
-WHERE gl.EXTERNAL_GLACCOUNT IN ('144000058', '144000062');
+WHERE gte.FK_GLG_ACCOUNTACCO IN ('1.4.4.00.0058', '1.4.4.00.0062');

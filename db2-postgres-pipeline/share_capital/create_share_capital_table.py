@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Create incomingFundTransfer table in PostgreSQL
-Based on incoming-fund-transfer.sql structure
+Create shareCapital table in PostgreSQL
+Based on share-capital.sql structure
 """
 
 import psycopg2
@@ -14,8 +14,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 
-def create_incoming_fund_transfer_table():
-    """Create the incomingFundTransfer table in PostgreSQL"""
+def create_share_capital_table():
+    """Create the shareCapital table in PostgreSQL"""
     
     # Setup logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -36,35 +36,28 @@ def create_incoming_fund_transfer_table():
         cursor = conn.cursor()
         
         # Drop table if exists
-        logger.info("Dropping existing incomingFundTransfer table if it exists...")
-        cursor.execute('DROP TABLE IF EXISTS "incomingFundTransfer" CASCADE')
+        logger.info("Dropping existing shareCapital table if it exists...")
+        cursor.execute('DROP TABLE IF EXISTS "shareCapital" CASCADE')
         
-        # Create incomingFundTransfer table
-        logger.info("Creating incomingFundTransfer table...")
+        # Create shareCapital table
+        logger.info("Creating shareCapital table...")
         create_table_sql = """
-        CREATE TABLE "incomingFundTransfer" (
+        CREATE TABLE "shareCapital" (
             id SERIAL PRIMARY KEY,
             "reportingDate" VARCHAR(12),
-            "transactionId" VARCHAR(255),
-            "transactionDate" VARCHAR(12),
-            "transferChannel" VARCHAR(50),
-            "subCategoryTransferChannel" VARCHAR(100),
-            "recipientName" VARCHAR(255),
-            "senderAccountNumber" VARCHAR(50),
-            "recipientIdentificationType" VARCHAR(50),
-            "recipientIdentificationNumber" VARCHAR(50),
-            "recipientCountry" VARCHAR(100),
-            "senderName" VARCHAR(255),
-            "senderBankOrFspCode" VARCHAR(50),
-            "senderAccountOrWalletNumber" VARCHAR(50),
-            "serviceCategory" VARCHAR(100),
-            "serviceSubCategory" VARCHAR(100),
+            "capitalCategory" VARCHAR(100),
+            "capitalSubCategory" VARCHAR(100),
+            "transactionDate" VARCHAR(50),
+            "transactionType" VARCHAR(50),
+            "shareholderNames" VARCHAR(255),
+            "clientType" VARCHAR(50),
+            "shareholderCountry" VARCHAR(100),
+            "numberOfShares" VARCHAR(50),
+            "sharePriceBookValue" VARCHAR(50),
             "currency" VARCHAR(10),
             "orgAmount" VARCHAR(50),
-            "usdAmount" VARCHAR(50),
             "tzsAmount" VARCHAR(50),
-            "senderInstruction" VARCHAR(255),
-            "purposes" TEXT,
+            "sectorSnaClassification" VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -76,15 +69,14 @@ def create_incoming_fund_transfer_table():
         logger.info("Creating indexes...")
         
         indexes = [
-            'CREATE INDEX idx_incomingFundTransfer_reporting_date ON "incomingFundTransfer"("reportingDate")',
-            'CREATE UNIQUE INDEX idx_incomingFundTransfer_transaction_id ON "incomingFundTransfer"("transactionId")',
-            'CREATE INDEX idx_incomingFundTransfer_transaction_date ON "incomingFundTransfer"("transactionDate")',
-            'CREATE INDEX idx_incomingFundTransfer_transfer_channel ON "incomingFundTransfer"("transferChannel")',
-            'CREATE INDEX idx_incomingFundTransfer_recipient_name ON "incomingFundTransfer"("recipientName")',
-            'CREATE INDEX idx_incomingFundTransfer_sender_name ON "incomingFundTransfer"("senderName")',
-            'CREATE INDEX idx_incomingFundTransfer_currency ON "incomingFundTransfer"("currency")',
-            'CREATE INDEX idx_incomingFundTransfer_service_category ON "incomingFundTransfer"("serviceCategory")',
-            'CREATE INDEX idx_incomingFundTransfer_created_at ON "incomingFundTransfer"(created_at)'
+            'CREATE INDEX idx_shareCapital_reporting_date ON "shareCapital"("reportingDate")',
+            'CREATE INDEX idx_shareCapital_capital_category ON "shareCapital"("capitalCategory")',
+            'CREATE INDEX idx_shareCapital_transaction_date ON "shareCapital"("transactionDate")',
+            'CREATE INDEX idx_shareCapital_shareholder_names ON "shareCapital"("shareholderNames")',
+            'CREATE INDEX idx_shareCapital_client_type ON "shareCapital"("clientType")',
+            'CREATE INDEX idx_shareCapital_currency ON "shareCapital"("currency")',
+            'CREATE UNIQUE INDEX idx_shareCapital_unique ON "shareCapital"("shareholderNames", "transactionDate", "capitalCategory")',
+            'CREATE INDEX idx_shareCapital_created_at ON "shareCapital"(created_at)'
         ]
         
         for index_sql in indexes:
@@ -100,13 +92,13 @@ def create_incoming_fund_transfer_table():
         cursor.execute("""
             SELECT column_name, data_type, character_maximum_length, is_nullable
             FROM information_schema.columns 
-            WHERE table_name = 'incomingFundTransfer'
+            WHERE table_name = 'shareCapital'
             ORDER BY ordinal_position
         """)
         
         columns = cursor.fetchall()
         
-        logger.info("Incoming Fund Transfer table created successfully!")
+        logger.info("Share Capital table created successfully!")
         logger.info("Table structure:")
         logger.info("-" * 80)
         logger.info(f"{'Column Name':<35} {'Data Type':<20} {'Max Length':<12} {'Nullable':<10}")
@@ -123,11 +115,11 @@ def create_incoming_fund_transfer_table():
         cursor.close()
         conn.close()
         
-        logger.info("incomingFundTransfer table setup completed successfully!")
+        logger.info("shareCapital table setup completed successfully!")
         
     except Exception as e:
-        logger.error(f"Error creating incomingFundTransfer table: {e}")
+        logger.error(f"Error creating shareCapital table: {e}")
         raise
 
 if __name__ == "__main__":
-    create_incoming_fund_transfer_table()
+    create_share_capital_table()

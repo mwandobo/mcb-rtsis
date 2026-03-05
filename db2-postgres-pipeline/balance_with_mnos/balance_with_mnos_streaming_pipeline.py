@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Incoming Fund Transfer Streaming Pipeline - Producer and Consumer run simultaneously
-Based on incoming-fund-transfer.sql query
+Balance with MNOs Streaming Pipeline - Producer and Consumer run simultaneously
+Based on balances-with-mnos.sql query
 """
 
 import pika
@@ -14,100 +14,104 @@ import time
 from dataclasses import dataclass, asdict
 from contextlib import contextmanager
 from typing import Optional, List
-from datetime import datetime
+from decimal import Decimal
 import sys
 import os
 
-# Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from db2_connection import DB2Connection
 
-# Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 @dataclass
-class IncomingFundTransferRecord:
-    """Data class for incoming fund transfer records based on incoming-fund-transfer.sql"""
+class BalanceWithMnoRecord:
+    """Data class for balance with MNO records based on balances-with-mnos.sql"""
     reportingDate: str
-    transactionId: str
-    transactionDate: str
-    transferChannel: str
-    subCategoryTransferChannel: Optional[str]
-    recipientName: str
-    senderAccountNumber: Optional[str]
-    recipientIdentificationType: str
-    recipientIdentificationNumber: str
-    recipientCountry: str
-    senderName: str
-    senderBankOrFspCode: str
-    senderAccountOrWalletNumber: str
-    serviceCategory: str
-    serviceSubCategory: str
+    floatBalanceDate: str
+    mnoCode: Optional[str]
+    tillNumber: Optional[str]
     currency: str
-    orgAmount: str
-    usdAmount: str
-    tzsAmount: str
-    senderInstruction: str
-    purposes: str
+    allowanceProbableLoss: int
+    botProvision: int
+    orgFloatAmount: Optional[Decimal]
+    usdFloatAmount: Optional[Decimal]
+    tzsFloatAmount: Optional[Decimal]
 
 
-class IncomingFundTransferStreamingPipeline:
+
+class BalanceWithMnosStreamingPipeline:
     def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
         self.consumer_batch_size = consumer_batch_size
         
-        # Threading control
         self.producer_finished = threading.Event()
         self.consumer_finished = threading.Event()
         self.stop_consumer = threading.Event()
         
-        # Thread-safe statistics
         self._stats_lock = threading.Lock()
         self.total_produced = 0
         self.total_consumed = 0
         self.total_available = 0
         self.start_time = time.time()
         
-        # Retry settings
         self.max_retries = 3
-        self.retry_delay = 5  # seconds
+        self.retry_delay = 5
         
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Incoming Fund Transfer STREAMING Pipeline initialized")
+        self.logger.info("Balance with MNOs STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_incoming_fund_transfer_query(self):
-        """Get the incoming fund transfer query from incoming-fund-transfer.sql"""
+    def get_balance_with_mnos_query(self):
+        """Get the balance with MNOs query from balances-with-mnos.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'incoming-fund-transfer.sql'
+            'sqls', 'balances-with-mnos.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
             return f.read()
     
     def get_total_count(self):
-        """Get approximate total count of incoming fund transfer records from DB2"""
+        """Get approximate total count of balance with MNO records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM IPS_MESSAGE_HEADER")
+                # Use the same query structure as the main query for accurate count
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM GLI_TRX_EXTRACT gte
+                    LEFT JOIN CURRENCY curr ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+                    LEFT JOIN (
+                        SELECT fr.fk_currencyid_curr, fr.rate
+                        FROM fixing_rate fr
+                        WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN
+                              (SELECT fk_currencyid_curr, activation_date, MAX(activation_time)
+                               FROM fixing_rate
+                               WHERE activation_date = (SELECT MAX(b.activation_date)
+                                                        FROM fixing_rate b
+                                                        WHERE b.activation_date <= CURRENT_DATE)
+                               GROUP BY fk_currencyid_curr, activation_date)
+                    ) fx ON fx.fk_currencyid_curr = curr.ID_CURRENCY
+                    LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
+                    WHERE gte.FK_GLG_ACCOUNTACCO IN ('1.4.4.00.0058', '1.4.4.00.0062')
+                """)
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from IPS_MESSAGE_HEADER: {count:,}")
+                self.logger.info(f"Estimated record count: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
             return 0
+
     
     @contextmanager
     def get_postgres_connection(self):
@@ -141,8 +145,8 @@ class IncomingFundTransferStreamingPipeline:
                     host=self.config.message_queue.rabbitmq_host,
                     port=self.config.message_queue.rabbitmq_port,
                     credentials=credentials,
-                    heartbeat=600,  # 10 minutes heartbeat
-                    blocked_connection_timeout=300,  # 5 minutes timeout
+                    heartbeat=600,
+                    blocked_connection_timeout=300,
                 )
                 connection = pika.BlockingConnection(parameters)
                 channel = connection.channel()
@@ -158,125 +162,118 @@ class IncomingFundTransferStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for incoming fund transfers with dead-letter exchange"""
+        """Setup RabbitMQ queue for balance with MNOs with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Declare dead-letter exchange and queue for failed messages
-            channel.exchange_declare(exchange='incoming_fund_transfer_dlx', exchange_type='direct', durable=True)
-            channel.queue_declare(queue='incoming_fund_transfer_dead_letter', durable=True)
+            channel.exchange_declare(exchange='balance_with_mnos_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='balance_with_mnos_dead_letter', durable=True)
             channel.queue_bind(
-                queue='incoming_fund_transfer_dead_letter',
-                exchange='incoming_fund_transfer_dlx',
-                routing_key='incoming_fund_transfer_queue'
+                queue='balance_with_mnos_dead_letter',
+                exchange='balance_with_mnos_dlx',
+                routing_key='balance_with_mnos_queue'
             )
             
-            # Declare main queue with dead-letter exchange routing
             try:
                 channel.queue_declare(
-                    queue='incoming_fund_transfer_queue',
+                    queue='balance_with_mnos_queue',
                     durable=True,
                     arguments={
-                        'x-dead-letter-exchange': 'incoming_fund_transfer_dlx',
-                        'x-dead-letter-routing-key': 'incoming_fund_transfer_queue'
+                        'x-dead-letter-exchange': 'balance_with_mnos_dlx',
+                        'x-dead-letter-routing-key': 'balance_with_mnos_queue'
                     }
                 )
                 self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
             except Exception:
-                # Queue may already exist with different arguments
                 self.logger.warning(
-                    "Queue 'incoming_fund_transfer_queue' already exists with different args. "
+                    "Queue 'balance_with_mnos_queue' already exists with different args. "
                     "Delete and recreate it to enable dead-letter support."
                 )
                 connection, channel = self.setup_rabbitmq_connection()
-                channel.queue_declare(queue='incoming_fund_transfer_queue', durable=True)
-                self.logger.info("RabbitMQ queue 'incoming_fund_transfer_queue' setup complete (without DLX)")
+                channel.queue_declare(queue='balance_with_mnos_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'balance_with_mnos_queue' setup complete (without DLX)")
             
             connection.close()
             
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
             raise
+
     
     def process_record(self, row):
-        """Process a single incoming fund transfer record from DB2"""
+        """Process a single balance with MNO record from DB2"""
         try:
-            # Helper function to safely convert values
             def safe_string(value):
-                """Safely convert to string"""
                 if value is None:
                     return None
                 return str(value).strip()
             
-            # Map the fields from the SQL query to the dataclass
-            record = IncomingFundTransferRecord(
-                reportingDate=safe_string(row[0]),                      # VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')
-                transactionId=safe_string(row[1]),                      # ORDER_CODE
-                transactionDate=safe_string(row[2]),                    # VARCHAR_FORMAT(TRX_DATE, 'DDMMYYYYHHMM')
-                transferChannel=safe_string(row[3]),                    # 'EFT'
-                subCategoryTransferChannel=safe_string(row[4]) if row[4] else None,  # NULL
-                recipientName=safe_string(row[5]),                      # TRIM(TRIM(cust.FIRST_NAME) || ' ' || ...)
-                senderAccountNumber=safe_string(row[6]) if row[6] else None,         # im.PRFT_ACCOUNT
-                recipientIdentificationType=safe_string(row[7]),        # CASE WHEN id.ISSUE_AUTHORITY...
-                recipientIdentificationNumber=safe_string(row[8]),      # id.ID_NO
-                recipientCountry=safe_string(row[9]),                   # 'TANZANIA, UNITED REPUBLIC OF'
-                senderName=safe_string(row[10]),                        # 'Bank Of Tanzania'
-                senderBankOrFspCode=safe_string(row[11]),               # 'TANZTZTXXXX'
-                senderAccountOrWalletNumber=safe_string(row[12]),       # im.BENEF_IBAN_ACC
-                serviceCategory=safe_string(row[13]),                   # 'Mobile Banking Transactions'
-                serviceSubCategory=safe_string(row[14]),                # 'Inter-Bank'
-                currency=safe_string(row[15]),                          # curr.SHORT_DESCR
-                orgAmount=safe_string(row[16]),                         # ORDER_AMOUNT
-                usdAmount=safe_string(row[17]),                         # USD conversion
-                tzsAmount=safe_string(row[18]),                         # TZS conversion
-                senderInstruction=safe_string(row[19]),                 # REMITTANCE_INFO
-                purposes=safe_string(row[20])                           # 'Salaries and wages'
+            def safe_decimal(value):
+                if value is None:
+                    return None
+                try:
+                    return Decimal(str(value))
+                except (ValueError, TypeError):
+                    return None
+            
+            def safe_int(value):
+                if value is None:
+                    return 0
+                try:
+                    return int(value)
+                except (ValueError, TypeError):
+                    return 0
+            
+            record = BalanceWithMnoRecord(
+                reportingDate=safe_string(row[0]),
+                floatBalanceDate=safe_string(row[1]),
+                mnoCode=safe_string(row[2]) if row[2] else None,
+                tillNumber=safe_string(row[3]) if row[3] else None,
+                currency=safe_string(row[4]),
+                allowanceProbableLoss=safe_int(row[5]),
+                botProvision=safe_int(row[6]),
+                orgFloatAmount=safe_decimal(row[7]),
+                usdFloatAmount=safe_decimal(row[8]),
+                tzsFloatAmount=safe_decimal(row[9])
             )
             
             return record
             
         except Exception as e:
-            self.logger.error(f"Error processing incoming fund transfer record: {e}")
+            self.logger.error(f"Error processing balance with MNO record: {e}")
             self.logger.error(f"Row data: {row}")
             self.logger.error(f"Row length: {len(row)}")
             raise
     
     def validate_record(self, record):
-        """Validate incoming fund transfer record"""
+        """Validate balance with MNO record"""
         try:
-            # Basic validation
-            if not record.transactionId:
-                self.logger.warning("Missing transaction ID")
-                return False
-            
-            if not record.recipientName:
-                self.logger.warning("Missing recipient name")
+            if not record.currency:
+                self.logger.warning("Missing currency")
                 return False
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Error validating incoming fund transfer record: {e}")
+            self.logger.error(f"Error validating balance with MNO record: {e}")
             return False
+
     
     def producer_thread(self):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
             
-            # Get dynamic record count
             self.total_available = self.get_total_count()
             
-            self.logger.info(f"Total incoming fund transfer records available: {self.total_available:,} (estimated)")
+            self.logger.info(f"Total balance with MNO records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
-            # Setup RabbitMQ connection with retry
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
-            # Execute the query ONCE and stream results
-            query = self.get_incoming_fund_transfer_query()
-            self.logger.info("Executing incoming fund transfer query (single execution, streaming results)...")
+            query = self.get_balance_with_mnos_query()
+            self.logger.info("Executing balance with MNOs query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -289,14 +286,12 @@ class IncomingFundTransferStreamingPipeline:
                 while True:
                     batch_start_time = time.time()
                     
-                    # Fetch next chunk from the already-running query
                     rows = db2_cursor.fetchmany(self.batch_size)
                     
                     if not rows:
                         self.logger.info("No more records to fetch")
                         break
                     
-                    # Process and publish
                     batch_published = 0
                     for row in rows:
                         record = self.process_record(row)
@@ -304,13 +299,12 @@ class IncomingFundTransferStreamingPipeline:
                         if self.validate_record(record):
                             message = json.dumps(asdict(record), default=str)
                             
-                            # Publish with retry
                             published = False
                             for attempt in range(self.max_retries):
                                 try:
                                     channel.basic_publish(
                                         exchange='',
-                                        routing_key='incoming_fund_transfer_queue',
+                                        routing_key='balance_with_mnos_queue',
                                         body=message,
                                         properties=pika.BasicProperties(delivery_mode=2)
                                     )
@@ -340,7 +334,6 @@ class IncomingFundTransferStreamingPipeline:
                     
                     self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} rows fetched, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
                     
-                    # Progress report every 5 minutes
                     current_time = time.time()
                     if current_time - last_progress_report >= 300:
                         elapsed_time = current_time - self.start_time
@@ -363,6 +356,7 @@ class IncomingFundTransferStreamingPipeline:
         except Exception as e:
             self.logger.error(f"Producer error: {e}")
             self.producer_finished.set()
+
     
     def consumer_thread(self):
         """Consumer thread - processes messages from queue with batch inserts and persistent connection"""
@@ -370,7 +364,6 @@ class IncomingFundTransferStreamingPipeline:
         try:
             self.logger.info("Consumer thread started")
             
-            # Setup persistent PostgreSQL connection
             pg_conn = psycopg2.connect(
                 host=self.config.database.pg_host,
                 port=self.config.database.pg_port,
@@ -380,18 +373,15 @@ class IncomingFundTransferStreamingPipeline:
             )
             self.logger.info("Consumer: Persistent PostgreSQL connection established")
             
-            # Setup RabbitMQ connection with retry
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Batch insert buffer
-            insert_buffer: List[IncomingFundTransferRecord] = []
+            insert_buffer: List[BalanceWithMnoRecord] = []
             pending_tags: List[int] = []
             last_flush_time = time.time()
-            flush_interval = 5  # seconds
+            flush_interval = 5
             last_progress_report = time.time()
             
             def flush_buffer(ch):
-                """Flush buffered records to PostgreSQL in a single batch insert"""
                 nonlocal insert_buffer, pending_tags, last_flush_time, pg_conn
                 if not insert_buffer:
                     return
@@ -400,7 +390,6 @@ class IncomingFundTransferStreamingPipeline:
                 try:
                     self.insert_batch_to_postgres(insert_buffer, pg_conn)
                     
-                    # Batch acknowledge all messages at once
                     if pending_tags:
                         ch.basic_ack(delivery_tag=pending_tags[-1], multiple=True)
                     
@@ -413,7 +402,6 @@ class IncomingFundTransferStreamingPipeline:
                     
                 except psycopg2.OperationalError as e:
                     self.logger.error(f"PostgreSQL connection lost during batch insert: {e}")
-                    # Reconnect PostgreSQL
                     try:
                         pg_conn.close()
                     except Exception:
@@ -425,7 +413,6 @@ class IncomingFundTransferStreamingPipeline:
                         user=self.config.database.pg_user,
                         password=self.config.database.pg_password
                     )
-                    # Nack all to requeue for retry
                     for tag in pending_tags:
                         try:
                             ch.basic_nack(delivery_tag=tag, requeue=True)
@@ -441,7 +428,6 @@ class IncomingFundTransferStreamingPipeline:
                         pg_conn.rollback()
                     except Exception:
                         pass
-                    # Nack all messages - they go to dead-letter queue
                     for tag in pending_tags:
                         try:
                             ch.basic_nack(delivery_tag=tag, requeue=False)
@@ -455,17 +441,15 @@ class IncomingFundTransferStreamingPipeline:
                 nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
-                    record = IncomingFundTransferRecord(**record_data)
+                    record = BalanceWithMnoRecord(**record_data)
                     
                     insert_buffer.append(record)
                     pending_tags.append(method.delivery_tag)
                     
-                    # Flush if buffer is full or time interval exceeded
                     if len(insert_buffer) >= self.consumer_batch_size or \
                        time.time() - last_flush_time >= flush_interval:
                         flush_buffer(ch)
                     
-                    # Progress monitoring
                     with self._stats_lock:
                         consumed = self.total_consumed
                     
@@ -476,7 +460,6 @@ class IncomingFundTransferStreamingPipeline:
                         
                         self.logger.info(f"Consumer: Processed {consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
                     
-                    # Detailed progress report every 5 minutes
                     current_time = time.time()
                     if current_time - last_progress_report >= 300:
                         elapsed_time = current_time - self.start_time
@@ -494,40 +477,33 @@ class IncomingFundTransferStreamingPipeline:
                     self.logger.error(f"Consumer error processing message: {e}")
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             
-            # Set QoS to match consumer batch size for efficient batching
             channel.basic_qos(prefetch_count=self.consumer_batch_size)
-            channel.basic_consume(queue='incoming_fund_transfer_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='balance_with_mnos_queue', on_message_callback=process_message)
             
-            # Keep consuming until producer is done and queue is empty
             while not self.stop_consumer.is_set():
                 try:
                     connection.process_data_events(time_limit=1)
                     
-                    # Flush any remaining buffered records on timeout
                     if insert_buffer and time.time() - last_flush_time >= flush_interval:
                         flush_buffer(channel)
                     
-                    # Check if we should stop
                     if self.producer_finished.is_set():
-                        # Flush remaining buffer before checking queue
                         flush_buffer(channel)
                         
-                        # Producer is done, check if queue is empty
-                        queue_state = channel.queue_declare(queue='incoming_fund_transfer_queue', durable=True, passive=True)
+                        queue_state = channel.queue_declare(queue='balance_with_mnos_queue', durable=True, passive=True)
                         if queue_state.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
                         
                 except Exception as e:
                     self.logger.error(f"Consumer processing error: {e}")
-                    # Try to reconnect RabbitMQ
                     try:
                         connection.close()
                     except Exception:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
                     channel.basic_qos(prefetch_count=self.consumer_batch_size)
-                    channel.basic_consume(queue='incoming_fund_transfer_queue', on_message_callback=process_message)
+                    channel.basic_consume(queue='balance_with_mnos_queue', on_message_callback=process_message)
             
             connection.close()
             with self._stats_lock:
@@ -544,32 +520,26 @@ class IncomingFundTransferStreamingPipeline:
                     pg_conn.close()
                 except Exception:
                     pass
+
     
-    def insert_batch_to_postgres(self, records: List[IncomingFundTransferRecord], pg_conn):
-        """Batch insert incoming fund transfer records to PostgreSQL with duplicate prevention"""
+    def insert_batch_to_postgres(self, records: List[BalanceWithMnoRecord], pg_conn):
+        """Batch insert balance with MNO records to PostgreSQL"""
         try:
             cursor = pg_conn.cursor()
             
             insert_query = """
-            INSERT INTO "incomingFundTransfer" (
-                "reportingDate", "transactionId", "transactionDate", "transferChannel",
-                "subCategoryTransferChannel", "recipientName", "senderAccountNumber",
-                "recipientIdentificationType", "recipientIdentificationNumber", "recipientCountry",
-                "senderName", "senderBankOrFspCode", "senderAccountOrWalletNumber",
-                "serviceCategory", "serviceSubCategory", "currency", "orgAmount",
-                "usdAmount", "tzsAmount", "senderInstruction", "purposes"
+            INSERT INTO "balanceWithMnos" (
+                "reportingDate", "floatBalanceDate", "mnoCode", "tillNumber", currency,
+                "allowanceProbableLoss", "botProvision", "orgFloatAmount",
+                "usdFloatAmount", "tzsFloatAmount"
             ) VALUES %s
-            ON CONFLICT ("transactionId") DO NOTHING
             """
             
             values = [
                 (
-                    r.reportingDate, r.transactionId, r.transactionDate, r.transferChannel,
-                    r.subCategoryTransferChannel, r.recipientName, r.senderAccountNumber,
-                    r.recipientIdentificationType, r.recipientIdentificationNumber, r.recipientCountry,
-                    r.senderName, r.senderBankOrFspCode, r.senderAccountOrWalletNumber,
-                    r.serviceCategory, r.serviceSubCategory, r.currency, r.orgAmount,
-                    r.usdAmount, r.tzsAmount, r.senderInstruction, r.purposes
+                    r.reportingDate, r.floatBalanceDate, r.mnoCode, r.tillNumber, r.currency,
+                    r.allowanceProbableLoss, r.botProvision, r.orgFloatAmount,
+                    r.usdFloatAmount, r.tzsFloatAmount
                 )
                 for r in records
             ]
@@ -578,66 +548,41 @@ class IncomingFundTransferStreamingPipeline:
             pg_conn.commit()
             
         except Exception as e:
-            self.logger.error(f"Error batch inserting {len(records)} incoming fund transfer records: {e}")
-            raise
-    
-    def ensure_unique_index(self):
-        """Ensure unique index on transactionId exists for ON CONFLICT duplicate prevention"""
-        try:
-            with self.get_postgres_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_incomingfundtransfer_txn_id_unique
-                    ON "incomingFundTransfer" ("transactionId")
-                """)
-                conn.commit()
-                self.logger.info("Unique index on transactionId verified/created")
-        except Exception as e:
-            self.logger.error(f"Failed to create unique index on transactionId: {e}")
+            self.logger.error(f"Error batch inserting {len(records)} balance with MNO records: {e}")
             raise
     
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Incoming Fund Transfer STREAMING pipeline...")
+        self.logger.info("Starting Balance with MNOs STREAMING pipeline...")
         
         try:
-            # Ensure unique index for duplicate prevention
-            self.ensure_unique_index()
-            
-            # Setup queue
             self.setup_rabbitmq_queue()
             
-            # Start consumer thread first
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")
             consumer_thread.start()
             
-            # Small delay to let consumer start
             time.sleep(1)
             
-            # Start producer thread
             producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
             producer_thread.start()
             
-            # Wait for producer to finish
             producer_thread.join()
             self.logger.info("Producer thread completed")
             
-            # Wait for consumer to finish processing remaining messages
-            consumer_thread.join(timeout=60)  # Wait up to 60 seconds
+            consumer_thread.join(timeout=60)
             
             if consumer_thread.is_alive():
                 self.logger.info("Stopping consumer thread...")
                 self.stop_consumer.set()
                 consumer_thread.join(timeout=30)
             
-            # Final statistics
             total_time = time.time() - self.start_time
             avg_rate = self.total_consumed / total_time if total_time > 0 else 0
             success_rate = (self.total_consumed / self.total_produced * 100) if self.total_produced > 0 else 0
             
             self.logger.info(f"""
             ==========================================
-            Incoming Fund Transfer Pipeline Summary:
+            Balance with MNOs Pipeline Summary:
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -657,7 +602,7 @@ def main():
     """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Incoming Fund Transfer Streaming Pipeline')
+    parser = argparse.ArgumentParser(description='Balance with MNOs Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
@@ -665,15 +610,14 @@ def main():
     
     args = parser.parse_args()
     
-    # Create pipeline
-    pipeline = IncomingFundTransferStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = BalanceWithMnosStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
     
     try:
         if args.mode == 'producer':
             pipeline.producer_thread()
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
-        else:  # streaming
+        else:
             pipeline.run_streaming_pipeline()
             
     except KeyboardInterrupt:

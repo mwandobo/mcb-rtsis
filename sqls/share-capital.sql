@@ -1,7 +1,7 @@
 SELECT TO_CHAR(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI') as reportingDate,
        sc.CAPITAL_CATEGORY                          AS capitalCategory,
        sc.CAPITAL_SUBCATEGORY                       AS capitalSubCategory,
-       sc.TRANSACTION_DATE                          AS transactionDate,
+       VARCHAR_FORMAT(sc.TRANSACTION_DATE,'DDMMYYYYHHMM')                          AS transactionDate,
        sc.TRANSACTION_TYPE                          AS transactionType,
        sc.SHAREHOLDER_NAME                          AS shareholderNames,
        sc.CLIENT_TYPE                               AS clientType,
