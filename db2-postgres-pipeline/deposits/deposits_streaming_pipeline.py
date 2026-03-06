@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Personal Data Corporates Streaming Pipeline - Producer and Consumer run simultaneously
-Based on personal-data-corporates-v4.sql query
+Deposits Streaming Pipeline - Producer and Consumer run simultaneously
+Based on deposits-v1.sql query
 """
 
 import pika
@@ -29,63 +29,48 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 @dataclass
-class PersonalDataCorporateRecord:
-    """Data class for corporate personal data records based on personal-data-corporates-v4.sql"""
+class DepositRecord:
+    """Data class for deposit records based on deposits-v1.sql"""
     reportingDate: str
-    companyName: str
-    customerIdentificationNumber: str
-    establishedDate: Optional[str]
-    legalForm: str
-    negativeClientStatus: str
-    numberOfEmployees: Optional[int]
-    totalEmployeesMAle: int
-    totalEmployeesFemale: int
-    registrationCountry: str
-    registrationNumber: Optional[str]
-    taxIdentificationNumber: Optional[str]
-    tradeName: str
-    parentName: Optional[str]
-    parentIncorporationNumber: Optional[str]
-    groupId: Optional[str]
-    sectorSnaClassification: str
-    related_customers: Optional[str]
-    street: Optional[str]
-    country: Optional[str]
-    region: str
+    clientIdentificationNumber: str
+    accountNumber: str
+    accountName: str
+    customerCategory: str
+    customerCountry: str
+    branchCode: str
+    clientType: Optional[str]
+    relationshipType: str
     district: Optional[str]
-    ward: Optional[str]
-    houseNumber: Optional[str]
-    postalCode: Optional[str]
-    poBox: Optional[str]
-    zipCode: Optional[str]
-    secondaryStreet: Optional[str]
-    secondartHouseNumber: Optional[str]
-    secondaryPostalCode: Optional[str]
-    secondaryRegion: Optional[str]
-    secondaryDistrict: Optional[str]
-    secondaryCountry: Optional[str]
-    secondaryTextAddress: Optional[str]
-    mobileNumber: Optional[str]
-    alternativeMobileNumber: Optional[str]
-    fixedLineNumber: Optional[str]
-    faxNumber: Optional[str]
-    emailAddress: Optional[str]
-    socialMedia: Optional[str]
-    entityName: str
-    entityType: str
-    certificateIncorporation: Optional[str]
-    entiryRegion: str
-    entityDistrict: Optional[str]
-    entityWard: str
-    entityStreet: str
-    entityHouseNumber: str
-    entityPostalCode: str
-    groupParentCode: str
-    shareOwnedPercentage: Optional[str]
-    shareOwnedAmount: Optional[str]
+    region: str
+    accountProductName: str
+    accountType: str
+    accountSubType: Optional[str]
+    depositCategory: str
+    depositAccountStatus: str
+    transactionUniqueRef: str
+    timeStamp: str
+    serviceChannel: str
+    currency: str
+    transactionType: str
+    orgTransactionAmount: str
+    usdTransactionAmount: Optional[str]
+    tzsTransactionAmount: Optional[str]
+    transactionPurposes: Optional[str]
+    sectorSnaClassification: str
+    lienNumber: Optional[str]
+    orgAmountLien: Optional[str]
+    usdAmountLien: Optional[str]
+    tzsAmountLien: Optional[str]
+    contractDate: Optional[str]
+    maturityDate: Optional[str]
+    annualInterestRate: str
+    interestRateType: str
+    orgInterestAmount: str
+    usdInterestAmount: str
+    tzsInterestAmount: str
 
 
-class PersonalDataCorporatesStreamingPipeline:
+class DepositsStreamingPipeline:
     def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
@@ -110,31 +95,31 @@ class PersonalDataCorporatesStreamingPipeline:
         
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Personal Data Corporates STREAMING Pipeline initialized")
+        self.logger.info("Deposits STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_personal_data_corporates_query(self):
-        """Get the corporate personal data query from personal-data-corporates-v4.sql"""
+    def get_deposits_query(self):
+        """Get the deposits query from deposits-v1.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'personal-data-corporates-v4.sql'
+            'sqls', 'deposits-v1.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
             return f.read()
     
     def get_total_count(self):
-        """Get approximate total count of corporate records from DB2"""
+        """Get approximate total count of deposit records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM W_DIM_CUSTOMER WHERE CUST_TYPE_IND = 'Corporate'")
+                cursor.execute("SELECT COUNT(*) FROM GLI_TRX_EXTRACT WHERE ID_PRODUCT IN (31201, 31202, 31220)")
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from W_DIM_CUSTOMER (Corporate): {count:,}")
+                self.logger.info(f"Estimated record count from GLI_TRX_EXTRACT: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -189,39 +174,39 @@ class PersonalDataCorporatesStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for corporate personal data with dead-letter exchange"""
+        """Setup RabbitMQ queue for deposits with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Declare dead-letter exchange and queue for failed messages
-            channel.exchange_declare(exchange='personal_data_corporates_dlx', exchange_type='direct', durable=True)
-            channel.queue_declare(queue='personal_data_corporates_dead_letter', durable=True)
+            channel.exchange_declare(exchange='deposits_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='deposits_dead_letter', durable=True)
             channel.queue_bind(
-                queue='personal_data_corporates_dead_letter',
-                exchange='personal_data_corporates_dlx',
-                routing_key='personal_data_corporates_queue'
+                queue='deposits_dead_letter',
+                exchange='deposits_dlx',
+                routing_key='deposits_queue'
             )
             
             # Declare main queue with dead-letter exchange routing
             try:
                 channel.queue_declare(
-                    queue='personal_data_corporates_queue',
+                    queue='deposits_queue',
                     durable=True,
                     arguments={
-                        'x-dead-letter-exchange': 'personal_data_corporates_dlx',
-                        'x-dead-letter-routing-key': 'personal_data_corporates_queue'
+                        'x-dead-letter-exchange': 'deposits_dlx',
+                        'x-dead-letter-routing-key': 'deposits_queue'
                     }
                 )
                 self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
             except Exception:
                 # Queue may already exist with different arguments
                 self.logger.warning(
-                    "Queue 'personal_data_corporates_queue' already exists with different args. "
+                    "Queue 'deposits_queue' already exists with different args. "
                     "Delete and recreate it to enable dead-letter support."
                 )
                 connection, channel = self.setup_rabbitmq_connection()
-                channel.queue_declare(queue='personal_data_corporates_queue', durable=True)
-                self.logger.info("RabbitMQ queue 'personal_data_corporates_queue' setup complete (without DLX)")
+                channel.queue_declare(queue='deposits_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'deposits_queue' setup complete (without DLX)")
             
             connection.close()
             
@@ -231,92 +216,69 @@ class PersonalDataCorporatesStreamingPipeline:
 
     
     def process_record(self, row):
-        """Process a single corporate personal data record from DB2"""
+        """Process a single deposit record from DB2"""
         try:
             def safe_string(value):
                 if value is None:
                     return None
                 return str(value).strip()
             
-            def safe_int(value):
-                if value is None:
-                    return None
-                try:
-                    return int(value)
-                except (ValueError, TypeError):
-                    return None
-            
-            # Map the 52 fields from the SQL query
-            record = PersonalDataCorporateRecord(
+            # Map the 36 fields from the SQL query
+            record = DepositRecord(
                 reportingDate=safe_string(row[0]),
-                companyName=safe_string(row[1]),
-                customerIdentificationNumber=safe_string(row[2]),
-                establishedDate=safe_string(row[3]) if row[3] else None,
-                legalForm=safe_string(row[4]),
-                negativeClientStatus=safe_string(row[5]),
-                numberOfEmployees=safe_int(row[6]),
-                totalEmployeesMAle=safe_int(row[7]),
-                totalEmployeesFemale=safe_int(row[8]),
-                registrationCountry=safe_string(row[9]),
-                registrationNumber=safe_string(row[10]) if row[10] else None,
-                taxIdentificationNumber=safe_string(row[11]) if row[11] else None,
-                tradeName=safe_string(row[12]),
-                parentName=safe_string(row[13]) if row[13] else None,
-                parentIncorporationNumber=safe_string(row[14]) if row[14] else None,
-                groupId=safe_string(row[15]) if row[15] else None,
-                sectorSnaClassification=safe_string(row[16]),
-                related_customers=safe_string(row[17]) if row[17] else None,
-                street=safe_string(row[18]) if row[18] else None,
-                country=safe_string(row[19]) if row[19] else None,
-                region=safe_string(row[20]),
-                district=safe_string(row[21]) if row[21] else None,
-                ward=safe_string(row[22]) if row[22] else None,
-                houseNumber=safe_string(row[23]) if row[23] else None,
-                postalCode=safe_string(row[24]) if row[24] else None,
-                poBox=safe_string(row[25]) if row[25] else None,
-                zipCode=safe_string(row[26]) if row[26] else None,
-                secondaryStreet=safe_string(row[27]) if row[27] else None,
-                secondartHouseNumber=safe_string(row[28]) if row[28] else None,
-                secondaryPostalCode=safe_string(row[29]) if row[29] else None,
-                secondaryRegion=safe_string(row[30]) if row[30] else None,
-                secondaryDistrict=safe_string(row[31]) if row[31] else None,
-                secondaryCountry=safe_string(row[32]) if row[32] else None,
-                secondaryTextAddress=safe_string(row[33]) if row[33] else None,
-                mobileNumber=safe_string(row[34]) if row[34] else None,
-                alternativeMobileNumber=safe_string(row[35]) if row[35] else None,
-                fixedLineNumber=safe_string(row[36]) if row[36] else None,
-                faxNumber=safe_string(row[37]) if row[37] else None,
-                emailAddress=safe_string(row[38]) if row[38] else None,
-                socialMedia=safe_string(row[39]) if row[39] else None,
-                entityName=safe_string(row[40]),
-                entityType=safe_string(row[41]),
-                certificateIncorporation=safe_string(row[42]) if row[42] else None,
-                entiryRegion=safe_string(row[43]),
-                entityDistrict=safe_string(row[44]) if row[44] else None,
-                entityWard=safe_string(row[45]),
-                entityStreet=safe_string(row[46]),
-                entityHouseNumber=safe_string(row[47]),
-                entityPostalCode=safe_string(row[48]),
-                groupParentCode=safe_string(row[49]),
-                shareOwnedPercentage=safe_string(row[50]) if row[50] else None,
-                shareOwnedAmount=safe_string(row[51]) if row[51] else None
+                clientIdentificationNumber=safe_string(row[1]),
+                accountNumber=safe_string(row[2]),
+                accountName=safe_string(row[3]),
+                customerCategory=safe_string(row[4]),
+                customerCountry=safe_string(row[5]),
+                branchCode=safe_string(row[6]),
+                clientType=safe_string(row[7]) if row[7] else None,
+                relationshipType=safe_string(row[8]),
+                district=safe_string(row[9]) if row[9] else None,
+                region=safe_string(row[10]),
+                accountProductName=safe_string(row[11]),
+                accountType=safe_string(row[12]),
+                accountSubType=safe_string(row[13]) if row[13] else None,
+                depositCategory=safe_string(row[14]),
+                depositAccountStatus=safe_string(row[15]),
+                transactionUniqueRef=safe_string(row[16]),
+                timeStamp=safe_string(row[17]),
+                serviceChannel=safe_string(row[18]),
+                currency=safe_string(row[19]),
+                transactionType=safe_string(row[20]),
+                orgTransactionAmount=safe_string(row[21]),
+                usdTransactionAmount=safe_string(row[22]) if row[22] else None,
+                tzsTransactionAmount=safe_string(row[23]) if row[23] else None,
+                transactionPurposes=safe_string(row[24]) if row[24] else None,
+                sectorSnaClassification=safe_string(row[25]),
+                lienNumber=safe_string(row[26]) if row[26] else None,
+                orgAmountLien=safe_string(row[27]) if row[27] else None,
+                usdAmountLien=safe_string(row[28]) if row[28] else None,
+                tzsAmountLien=safe_string(row[29]) if row[29] else None,
+                contractDate=safe_string(row[30]) if row[30] else None,
+                maturityDate=safe_string(row[31]) if row[31] else None,
+                annualInterestRate=safe_string(row[32]),
+                interestRateType=safe_string(row[33]),
+                orgInterestAmount=safe_string(row[34]),
+                usdInterestAmount=safe_string(row[35]),
+                tzsInterestAmount=safe_string(row[36])
             )
             
             return record
             
         except Exception as e:
-            self.logger.error(f"Error processing corporate record: {e}")
+            self.logger.error(f"Error processing deposit record: {e}")
             self.logger.error(f"Row length: {len(row)}")
             raise
     
     def validate_record(self, record):
-        """Validate corporate record"""
+        """Validate deposit record"""
         try:
-            if not record.customerIdentificationNumber:
-                self.logger.warning("Missing customer identification number")
+            if not record.transactionUniqueRef:
+                self.logger.warning("Missing transaction unique reference")
                 return False
-            if not record.companyName:
-                self.logger.warning("Missing company name")
+            if not record.accountNumber:
+                self.logger.warning("Missing account number")
                 return False
             return True
         except Exception as e:
@@ -328,11 +290,11 @@ class PersonalDataCorporatesStreamingPipeline:
         try:
             self.logger.info("Producer thread started")
             self.total_available = self.get_total_count()
-            self.logger.info(f"Total corporate records available: {self.total_available:,} (estimated)")
+            self.logger.info(f"Total deposit records available: {self.total_available:,} (estimated)")
             
             rmq_connection, channel = self.setup_rabbitmq_connection()
-            query = self.get_personal_data_corporates_query()
-            self.logger.info("Executing corporate query...")
+            query = self.get_deposits_query()
+            self.logger.info("Executing deposits query...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -359,7 +321,7 @@ class PersonalDataCorporatesStreamingPipeline:
                                 try:
                                     channel.basic_publish(
                                         exchange='',
-                                        routing_key='personal_data_corporates_queue',
+                                        routing_key='deposits_queue',
                                         body=message,
                                         properties=pika.BasicProperties(delivery_mode=2)
                                     )
@@ -422,7 +384,7 @@ class PersonalDataCorporatesStreamingPipeline:
             self.logger.info("Consumer: PostgreSQL connection established")
             
             connection, channel = self.setup_rabbitmq_connection()
-            insert_buffer: List[PersonalDataCorporateRecord] = []
+            insert_buffer: List[DepositRecord] = []
             pending_tags: List[int] = []
             last_flush_time = time.time()
             last_message_time = time.time()  # Track when we last received a message
@@ -463,7 +425,7 @@ class PersonalDataCorporatesStreamingPipeline:
                 try:
                     last_message_time = time.time()  # Update last message time
                     record_data = json.loads(body)
-                    record = PersonalDataCorporateRecord(**record_data)
+                    record = DepositRecord(**record_data)
                     insert_buffer.append(record)
                     pending_tags.append(method.delivery_tag)
                     
@@ -474,7 +436,7 @@ class PersonalDataCorporatesStreamingPipeline:
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             
             channel.basic_qos(prefetch_count=self.consumer_batch_size)
-            channel.basic_consume(queue='personal_data_corporates_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='deposits_queue', on_message_callback=process_message)
             
             idle_timeout = 10  # seconds - if no messages for this long after producer finishes, we're done
             
@@ -495,7 +457,7 @@ class PersonalDataCorporatesStreamingPipeline:
                             flush_buffer(channel)
                             
                             # Double-check queue is empty
-                            queue_state = channel.queue_declare(queue='personal_data_corporates_queue', durable=True, passive=True)
+                            queue_state = channel.queue_declare(queue='deposits_queue', durable=True, passive=True)
                             if queue_state.method.message_count == 0:
                                 self.logger.info(f"Consumer: No messages received for {idle_timeout}s and queue empty. Finishing.")
                                 break
@@ -519,41 +481,37 @@ class PersonalDataCorporatesStreamingPipeline:
                 except Exception:
                     pass
     
-    def insert_batch_to_postgres(self, records: List[PersonalDataCorporateRecord], pg_conn):
-        """Batch insert corporate records to PostgreSQL"""
+    def insert_batch_to_postgres(self, records: List[DepositRecord], pg_conn):
+        """Batch insert deposit records to PostgreSQL"""
         try:
             cursor = pg_conn.cursor()
             insert_query = """
-            INSERT INTO "personalDataCorporates" (
-                "reportingDate", "companyName", "customerIdentificationNumber", "establishedDate",
-                "legalForm", "negativeClientStatus", "numberOfEmployees", "totalEmployeesMAle",
-                "totalEmployeesFemale", "registrationCountry", "registrationNumber", "taxIdentificationNumber",
-                "tradeName", "parentName", "parentIncorporationNumber", "groupId", "sectorSnaClassification",
-                "related_customers", "street", "country", "region", "district", "ward", "houseNumber",
-                "postalCode", "poBox", "zipCode", "secondaryStreet", "secondartHouseNumber",
-                "secondaryPostalCode", "secondaryRegion", "secondaryDistrict", "secondaryCountry",
-                "secondaryTextAddress", "mobileNumber", "alternativeMobileNumber", "fixedLineNumber",
-                "faxNumber", "emailAddress", "socialMedia", "entityName", "entityType",
-                "certificateIncorporation", "entiryRegion", "entityDistrict", "entityWard",
-                "entityStreet", "entityHouseNumber", "entityPostalCode", "groupParentCode",
-                "shareOwnedPercentage", "shareOwnedAmount"
+            INSERT INTO "deposits" (
+                "reportingDate", "clientIdentificationNumber", "accountNumber", "accountName",
+                "customerCategory", "customerCountry", "branchCode", "clientType",
+                "relationshipType", "district", "region", "accountProductName",
+                "accountType", "accountSubType", "depositCategory", "depositAccountStatus",
+                "transactionUniqueRef", "timeStamp", "serviceChannel", "currency",
+                "transactionType", "orgTransactionAmount", "usdTransactionAmount", "tzsTransactionAmount",
+                "transactionPurposes", "sectorSnaClassification", "lienNumber", "orgAmountLien",
+                "usdAmountLien", "tzsAmountLien", "contractDate", "maturityDate",
+                "annualInterestRate", "interestRateType", "orgInterestAmount", "usdInterestAmount",
+                "tzsInterestAmount"
             ) VALUES %s
-            ON CONFLICT ("customerIdentificationNumber") DO NOTHING
+            ON CONFLICT ("transactionUniqueRef") DO NOTHING
             """
             
             values = [(
-                r.reportingDate, r.companyName, r.customerIdentificationNumber, r.establishedDate,
-                r.legalForm, r.negativeClientStatus, r.numberOfEmployees, r.totalEmployeesMAle,
-                r.totalEmployeesFemale, r.registrationCountry, r.registrationNumber, r.taxIdentificationNumber,
-                r.tradeName, r.parentName, r.parentIncorporationNumber, r.groupId, r.sectorSnaClassification,
-                r.related_customers, r.street, r.country, r.region, r.district, r.ward, r.houseNumber,
-                r.postalCode, r.poBox, r.zipCode, r.secondaryStreet, r.secondartHouseNumber,
-                r.secondaryPostalCode, r.secondaryRegion, r.secondaryDistrict, r.secondaryCountry,
-                r.secondaryTextAddress, r.mobileNumber, r.alternativeMobileNumber, r.fixedLineNumber,
-                r.faxNumber, r.emailAddress, r.socialMedia, r.entityName, r.entityType,
-                r.certificateIncorporation, r.entiryRegion, r.entityDistrict, r.entityWard,
-                r.entityStreet, r.entityHouseNumber, r.entityPostalCode, r.groupParentCode,
-                r.shareOwnedPercentage, r.shareOwnedAmount
+                r.reportingDate, r.clientIdentificationNumber, r.accountNumber, r.accountName,
+                r.customerCategory, r.customerCountry, r.branchCode, r.clientType,
+                r.relationshipType, r.district, r.region, r.accountProductName,
+                r.accountType, r.accountSubType, r.depositCategory, r.depositAccountStatus,
+                r.transactionUniqueRef, r.timeStamp, r.serviceChannel, r.currency,
+                r.transactionType, r.orgTransactionAmount, r.usdTransactionAmount, r.tzsTransactionAmount,
+                r.transactionPurposes, r.sectorSnaClassification, r.lienNumber, r.orgAmountLien,
+                r.usdAmountLien, r.tzsAmountLien, r.contractDate, r.maturityDate,
+                r.annualInterestRate, r.interestRateType, r.orgInterestAmount, r.usdInterestAmount,
+                r.tzsInterestAmount
             ) for r in records]
             
             psycopg2.extras.execute_values(cursor, insert_query, values, page_size=len(values))
@@ -568,8 +526,8 @@ class PersonalDataCorporatesStreamingPipeline:
             with self.get_postgres_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_personaldatacorporates_customer_id_unique
-                    ON "personalDataCorporates" ("customerIdentificationNumber")
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_deposits_transaction_unique_ref
+                    ON "deposits" ("transactionUniqueRef")
                 """)
                 conn.commit()
                 self.logger.info("Unique index verified/created")
@@ -579,7 +537,7 @@ class PersonalDataCorporatesStreamingPipeline:
     
     def run_streaming_pipeline(self):
         """Run the streaming pipeline"""
-        self.logger.info("Starting Personal Data Corporates STREAMING pipeline...")
+        self.logger.info("Starting Deposits STREAMING pipeline...")
         
         try:
             self.ensure_unique_index()
@@ -606,7 +564,7 @@ class PersonalDataCorporatesStreamingPipeline:
             
             self.logger.info(f"""
             ==========================================
-            Personal Data Corporates Pipeline Summary:
+            Deposits Pipeline Summary:
             ==========================================
             Total available: {self.total_available:,}
             Produced: {self.total_produced:,}
@@ -616,40 +574,19 @@ class PersonalDataCorporatesStreamingPipeline:
             Rate: {avg_rate:.1f} rec/sec
             ==========================================
             """)
-            
-            # Update pipeline state
-            self._update_state('completed')
-            
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
-            self._update_state('failed', str(e))
-            raise
-    
-    def _update_state(self, status, error_message=None):
-        """Update pipeline state in the state table"""
-        try:
-            from pipeline_state import PipelineStateManager
-            state_manager = PipelineStateManager()
-            state_manager.update_run(
-                'personal_data_corporates',
-                status,
-                self.total_consumed,
-                error_message
-            )
-            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
-        except Exception as e:
-            self.logger.warning(f"Could not update state: {e}")
             raise
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description='Personal Data Corporates Streaming Pipeline')
+    parser = argparse.ArgumentParser(description='Deposits Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=1000)
     parser.add_argument('--consumer-batch-size', type=int, default=100)
     args = parser.parse_args()
     
-    pipeline = PersonalDataCorporatesStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = DepositsStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
     
     try:
         pipeline.run_streaming_pipeline()
