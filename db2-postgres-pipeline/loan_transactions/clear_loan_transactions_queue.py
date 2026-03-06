@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Clear RabbitMQ personal data queue
+Clear RabbitMQ loan transactions queue
 """
 
 import pika
@@ -13,8 +13,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 
-def clear_personal_data_queue():
-    """Clear the personal data queue in RabbitMQ"""
+def clear_loan_transactions_queue():
+    """Clear the loan transactions queue in RabbitMQ"""
     
     # Setup logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -38,7 +38,7 @@ def clear_personal_data_queue():
         channel = connection.channel()
         
         # Get queue status before clearing
-        queue_state = channel.queue_declare(queue='personal_data_queue', durable=True, passive=True)
+        queue_state = channel.queue_declare(queue='loan_transactions_queue', durable=True, passive=True)
         message_count_before = queue_state.method.message_count
         
         logger.info(f"Messages in queue before clearing: {message_count_before:,}")
@@ -49,21 +49,21 @@ def clear_personal_data_queue():
             return
         
         # Purge the queue
-        logger.info("Clearing personal data queue...")
-        channel.queue_purge(queue='personal_data_queue')
+        logger.info("Clearing loan transactions queue...")
+        channel.queue_purge(queue='loan_transactions_queue')
         
         # Verify queue is empty
-        queue_state = channel.queue_declare(queue='personal_data_queue', durable=True, passive=True)
+        queue_state = channel.queue_declare(queue='loan_transactions_queue', durable=True, passive=True)
         message_count_after = queue_state.method.message_count
         
         logger.info(f"Messages in queue after clearing: {message_count_after:,}")
-        logger.info(f"Cleared {message_count_before:,} messages from personal data queue")
+        logger.info(f"Cleared {message_count_before:,} messages from loan transactions queue")
         
         connection.close()
         
     except Exception as e:
-        logger.error(f"Error clearing personal data queue: {e}")
+        logger.error(f"Error clearing loan transactions queue: {e}")
         raise
 
 if __name__ == "__main__":
-    clear_personal_data_queue()
+    clear_loan_transactions_queue()

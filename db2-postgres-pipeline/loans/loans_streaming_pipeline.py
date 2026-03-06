@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Personal Data Streaming Pipeline - Producer and Consumer run simultaneously
-Based on personal_data_information-v4.sql query
+Loans Streaming Pipeline - Producer and Consumer run simultaneously
+Based on loan-information-v6.sql query
 """
 
 import pika
@@ -29,89 +29,66 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 @dataclass
-class PersonalDataRecord:
-    """Data class for personal data records based on personal_data_information-v4.sql"""
+class LoanRecord:
+    """Data class for loan records based on loan-information-v6.sql"""
     reportingDate: str
     customerIdentificationNumber: str
-    firstName: str
-    middleNames: str
-    otherNames: str
-    fullNames: str
-    presentSurname: str
-    birthSurname: str
+    accountNumber: Optional[str]
+    clientName: str
+    borrowerCountry: str
+    ratingStatus: str
+    crRatingBorrower: Optional[str]
+    gradesUnratedBanks: str
+    borrowerCategory: str
     gender: str
-    maritalStatus: str
-    numberSpouse: Optional[str]
-    nationality: Optional[str]
-    citizenship: Optional[str]
-    residency: str
-    profession: Optional[str]
-    sectorSnaClassification: str
-    fateStatus: str
-    socialStatus: str
-    employmentStatus: str
-    monthlyIncome: Optional[str]
-    numberDependants: Optional[int]
-    educationLevel: str
-    averageMonthlyExpenditure: str
-    negativeClientStatus: Optional[str]
-    spousesFullName: Optional[str]
-    spouseIdentificationType: Optional[str]
-    spouseIdentificationNumber: Optional[str]
-    maidenName: Optional[str]
-    monthlyExpenses: Optional[str]
-    birthDate: Optional[str]
-    birthCountry: Optional[str]
-    birthPostalCode: Optional[str]
-    birthHouseNumber: Optional[str]
-    birthRegion: str
-    birthDistrict: Optional[str]
-    birthWard: Optional[str]
-    birthStreet: Optional[str]
-    identificationType: str
-    identificationNumber: Optional[str]
-    issuance_date: Optional[str]
-    expirationDate: Optional[str]
-    issuancePlace: str
-    issuingAuthority: Optional[str]
-    businessName: Optional[str]
-    establishmentDate: Optional[str]
-    businessRegistrationNumber: Optional[str]
-    businessRegistrationDate: Optional[str]
-    businessLicenseNumber: Optional[str]
-    taxIdentificationNumber: Optional[str]
-    employerName: Optional[str]
-    employerRegion: Optional[str]
-    employerDistrict: Optional[str]
-    employerWard: Optional[str]
-    employerStreet: Optional[str]
-    employerHouseNumber: Optional[str]
-    employerPostalCode: Optional[str]
-    businessNature: Optional[str]
-    mobileNumber: Optional[str]
-    alternativeMobileNumber: Optional[str]
-    fixedLineNumber: Optional[str]
-    faxNumber: Optional[str]
-    emailAddress: Optional[str]
-    socialMedia: Optional[str]
-    mainAddress: Optional[str]
-    street: Optional[str]
-    houseNumber: Optional[str]
-    postalCode: Optional[str]
-    region: str
-    district: Optional[str]
-    ward: Optional[str]
-    country: Optional[str]
-    sstreet: Optional[str]
-    shouseNumber: Optional[str]
-    spostalCode: Optional[str]
-    sregion: Optional[str]
-    sdistrict: Optional[str]
-    sward: Optional[str]
-    scountry: Optional[str]
+    disability: str
+    clientType: str
+    clientSubType: Optional[str]
+    groupName: Optional[str]
+    groupCode: Optional[str]
+    relatedParty: str
+    relationshipCategory: str
+    loanNumber: str
+    loanType: str
+    loanEconomicActivity: str
+    loanPhase: str
+    transferStatus: str
+    purposeMortgage: Optional[str]
+    purposeOtherLoans: Optional[str]
+    sourceFundMortgage: str
+    amortizationType: str
+    branchCode: str
+    loanOfficer: str
+    loanSupervisor: str
+    groupVillageNumber: Optional[str]
+    cycleNumber: Optional[int]
+    loanInstallment: Optional[int]
+    repaymentFrequency: str
+    currency: str
+    contractDate: str
+    orgSanctionedAmount: Optional[str]
+    usdSanctionedAmount: Optional[str]
+    tzsSanctionedAmount: Optional[str]
+    orgDisbursedAmount: Optional[str]
+    usdDisbursedAmount: Optional[str]
+    tzsDisbursedAmount: Optional[str]
+    collateralPledged: Optional[str]
+    orgOutstandingPrincipalAmount: Optional[str]
+    usdOutstandingPrincipalAmount: Optional[str]
+    tzsOutstandingPrincipalAmount: Optional[str]
+    orgInstallmentAmount: Optional[str]
+    usdInstallmentAmount: Optional[str]
+    tzsInstallmentAmount: Optional[str]
+    loanInstallmentPaid: Optional[int]
+    allowanceProbableLoss: Optional[str]
+    botProvision: Optional[str]
+    tradingIntent: str
+    orgSuspendedInterest: Optional[str]
+    usdSuspendedInterest: Optional[str]
+    tzsSuspendedInterest: Optional[str]
 
 
-class PersonalDataStreamingPipeline:
+class LoansStreamingPipeline:
     def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
@@ -136,31 +113,31 @@ class PersonalDataStreamingPipeline:
         
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Personal Data STREAMING Pipeline initialized")
+        self.logger.info("Loans STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_personal_data_query(self):
-        """Get the personal data query from personal_data_information-v4.sql"""
+    def get_loans_query(self):
+        """Get the loans query from loan-information-v6.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'personal_data_information-v4.sql'
+            'sqls', 'loan-information-v6.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
             return f.read()
     
     def get_total_count(self):
-        """Get approximate total count of personal data records from DB2"""
+        """Get approximate total count of loan records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM CUSTOMER WHERE CUST_TYPE = '1'")
+                cursor.execute("SELECT COUNT(*) FROM LOAN_ACCOUNT")
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from CUSTOMER: {count:,}")
+                self.logger.info(f"Estimated record count from LOAN_ACCOUNT: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -215,49 +192,48 @@ class PersonalDataStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for personal data with dead-letter exchange"""
+        """Setup RabbitMQ queue for loans with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Declare dead-letter exchange and queue for failed messages
-            channel.exchange_declare(exchange='personal_data_dlx', exchange_type='direct', durable=True)
-            channel.queue_declare(queue='personal_data_dead_letter', durable=True)
+            channel.exchange_declare(exchange='loans_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='loans_dead_letter', durable=True)
             channel.queue_bind(
-                queue='personal_data_dead_letter',
-                exchange='personal_data_dlx',
-                routing_key='personal_data_queue'
+                queue='loans_dead_letter',
+                exchange='loans_dlx',
+                routing_key='loans_queue'
             )
             
             # Declare main queue with dead-letter exchange routing
             try:
                 channel.queue_declare(
-                    queue='personal_data_queue',
+                    queue='loans_queue',
                     durable=True,
                     arguments={
-                        'x-dead-letter-exchange': 'personal_data_dlx',
-                        'x-dead-letter-routing-key': 'personal_data_queue'
+                        'x-dead-letter-exchange': 'loans_dlx',
+                        'x-dead-letter-routing-key': 'loans_queue'
                     }
                 )
                 self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
             except Exception:
                 # Queue may already exist with different arguments
                 self.logger.warning(
-                    "Queue 'personal_data_queue' already exists with different args. "
+                    "Queue 'loans_queue' already exists with different args. "
                     "Delete and recreate it to enable dead-letter support."
                 )
                 connection, channel = self.setup_rabbitmq_connection()
-                channel.queue_declare(queue='personal_data_queue', durable=True)
-                self.logger.info("RabbitMQ queue 'personal_data_queue' setup complete (without DLX)")
+                channel.queue_declare(queue='loans_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'loans_queue' setup complete (without DLX)")
             
             connection.close()
             
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
             raise
-
     
     def process_record(self, row):
-        """Process a single personal data record from DB2"""
+        """Process a single loan record from DB2"""
         try:
             # Helper function to safely convert values
             def safe_string(value):
@@ -275,113 +251,91 @@ class PersonalDataStreamingPipeline:
                 except (ValueError, TypeError):
                     return None
             
-            # Map the fields from the SQL query to the dataclass (72 fields)
-            record = PersonalDataRecord(
+            # Map the fields from the SQL query to the dataclass
+            record = LoanRecord(
                 reportingDate=safe_string(row[0]),
                 customerIdentificationNumber=safe_string(row[1]),
-                firstName=safe_string(row[2]),
-                middleNames=safe_string(row[3]),
-                otherNames=safe_string(row[4]),
-                fullNames=safe_string(row[5]),
-                presentSurname=safe_string(row[6]),
-                birthSurname=safe_string(row[7]),
-                gender=safe_string(row[8]),
-                maritalStatus=safe_string(row[9]),
-                numberSpouse=safe_string(row[10]) if row[10] else None,
-                nationality=safe_string(row[11]) if row[11] else None,
-                citizenship=safe_string(row[12]) if row[12] else None,
-                residency=safe_string(row[13]),
-                profession=safe_string(row[14]) if row[14] else None,
-                sectorSnaClassification=safe_string(row[15]),
-                fateStatus=safe_string(row[16]),
-                socialStatus=safe_string(row[17]),
-                employmentStatus=safe_string(row[18]),
-                monthlyIncome=safe_string(row[19]) if row[19] else None,
-                numberDependants=safe_int(row[20]),
-                educationLevel=safe_string(row[21]),
-                averageMonthlyExpenditure=safe_string(row[22]),
-                negativeClientStatus=safe_string(row[23]) if row[23] else None,
-                spousesFullName=safe_string(row[24]) if row[24] else None,
-                spouseIdentificationType=safe_string(row[25]) if row[25] else None,
-                spouseIdentificationNumber=safe_string(row[26]) if row[26] else None,
-                maidenName=safe_string(row[27]) if row[27] else None,
-                monthlyExpenses=safe_string(row[28]) if row[28] else None,
-                birthDate=safe_string(row[29]) if row[29] else None,
-                birthCountry=safe_string(row[30]) if row[30] else None,
-                birthPostalCode=safe_string(row[31]) if row[31] else None,
-                birthHouseNumber=safe_string(row[32]) if row[32] else None,
-                birthRegion=safe_string(row[33]),
-                birthDistrict=safe_string(row[34]) if row[34] else None,
-                birthWard=safe_string(row[35]) if row[35] else None,
-                birthStreet=safe_string(row[36]) if row[36] else None,
-                identificationType=safe_string(row[37]),
-                identificationNumber=safe_string(row[38]) if row[38] else None,
-                issuance_date=safe_string(row[39]) if row[39] else None,
-                expirationDate=safe_string(row[40]) if row[40] else None,
-                issuancePlace=safe_string(row[41]),
-                issuingAuthority=safe_string(row[42]) if row[42] else None,
-                businessName=safe_string(row[43]) if row[43] else None,
-                establishmentDate=safe_string(row[44]) if row[44] else None,
-                businessRegistrationNumber=safe_string(row[45]) if row[45] else None,
-                businessRegistrationDate=safe_string(row[46]) if row[46] else None,
-                businessLicenseNumber=safe_string(row[47]) if row[47] else None,
-                taxIdentificationNumber=safe_string(row[48]) if row[48] else None,
-                employerName=safe_string(row[49]) if row[49] else None,
-                employerRegion=safe_string(row[50]) if row[50] else None,
-                employerDistrict=safe_string(row[51]) if row[51] else None,
-                employerWard=safe_string(row[52]) if row[52] else None,
-                employerStreet=safe_string(row[53]) if row[53] else None,
-                employerHouseNumber=safe_string(row[54]) if row[54] else None,
-                employerPostalCode=safe_string(row[55]) if row[55] else None,
-                businessNature=safe_string(row[56]) if row[56] else None,
-                mobileNumber=safe_string(row[57]) if row[57] else None,
-                alternativeMobileNumber=safe_string(row[58]) if row[58] else None,
-                fixedLineNumber=safe_string(row[59]) if row[59] else None,
-                faxNumber=safe_string(row[60]) if row[60] else None,
-                emailAddress=safe_string(row[61]) if row[61] else None,
-                socialMedia=safe_string(row[62]) if row[62] else None,
-                mainAddress=safe_string(row[63]) if row[63] else None,
-                street=safe_string(row[64]) if row[64] else None,
-                houseNumber=safe_string(row[65]) if row[65] else None,
-                postalCode=safe_string(row[66]) if row[66] else None,
-                region=safe_string(row[67]),
-                district=safe_string(row[68]) if row[68] else None,
-                ward=safe_string(row[69]) if row[69] else None,
-                country=safe_string(row[70]) if row[70] else None,
-                sstreet=safe_string(row[71]) if row[71] else None,
-                shouseNumber=safe_string(row[72]) if row[72] else None,
-                spostalCode=safe_string(row[73]) if row[73] else None,
-                sregion=safe_string(row[74]) if row[74] else None,
-                sdistrict=safe_string(row[75]) if row[75] else None,
-                sward=safe_string(row[76]) if row[76] else None,
-                scountry=safe_string(row[77]) if row[77] else None
+                accountNumber=safe_string(row[2]) if row[2] else None,
+                clientName=safe_string(row[3]),
+                borrowerCountry=safe_string(row[4]),
+                ratingStatus=safe_string(row[5]),
+                crRatingBorrower=safe_string(row[6]) if row[6] else None,
+                gradesUnratedBanks=safe_string(row[7]),
+                borrowerCategory=safe_string(row[8]),
+                gender=safe_string(row[9]),
+                disability=safe_string(row[10]),
+                clientType=safe_string(row[11]),
+                clientSubType=safe_string(row[12]) if row[12] else None,
+                groupName=safe_string(row[13]) if row[13] else None,
+                groupCode=safe_string(row[14]) if row[14] else None,
+                relatedParty=safe_string(row[15]),
+                relationshipCategory=safe_string(row[16]),
+                loanNumber=safe_string(row[17]),
+                loanType=safe_string(row[18]),
+                loanEconomicActivity=safe_string(row[19]),
+                loanPhase=safe_string(row[20]),
+                transferStatus=safe_string(row[21]),
+                purposeMortgage=safe_string(row[22]) if row[22] else None,
+                purposeOtherLoans=safe_string(row[23]) if row[23] else None,
+                sourceFundMortgage=safe_string(row[24]),
+                amortizationType=safe_string(row[25]),
+                branchCode=safe_string(row[26]),
+                loanOfficer=safe_string(row[27]),
+                loanSupervisor=safe_string(row[28]),
+                groupVillageNumber=safe_string(row[29]) if row[29] else None,
+                cycleNumber=safe_int(row[30]),
+                loanInstallment=safe_int(row[31]),
+                repaymentFrequency=safe_string(row[32]),
+                currency=safe_string(row[33]),
+                contractDate=safe_string(row[34]),
+                orgSanctionedAmount=safe_string(row[35]) if row[35] else None,
+                usdSanctionedAmount=safe_string(row[36]) if row[36] else None,
+                tzsSanctionedAmount=safe_string(row[37]) if row[37] else None,
+                orgDisbursedAmount=safe_string(row[38]) if row[38] else None,
+                usdDisbursedAmount=safe_string(row[39]) if row[39] else None,
+                tzsDisbursedAmount=safe_string(row[40]) if row[40] else None,
+                collateralPledged=safe_string(row[41]) if row[41] else None,
+                orgOutstandingPrincipalAmount=safe_string(row[42]) if row[42] else None,
+                usdOutstandingPrincipalAmount=safe_string(row[43]) if row[43] else None,
+                tzsOutstandingPrincipalAmount=safe_string(row[44]) if row[44] else None,
+                orgInstallmentAmount=safe_string(row[45]) if row[45] else None,
+                usdInstallmentAmount=safe_string(row[46]) if row[46] else None,
+                tzsInstallmentAmount=safe_string(row[47]) if row[47] else None,
+                loanInstallmentPaid=safe_int(row[48]),
+                allowanceProbableLoss=safe_string(row[49]) if row[49] else None,
+                botProvision=safe_string(row[50]) if row[50] else None,
+                tradingIntent=safe_string(row[51]),
+                orgSuspendedInterest=safe_string(row[52]) if row[52] else None,
+                usdSuspendedInterest=safe_string(row[53]) if row[53] else None,
+                tzsSuspendedInterest=safe_string(row[54]) if row[54] else None
             )
             
             return record
             
         except Exception as e:
-            self.logger.error(f"Error processing personal data record: {e}")
+            self.logger.error(f"Error processing loan record: {e}")
             self.logger.error(f"Row data: {row}")
             self.logger.error(f"Row length: {len(row)}")
             raise
     
     def validate_record(self, record):
-        """Validate personal data record"""
+        """Validate loan record"""
         try:
             # Basic validation
-            if not record.customerIdentificationNumber:
-                self.logger.warning("Missing customer identification number")
+            if not record.loanNumber:
+                self.logger.warning("Missing loan number")
                 return False
             
-            if not record.fullNames:
-                self.logger.warning("Missing full names")
+            if not record.customerIdentificationNumber:
+                self.logger.warning("Missing customer identification number")
                 return False
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Error validating personal data record: {e}")
+            self.logger.error(f"Error validating loan record: {e}")
             return False
+
     
     def producer_thread(self):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
@@ -391,7 +345,7 @@ class PersonalDataStreamingPipeline:
             # Get dynamic record count
             self.total_available = self.get_total_count()
             
-            self.logger.info(f"Total personal data records available: {self.total_available:,} (estimated)")
+            self.logger.info(f"Total loan records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
@@ -399,8 +353,8 @@ class PersonalDataStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_personal_data_query()
-            self.logger.info("Executing personal data query (single execution, streaming results)...")
+            query = self.get_loans_query()
+            self.logger.info("Executing loans query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -434,7 +388,7 @@ class PersonalDataStreamingPipeline:
                                 try:
                                     channel.basic_publish(
                                         exchange='',
-                                        routing_key='personal_data_queue',
+                                        routing_key='loans_queue',
                                         body=message,
                                         properties=pika.BasicProperties(delivery_mode=2)
                                     )
@@ -487,7 +441,6 @@ class PersonalDataStreamingPipeline:
         except Exception as e:
             self.logger.error(f"Producer error: {e}")
             self.producer_finished.set()
-
     
     def consumer_thread(self):
         """Consumer thread - processes messages from queue with batch inserts and persistent connection"""
@@ -509,7 +462,7 @@ class PersonalDataStreamingPipeline:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Batch insert buffer
-            insert_buffer: List[PersonalDataRecord] = []
+            insert_buffer: List[LoanRecord] = []
             pending_tags: List[int] = []
             last_flush_time = time.time()
             flush_interval = 5  # seconds
@@ -580,7 +533,7 @@ class PersonalDataStreamingPipeline:
                 nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
-                    record = PersonalDataRecord(**record_data)
+                    record = LoanRecord(**record_data)
                     
                     insert_buffer.append(record)
                     pending_tags.append(method.delivery_tag)
@@ -621,7 +574,7 @@ class PersonalDataStreamingPipeline:
             
             # Set QoS to match consumer batch size for efficient batching
             channel.basic_qos(prefetch_count=self.consumer_batch_size)
-            channel.basic_consume(queue='personal_data_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='loans_queue', on_message_callback=process_message)
             
             # Keep consuming until producer is done and queue is empty
             while not self.stop_consumer.is_set():
@@ -638,7 +591,7 @@ class PersonalDataStreamingPipeline:
                         flush_buffer(channel)
                         
                         # Producer is done, check if queue is empty
-                        queue_state = channel.queue_declare(queue='personal_data_queue', durable=True, passive=True)
+                        queue_state = channel.queue_declare(queue='loans_queue', durable=True, passive=True)
                         if queue_state.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
@@ -652,7 +605,7 @@ class PersonalDataStreamingPipeline:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
                     channel.basic_qos(prefetch_count=self.consumer_batch_size)
-                    channel.basic_consume(queue='personal_data_queue', on_message_callback=process_message)
+                    channel.basic_consume(queue='loans_queue', on_message_callback=process_message)
             
             connection.close()
             with self._stats_lock:
@@ -670,55 +623,47 @@ class PersonalDataStreamingPipeline:
                 except Exception:
                     pass
     
-    def insert_batch_to_postgres(self, records: List[PersonalDataRecord], pg_conn):
-        """Batch insert personal data records to PostgreSQL with duplicate prevention"""
+    def insert_batch_to_postgres(self, records: List[LoanRecord], pg_conn):
+        """Batch insert loan records to PostgreSQL with duplicate prevention"""
         try:
             cursor = pg_conn.cursor()
             
             insert_query = """
-            INSERT INTO "personalDataInformation" (
-                "reportingDate", "customerIdentificationNumber", "firstName", "middleNames",
-                "otherNames", "fullNames", "presentSurname", "birthSurname", "gender",
-                "maritalStatus", "numberSpouse", "nationality", "citizenship", "residency",
-                "profession", "sectorSnaClassification", "fateStatus", "socialStatus",
-                "employmentStatus", "monthlyIncome", "numberDependants", "educationLevel",
-                "averageMonthlyExpenditure", "negativeClientStatus", "spousesFullName",
-                "spouseIdentificationType", "spouseIdentificationNumber", "maidenName",
-                "monthlyExpenses", "birthDate", "birthCountry", "birthPostalCode",
-                "birthHouseNumber", "birthRegion", "birthDistrict", "birthWard", "birthStreet",
-                "identificationType", "identificationNumber", "issuance_date", "expirationDate",
-                "issuancePlace", "issuingAuthority", "businessName", "establishmentDate",
-                "businessRegistrationNumber", "businessRegistrationDate", "businessLicenseNumber",
-                "taxIdentificationNumber", "employerName", "employerRegion", "employerDistrict",
-                "employerWard", "employerStreet", "employerHouseNumber", "employerPostalCode",
-                "businessNature", "mobileNumber", "alternativeMobileNumber", "fixedLineNumber",
-                "faxNumber", "emailAddress", "socialMedia", "mainAddress", "street",
-                "houseNumber", "postalCode", "region", "district", "ward", "country",
-                "sstreet", "shouseNumber", "spostalCode", "sregion", "sdistrict", "sward", "scountry"
+            INSERT INTO "loanInformation" (
+                "reportingDate", "customerIdentificationNumber", "accountNumber", "clientName",
+                "borrowerCountry", "ratingStatus", "crRatingBorrower", "gradesUnratedBanks",
+                "borrowerCategory", "gender", "disability", "clientType", "clientSubType",
+                "groupName", "groupCode", "relatedParty", "relationshipCategory", "loanNumber",
+                "loanType", "loanEconomicActivity", "loanPhase", "transferStatus",
+                "purposeMortgage", "purposeOtherLoans", "sourceFundMortgage", "amortizationType",
+                "branchCode", "loanOfficer", "loanSupervisor", "groupVillageNumber",
+                "cycleNumber", "loanInstallment", "repaymentFrequency", "currency",
+                "contractDate", "orgSanctionedAmount", "usdSanctionedAmount", "tzsSanctionedAmount",
+                "orgDisbursedAmount", "usdDisbursedAmount", "tzsDisbursedAmount", "collateralPledged",
+                "orgOutstandingPrincipalAmount", "usdOutstandingPrincipalAmount", "tzsOutstandingPrincipalAmount",
+                "orgInstallmentAmount", "usdInstallmentAmount", "tzsInstallmentAmount",
+                "loanInstallmentPaid", "allowanceProbableLoss", "botProvision", "tradingIntent",
+                "orgSuspendedInterest", "usdSuspendedInterest", "tzsSuspendedInterest"
             ) VALUES %s
-            ON CONFLICT ("customerIdentificationNumber") DO NOTHING
+            ON CONFLICT ("loanNumber") DO NOTHING
             """
             
             values = [
                 (
-                    r.reportingDate, r.customerIdentificationNumber, r.firstName, r.middleNames,
-                    r.otherNames, r.fullNames, r.presentSurname, r.birthSurname, r.gender,
-                    r.maritalStatus, r.numberSpouse, r.nationality, r.citizenship, r.residency,
-                    r.profession, r.sectorSnaClassification, r.fateStatus, r.socialStatus,
-                    r.employmentStatus, r.monthlyIncome, r.numberDependants, r.educationLevel,
-                    r.averageMonthlyExpenditure, r.negativeClientStatus, r.spousesFullName,
-                    r.spouseIdentificationType, r.spouseIdentificationNumber, r.maidenName,
-                    r.monthlyExpenses, r.birthDate, r.birthCountry, r.birthPostalCode,
-                    r.birthHouseNumber, r.birthRegion, r.birthDistrict, r.birthWard, r.birthStreet,
-                    r.identificationType, r.identificationNumber, r.issuance_date, r.expirationDate,
-                    r.issuancePlace, r.issuingAuthority, r.businessName, r.establishmentDate,
-                    r.businessRegistrationNumber, r.businessRegistrationDate, r.businessLicenseNumber,
-                    r.taxIdentificationNumber, r.employerName, r.employerRegion, r.employerDistrict,
-                    r.employerWard, r.employerStreet, r.employerHouseNumber, r.employerPostalCode,
-                    r.businessNature, r.mobileNumber, r.alternativeMobileNumber, r.fixedLineNumber,
-                    r.faxNumber, r.emailAddress, r.socialMedia, r.mainAddress, r.street,
-                    r.houseNumber, r.postalCode, r.region, r.district, r.ward, r.country,
-                    r.sstreet, r.shouseNumber, r.spostalCode, r.sregion, r.sdistrict, r.sward, r.scountry
+                    r.reportingDate, r.customerIdentificationNumber, r.accountNumber, r.clientName,
+                    r.borrowerCountry, r.ratingStatus, r.crRatingBorrower, r.gradesUnratedBanks,
+                    r.borrowerCategory, r.gender, r.disability, r.clientType, r.clientSubType,
+                    r.groupName, r.groupCode, r.relatedParty, r.relationshipCategory, r.loanNumber,
+                    r.loanType, r.loanEconomicActivity, r.loanPhase, r.transferStatus,
+                    r.purposeMortgage, r.purposeOtherLoans, r.sourceFundMortgage, r.amortizationType,
+                    r.branchCode, r.loanOfficer, r.loanSupervisor, r.groupVillageNumber,
+                    r.cycleNumber, r.loanInstallment, r.repaymentFrequency, r.currency,
+                    r.contractDate, r.orgSanctionedAmount, r.usdSanctionedAmount, r.tzsSanctionedAmount,
+                    r.orgDisbursedAmount, r.usdDisbursedAmount, r.tzsDisbursedAmount, r.collateralPledged,
+                    r.orgOutstandingPrincipalAmount, r.usdOutstandingPrincipalAmount, r.tzsOutstandingPrincipalAmount,
+                    r.orgInstallmentAmount, r.usdInstallmentAmount, r.tzsInstallmentAmount,
+                    r.loanInstallmentPaid, r.allowanceProbableLoss, r.botProvision, r.tradingIntent,
+                    r.orgSuspendedInterest, r.usdSuspendedInterest, r.tzsSuspendedInterest
                 )
                 for r in records
             ]
@@ -727,27 +672,27 @@ class PersonalDataStreamingPipeline:
             pg_conn.commit()
             
         except Exception as e:
-            self.logger.error(f"Error batch inserting {len(records)} personal data records: {e}")
+            self.logger.error(f"Error batch inserting {len(records)} loan records: {e}")
             raise
     
     def ensure_unique_index(self):
-        """Ensure unique index on customerIdentificationNumber exists for ON CONFLICT duplicate prevention"""
+        """Ensure unique index on loanNumber exists for ON CONFLICT duplicate prevention"""
         try:
             with self.get_postgres_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_personaldatainformation_customer_id_unique
-                    ON "personalDataInformation" ("customerIdentificationNumber")
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_loaninformation_loan_number_unique
+                    ON "loanInformation" ("loanNumber")
                 """)
                 conn.commit()
-                self.logger.info("Unique index on customerIdentificationNumber verified/created")
+                self.logger.info("Unique index on loanNumber verified/created")
         except Exception as e:
-            self.logger.error(f"Failed to create unique index on customerIdentificationNumber: {e}")
+            self.logger.error(f"Failed to create unique index on loanNumber: {e}")
             raise
     
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Personal Data STREAMING pipeline...")
+        self.logger.info("Starting Loans STREAMING pipeline...")
         
         try:
             # Ensure unique index for duplicate prevention
@@ -786,7 +731,7 @@ class PersonalDataStreamingPipeline:
             
             self.logger.info(f"""
             ==========================================
-            Personal Data Pipeline Summary:
+            Loans Pipeline Summary:
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -806,7 +751,7 @@ def main():
     """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Personal Data Streaming Pipeline')
+    parser = argparse.ArgumentParser(description='Loans Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
@@ -815,7 +760,7 @@ def main():
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = PersonalDataStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = LoansStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
     
     try:
         if args.mode == 'producer':

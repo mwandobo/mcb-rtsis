@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Personal Data Streaming Pipeline - Producer and Consumer run simultaneously
-Based on personal_data_information-v4.sql query
+Balance with BOT Streaming Pipeline - Producer and Consumer run simultaneously
+Based on balances-bot-v1.sql query
 """
 
 import pika
@@ -14,157 +14,108 @@ import time
 from dataclasses import dataclass, asdict
 from contextlib import contextmanager
 from typing import Optional, List
-from datetime import datetime
+from decimal import Decimal
 import sys
 import os
 
-# Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from db2_connection import DB2Connection
 
-# Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 @dataclass
-class PersonalDataRecord:
-    """Data class for personal data records based on personal_data_information-v4.sql"""
+class BalanceWithBotRecord:
+    """Data class for balance with BOT records based on balances-bot-v1.sql"""
     reportingDate: str
-    customerIdentificationNumber: str
-    firstName: str
-    middleNames: str
-    otherNames: str
-    fullNames: str
-    presentSurname: str
-    birthSurname: str
-    gender: str
-    maritalStatus: str
-    numberSpouse: Optional[str]
-    nationality: Optional[str]
-    citizenship: Optional[str]
-    residency: str
-    profession: Optional[str]
-    sectorSnaClassification: str
-    fateStatus: str
-    socialStatus: str
-    employmentStatus: str
-    monthlyIncome: Optional[str]
-    numberDependants: Optional[int]
-    educationLevel: str
-    averageMonthlyExpenditure: str
-    negativeClientStatus: Optional[str]
-    spousesFullName: Optional[str]
-    spouseIdentificationType: Optional[str]
-    spouseIdentificationNumber: Optional[str]
-    maidenName: Optional[str]
-    monthlyExpenses: Optional[str]
-    birthDate: Optional[str]
-    birthCountry: Optional[str]
-    birthPostalCode: Optional[str]
-    birthHouseNumber: Optional[str]
-    birthRegion: str
-    birthDistrict: Optional[str]
-    birthWard: Optional[str]
-    birthStreet: Optional[str]
-    identificationType: str
-    identificationNumber: Optional[str]
-    issuance_date: Optional[str]
-    expirationDate: Optional[str]
-    issuancePlace: str
-    issuingAuthority: Optional[str]
-    businessName: Optional[str]
-    establishmentDate: Optional[str]
-    businessRegistrationNumber: Optional[str]
-    businessRegistrationDate: Optional[str]
-    businessLicenseNumber: Optional[str]
-    taxIdentificationNumber: Optional[str]
-    employerName: Optional[str]
-    employerRegion: Optional[str]
-    employerDistrict: Optional[str]
-    employerWard: Optional[str]
-    employerStreet: Optional[str]
-    employerHouseNumber: Optional[str]
-    employerPostalCode: Optional[str]
-    businessNature: Optional[str]
-    mobileNumber: Optional[str]
-    alternativeMobileNumber: Optional[str]
-    fixedLineNumber: Optional[str]
-    faxNumber: Optional[str]
-    emailAddress: Optional[str]
-    socialMedia: Optional[str]
-    mainAddress: Optional[str]
-    street: Optional[str]
-    houseNumber: Optional[str]
-    postalCode: Optional[str]
-    region: str
-    district: Optional[str]
-    ward: Optional[str]
-    country: Optional[str]
-    sstreet: Optional[str]
-    shouseNumber: Optional[str]
-    spostalCode: Optional[str]
-    sregion: Optional[str]
-    sdistrict: Optional[str]
-    sward: Optional[str]
-    scountry: Optional[str]
+    accountNumber: Optional[str]
+    accountName: str
+    accountType: str
+    subAccountType: Optional[str]
+    currency: str
+    orgAmount: Optional[Decimal]
+    usdAmount: Optional[Decimal]
+    tzsAmount: Optional[Decimal]
+    transactionDate: str
+    maturityDate: str
+    allowanceProbableLoss: int
+    botProvision: int
 
 
-class PersonalDataStreamingPipeline:
+class BalanceWithBotStreamingPipeline:
     def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
         self.consumer_batch_size = consumer_batch_size
         
-        # Threading control
         self.producer_finished = threading.Event()
         self.consumer_finished = threading.Event()
         self.stop_consumer = threading.Event()
         
-        # Thread-safe statistics
         self._stats_lock = threading.Lock()
         self.total_produced = 0
         self.total_consumed = 0
         self.total_available = 0
         self.start_time = time.time()
         
-        # Retry settings
         self.max_retries = 3
-        self.retry_delay = 5  # seconds
+        self.retry_delay = 5
         
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Personal Data STREAMING Pipeline initialized")
+        self.logger.info("Balance with BOT STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_personal_data_query(self):
-        """Get the personal data query from personal_data_information-v4.sql"""
+    def get_balance_with_bot_query(self):
+        """Get the balance with BOT query from balances-bot-v1.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'personal_data_information-v4.sql'
+            'sqls', 'balances-bot-v1.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
             return f.read()
     
     def get_total_count(self):
-        """Get approximate total count of personal data records from DB2"""
+        """Get approximate total count of balance with BOT records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM CUSTOMER WHERE CUST_TYPE = '1'")
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM GLI_TRX_EXTRACT gte
+                    JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
+                    JOIN CUSTOMER c ON c.CUST_ID = gte.CUST_ID
+                    LEFT JOIN CURRENCY cu ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
+                    LEFT JOIN CURRENCY curr ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+                    JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID AND pa.PRFT_SYSTEM = 3
+                    LEFT JOIN (
+                        SELECT fr.fk_currencyid_curr, fr.rate
+                        FROM fixing_rate fr
+                        WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN
+                              (SELECT fk_currencyid_curr, activation_date, MAX(activation_time)
+                               FROM fixing_rate
+                               WHERE activation_date = (SELECT MAX(b.activation_date)
+                                                        FROM fixing_rate b
+                                                        WHERE b.activation_date <= CURRENT_DATE)
+                               GROUP BY fk_currencyid_curr, activation_date)
+                    ) fx ON fx.fk_currencyid_curr = curr.ID_CURRENCY
+                    WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
+                """)
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from CUSTOMER: {count:,}")
+                self.logger.info(f"Estimated record count: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
             return 0
+
     
     @contextmanager
     def get_postgres_connection(self):
@@ -198,8 +149,8 @@ class PersonalDataStreamingPipeline:
                     host=self.config.message_queue.rabbitmq_host,
                     port=self.config.message_queue.rabbitmq_port,
                     credentials=credentials,
-                    heartbeat=600,  # 10 minutes heartbeat
-                    blocked_connection_timeout=300,  # 5 minutes timeout
+                    heartbeat=600,
+                    blocked_connection_timeout=300,
                 )
                 connection = pika.BlockingConnection(parameters)
                 channel = connection.channel()
@@ -215,39 +166,36 @@ class PersonalDataStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for personal data with dead-letter exchange"""
+        """Setup RabbitMQ queue for balance with BOT with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Declare dead-letter exchange and queue for failed messages
-            channel.exchange_declare(exchange='personal_data_dlx', exchange_type='direct', durable=True)
-            channel.queue_declare(queue='personal_data_dead_letter', durable=True)
+            channel.exchange_declare(exchange='balance_with_bot_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='balance_with_bot_dead_letter', durable=True)
             channel.queue_bind(
-                queue='personal_data_dead_letter',
-                exchange='personal_data_dlx',
-                routing_key='personal_data_queue'
+                queue='balance_with_bot_dead_letter',
+                exchange='balance_with_bot_dlx',
+                routing_key='balance_with_bot_queue'
             )
             
-            # Declare main queue with dead-letter exchange routing
             try:
                 channel.queue_declare(
-                    queue='personal_data_queue',
+                    queue='balance_with_bot_queue',
                     durable=True,
                     arguments={
-                        'x-dead-letter-exchange': 'personal_data_dlx',
-                        'x-dead-letter-routing-key': 'personal_data_queue'
+                        'x-dead-letter-exchange': 'balance_with_bot_dlx',
+                        'x-dead-letter-routing-key': 'balance_with_bot_queue'
                     }
                 )
                 self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
             except Exception:
-                # Queue may already exist with different arguments
                 self.logger.warning(
-                    "Queue 'personal_data_queue' already exists with different args. "
+                    "Queue 'balance_with_bot_queue' already exists with different args. "
                     "Delete and recreate it to enable dead-letter support."
                 )
                 connection, channel = self.setup_rabbitmq_connection()
-                channel.queue_declare(queue='personal_data_queue', durable=True)
-                self.logger.info("RabbitMQ queue 'personal_data_queue' setup complete (without DLX)")
+                channel.queue_declare(queue='balance_with_bot_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'balance_with_bot_queue' setup complete (without DLX)")
             
             connection.close()
             
@@ -255,152 +203,85 @@ class PersonalDataStreamingPipeline:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
             raise
 
+
     
     def process_record(self, row):
-        """Process a single personal data record from DB2"""
+        """Process a single balance with BOT record from DB2"""
         try:
-            # Helper function to safely convert values
             def safe_string(value):
-                """Safely convert to string"""
                 if value is None:
                     return None
                 return str(value).strip()
             
-            def safe_int(value):
-                """Safely convert to int"""
+            def safe_decimal(value):
                 if value is None:
                     return None
                 try:
-                    return int(value)
+                    return Decimal(str(value))
                 except (ValueError, TypeError):
                     return None
             
-            # Map the fields from the SQL query to the dataclass (72 fields)
-            record = PersonalDataRecord(
+            def safe_int(value):
+                if value is None:
+                    return 0
+                try:
+                    return int(value)
+                except (ValueError, TypeError):
+                    return 0
+            
+            record = BalanceWithBotRecord(
                 reportingDate=safe_string(row[0]),
-                customerIdentificationNumber=safe_string(row[1]),
-                firstName=safe_string(row[2]),
-                middleNames=safe_string(row[3]),
-                otherNames=safe_string(row[4]),
-                fullNames=safe_string(row[5]),
-                presentSurname=safe_string(row[6]),
-                birthSurname=safe_string(row[7]),
-                gender=safe_string(row[8]),
-                maritalStatus=safe_string(row[9]),
-                numberSpouse=safe_string(row[10]) if row[10] else None,
-                nationality=safe_string(row[11]) if row[11] else None,
-                citizenship=safe_string(row[12]) if row[12] else None,
-                residency=safe_string(row[13]),
-                profession=safe_string(row[14]) if row[14] else None,
-                sectorSnaClassification=safe_string(row[15]),
-                fateStatus=safe_string(row[16]),
-                socialStatus=safe_string(row[17]),
-                employmentStatus=safe_string(row[18]),
-                monthlyIncome=safe_string(row[19]) if row[19] else None,
-                numberDependants=safe_int(row[20]),
-                educationLevel=safe_string(row[21]),
-                averageMonthlyExpenditure=safe_string(row[22]),
-                negativeClientStatus=safe_string(row[23]) if row[23] else None,
-                spousesFullName=safe_string(row[24]) if row[24] else None,
-                spouseIdentificationType=safe_string(row[25]) if row[25] else None,
-                spouseIdentificationNumber=safe_string(row[26]) if row[26] else None,
-                maidenName=safe_string(row[27]) if row[27] else None,
-                monthlyExpenses=safe_string(row[28]) if row[28] else None,
-                birthDate=safe_string(row[29]) if row[29] else None,
-                birthCountry=safe_string(row[30]) if row[30] else None,
-                birthPostalCode=safe_string(row[31]) if row[31] else None,
-                birthHouseNumber=safe_string(row[32]) if row[32] else None,
-                birthRegion=safe_string(row[33]),
-                birthDistrict=safe_string(row[34]) if row[34] else None,
-                birthWard=safe_string(row[35]) if row[35] else None,
-                birthStreet=safe_string(row[36]) if row[36] else None,
-                identificationType=safe_string(row[37]),
-                identificationNumber=safe_string(row[38]) if row[38] else None,
-                issuance_date=safe_string(row[39]) if row[39] else None,
-                expirationDate=safe_string(row[40]) if row[40] else None,
-                issuancePlace=safe_string(row[41]),
-                issuingAuthority=safe_string(row[42]) if row[42] else None,
-                businessName=safe_string(row[43]) if row[43] else None,
-                establishmentDate=safe_string(row[44]) if row[44] else None,
-                businessRegistrationNumber=safe_string(row[45]) if row[45] else None,
-                businessRegistrationDate=safe_string(row[46]) if row[46] else None,
-                businessLicenseNumber=safe_string(row[47]) if row[47] else None,
-                taxIdentificationNumber=safe_string(row[48]) if row[48] else None,
-                employerName=safe_string(row[49]) if row[49] else None,
-                employerRegion=safe_string(row[50]) if row[50] else None,
-                employerDistrict=safe_string(row[51]) if row[51] else None,
-                employerWard=safe_string(row[52]) if row[52] else None,
-                employerStreet=safe_string(row[53]) if row[53] else None,
-                employerHouseNumber=safe_string(row[54]) if row[54] else None,
-                employerPostalCode=safe_string(row[55]) if row[55] else None,
-                businessNature=safe_string(row[56]) if row[56] else None,
-                mobileNumber=safe_string(row[57]) if row[57] else None,
-                alternativeMobileNumber=safe_string(row[58]) if row[58] else None,
-                fixedLineNumber=safe_string(row[59]) if row[59] else None,
-                faxNumber=safe_string(row[60]) if row[60] else None,
-                emailAddress=safe_string(row[61]) if row[61] else None,
-                socialMedia=safe_string(row[62]) if row[62] else None,
-                mainAddress=safe_string(row[63]) if row[63] else None,
-                street=safe_string(row[64]) if row[64] else None,
-                houseNumber=safe_string(row[65]) if row[65] else None,
-                postalCode=safe_string(row[66]) if row[66] else None,
-                region=safe_string(row[67]),
-                district=safe_string(row[68]) if row[68] else None,
-                ward=safe_string(row[69]) if row[69] else None,
-                country=safe_string(row[70]) if row[70] else None,
-                sstreet=safe_string(row[71]) if row[71] else None,
-                shouseNumber=safe_string(row[72]) if row[72] else None,
-                spostalCode=safe_string(row[73]) if row[73] else None,
-                sregion=safe_string(row[74]) if row[74] else None,
-                sdistrict=safe_string(row[75]) if row[75] else None,
-                sward=safe_string(row[76]) if row[76] else None,
-                scountry=safe_string(row[77]) if row[77] else None
+                accountNumber=safe_string(row[1]) if row[1] else None,
+                accountName=safe_string(row[2]),
+                accountType=safe_string(row[3]),
+                subAccountType=safe_string(row[4]) if row[4] else None,
+                currency=safe_string(row[5]),
+                orgAmount=safe_decimal(row[6]),
+                usdAmount=safe_decimal(row[7]),
+                tzsAmount=safe_decimal(row[8]),
+                transactionDate=safe_string(row[9]),
+                maturityDate=safe_string(row[10]),
+                allowanceProbableLoss=safe_int(row[11]),
+                botProvision=safe_int(row[12])
             )
             
             return record
             
         except Exception as e:
-            self.logger.error(f"Error processing personal data record: {e}")
+            self.logger.error(f"Error processing balance with BOT record: {e}")
             self.logger.error(f"Row data: {row}")
             self.logger.error(f"Row length: {len(row)}")
             raise
     
     def validate_record(self, record):
-        """Validate personal data record"""
+        """Validate balance with BOT record"""
         try:
-            # Basic validation
-            if not record.customerIdentificationNumber:
-                self.logger.warning("Missing customer identification number")
-                return False
-            
-            if not record.fullNames:
-                self.logger.warning("Missing full names")
+            if not record.currency:
+                self.logger.warning("Missing currency")
                 return False
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Error validating personal data record: {e}")
+            self.logger.error(f"Error validating balance with BOT record: {e}")
             return False
+
     
     def producer_thread(self):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
             
-            # Get dynamic record count
             self.total_available = self.get_total_count()
             
-            self.logger.info(f"Total personal data records available: {self.total_available:,} (estimated)")
+            self.logger.info(f"Total balance with BOT records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
-            # Setup RabbitMQ connection with retry
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
-            # Execute the query ONCE and stream results
-            query = self.get_personal_data_query()
-            self.logger.info("Executing personal data query (single execution, streaming results)...")
+            query = self.get_balance_with_bot_query()
+            self.logger.info("Executing balance with BOT query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -413,14 +294,12 @@ class PersonalDataStreamingPipeline:
                 while True:
                     batch_start_time = time.time()
                     
-                    # Fetch next chunk from the already-running query
                     rows = db2_cursor.fetchmany(self.batch_size)
                     
                     if not rows:
                         self.logger.info("No more records to fetch")
                         break
                     
-                    # Process and publish
                     batch_published = 0
                     for row in rows:
                         record = self.process_record(row)
@@ -428,13 +307,12 @@ class PersonalDataStreamingPipeline:
                         if self.validate_record(record):
                             message = json.dumps(asdict(record), default=str)
                             
-                            # Publish with retry
                             published = False
                             for attempt in range(self.max_retries):
                                 try:
                                     channel.basic_publish(
                                         exchange='',
-                                        routing_key='personal_data_queue',
+                                        routing_key='balance_with_bot_queue',
                                         body=message,
                                         properties=pika.BasicProperties(delivery_mode=2)
                                     )
@@ -464,7 +342,6 @@ class PersonalDataStreamingPipeline:
                     
                     self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} rows fetched, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
                     
-                    # Progress report every 5 minutes
                     current_time = time.time()
                     if current_time - last_progress_report >= 300:
                         elapsed_time = current_time - self.start_time
@@ -495,7 +372,6 @@ class PersonalDataStreamingPipeline:
         try:
             self.logger.info("Consumer thread started")
             
-            # Setup persistent PostgreSQL connection
             pg_conn = psycopg2.connect(
                 host=self.config.database.pg_host,
                 port=self.config.database.pg_port,
@@ -505,18 +381,15 @@ class PersonalDataStreamingPipeline:
             )
             self.logger.info("Consumer: Persistent PostgreSQL connection established")
             
-            # Setup RabbitMQ connection with retry
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Batch insert buffer
-            insert_buffer: List[PersonalDataRecord] = []
+            insert_buffer: List[BalanceWithBotRecord] = []
             pending_tags: List[int] = []
             last_flush_time = time.time()
-            flush_interval = 5  # seconds
+            flush_interval = 5
             last_progress_report = time.time()
             
             def flush_buffer(ch):
-                """Flush buffered records to PostgreSQL in a single batch insert"""
                 nonlocal insert_buffer, pending_tags, last_flush_time, pg_conn
                 if not insert_buffer:
                     return
@@ -525,7 +398,6 @@ class PersonalDataStreamingPipeline:
                 try:
                     self.insert_batch_to_postgres(insert_buffer, pg_conn)
                     
-                    # Batch acknowledge all messages at once
                     if pending_tags:
                         ch.basic_ack(delivery_tag=pending_tags[-1], multiple=True)
                     
@@ -538,7 +410,6 @@ class PersonalDataStreamingPipeline:
                     
                 except psycopg2.OperationalError as e:
                     self.logger.error(f"PostgreSQL connection lost during batch insert: {e}")
-                    # Reconnect PostgreSQL
                     try:
                         pg_conn.close()
                     except Exception:
@@ -550,7 +421,6 @@ class PersonalDataStreamingPipeline:
                         user=self.config.database.pg_user,
                         password=self.config.database.pg_password
                     )
-                    # Nack all to requeue for retry
                     for tag in pending_tags:
                         try:
                             ch.basic_nack(delivery_tag=tag, requeue=True)
@@ -566,7 +436,6 @@ class PersonalDataStreamingPipeline:
                         pg_conn.rollback()
                     except Exception:
                         pass
-                    # Nack all messages - they go to dead-letter queue
                     for tag in pending_tags:
                         try:
                             ch.basic_nack(delivery_tag=tag, requeue=False)
@@ -580,17 +449,15 @@ class PersonalDataStreamingPipeline:
                 nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
-                    record = PersonalDataRecord(**record_data)
+                    record = BalanceWithBotRecord(**record_data)
                     
                     insert_buffer.append(record)
                     pending_tags.append(method.delivery_tag)
                     
-                    # Flush if buffer is full or time interval exceeded
                     if len(insert_buffer) >= self.consumer_batch_size or \
                        time.time() - last_flush_time >= flush_interval:
                         flush_buffer(ch)
                     
-                    # Progress monitoring
                     with self._stats_lock:
                         consumed = self.total_consumed
                     
@@ -601,7 +468,6 @@ class PersonalDataStreamingPipeline:
                         
                         self.logger.info(f"Consumer: Processed {consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
                     
-                    # Detailed progress report every 5 minutes
                     current_time = time.time()
                     if current_time - last_progress_report >= 300:
                         elapsed_time = current_time - self.start_time
@@ -619,40 +485,33 @@ class PersonalDataStreamingPipeline:
                     self.logger.error(f"Consumer error processing message: {e}")
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             
-            # Set QoS to match consumer batch size for efficient batching
             channel.basic_qos(prefetch_count=self.consumer_batch_size)
-            channel.basic_consume(queue='personal_data_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='balance_with_bot_queue', on_message_callback=process_message)
             
-            # Keep consuming until producer is done and queue is empty
             while not self.stop_consumer.is_set():
                 try:
                     connection.process_data_events(time_limit=1)
                     
-                    # Flush any remaining buffered records on timeout
                     if insert_buffer and time.time() - last_flush_time >= flush_interval:
                         flush_buffer(channel)
                     
-                    # Check if we should stop
                     if self.producer_finished.is_set():
-                        # Flush remaining buffer before checking queue
                         flush_buffer(channel)
                         
-                        # Producer is done, check if queue is empty
-                        queue_state = channel.queue_declare(queue='personal_data_queue', durable=True, passive=True)
+                        queue_state = channel.queue_declare(queue='balance_with_bot_queue', durable=True, passive=True)
                         if queue_state.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
                         
                 except Exception as e:
                     self.logger.error(f"Consumer processing error: {e}")
-                    # Try to reconnect RabbitMQ
                     try:
                         connection.close()
                     except Exception:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
                     channel.basic_qos(prefetch_count=self.consumer_batch_size)
-                    channel.basic_consume(queue='personal_data_queue', on_message_callback=process_message)
+                    channel.basic_consume(queue='balance_with_bot_queue', on_message_callback=process_message)
             
             connection.close()
             with self._stats_lock:
@@ -669,56 +528,26 @@ class PersonalDataStreamingPipeline:
                     pg_conn.close()
                 except Exception:
                     pass
+
     
-    def insert_batch_to_postgres(self, records: List[PersonalDataRecord], pg_conn):
-        """Batch insert personal data records to PostgreSQL with duplicate prevention"""
+    def insert_batch_to_postgres(self, records: List[BalanceWithBotRecord], pg_conn):
+        """Batch insert balance with BOT records to PostgreSQL"""
         try:
             cursor = pg_conn.cursor()
             
             insert_query = """
-            INSERT INTO "personalDataInformation" (
-                "reportingDate", "customerIdentificationNumber", "firstName", "middleNames",
-                "otherNames", "fullNames", "presentSurname", "birthSurname", "gender",
-                "maritalStatus", "numberSpouse", "nationality", "citizenship", "residency",
-                "profession", "sectorSnaClassification", "fateStatus", "socialStatus",
-                "employmentStatus", "monthlyIncome", "numberDependants", "educationLevel",
-                "averageMonthlyExpenditure", "negativeClientStatus", "spousesFullName",
-                "spouseIdentificationType", "spouseIdentificationNumber", "maidenName",
-                "monthlyExpenses", "birthDate", "birthCountry", "birthPostalCode",
-                "birthHouseNumber", "birthRegion", "birthDistrict", "birthWard", "birthStreet",
-                "identificationType", "identificationNumber", "issuance_date", "expirationDate",
-                "issuancePlace", "issuingAuthority", "businessName", "establishmentDate",
-                "businessRegistrationNumber", "businessRegistrationDate", "businessLicenseNumber",
-                "taxIdentificationNumber", "employerName", "employerRegion", "employerDistrict",
-                "employerWard", "employerStreet", "employerHouseNumber", "employerPostalCode",
-                "businessNature", "mobileNumber", "alternativeMobileNumber", "fixedLineNumber",
-                "faxNumber", "emailAddress", "socialMedia", "mainAddress", "street",
-                "houseNumber", "postalCode", "region", "district", "ward", "country",
-                "sstreet", "shouseNumber", "spostalCode", "sregion", "sdistrict", "sward", "scountry"
+            INSERT INTO "balanceWithBot" (
+                "reportingDate", "accountNumber", "accountName", "accountType", "subAccountType",
+                currency, "orgAmount", "usdAmount", "tzsAmount", "transactionDate",
+                "maturityDate", "allowanceProbableLoss", "botProvision"
             ) VALUES %s
-            ON CONFLICT ("customerIdentificationNumber") DO NOTHING
             """
             
             values = [
                 (
-                    r.reportingDate, r.customerIdentificationNumber, r.firstName, r.middleNames,
-                    r.otherNames, r.fullNames, r.presentSurname, r.birthSurname, r.gender,
-                    r.maritalStatus, r.numberSpouse, r.nationality, r.citizenship, r.residency,
-                    r.profession, r.sectorSnaClassification, r.fateStatus, r.socialStatus,
-                    r.employmentStatus, r.monthlyIncome, r.numberDependants, r.educationLevel,
-                    r.averageMonthlyExpenditure, r.negativeClientStatus, r.spousesFullName,
-                    r.spouseIdentificationType, r.spouseIdentificationNumber, r.maidenName,
-                    r.monthlyExpenses, r.birthDate, r.birthCountry, r.birthPostalCode,
-                    r.birthHouseNumber, r.birthRegion, r.birthDistrict, r.birthWard, r.birthStreet,
-                    r.identificationType, r.identificationNumber, r.issuance_date, r.expirationDate,
-                    r.issuancePlace, r.issuingAuthority, r.businessName, r.establishmentDate,
-                    r.businessRegistrationNumber, r.businessRegistrationDate, r.businessLicenseNumber,
-                    r.taxIdentificationNumber, r.employerName, r.employerRegion, r.employerDistrict,
-                    r.employerWard, r.employerStreet, r.employerHouseNumber, r.employerPostalCode,
-                    r.businessNature, r.mobileNumber, r.alternativeMobileNumber, r.fixedLineNumber,
-                    r.faxNumber, r.emailAddress, r.socialMedia, r.mainAddress, r.street,
-                    r.houseNumber, r.postalCode, r.region, r.district, r.ward, r.country,
-                    r.sstreet, r.shouseNumber, r.spostalCode, r.sregion, r.sdistrict, r.sward, r.scountry
+                    r.reportingDate, r.accountNumber, r.accountName, r.accountType, r.subAccountType,
+                    r.currency, r.orgAmount, r.usdAmount, r.tzsAmount, r.transactionDate,
+                    r.maturityDate, r.allowanceProbableLoss, r.botProvision
                 )
                 for r in records
             ]
@@ -727,66 +556,41 @@ class PersonalDataStreamingPipeline:
             pg_conn.commit()
             
         except Exception as e:
-            self.logger.error(f"Error batch inserting {len(records)} personal data records: {e}")
-            raise
-    
-    def ensure_unique_index(self):
-        """Ensure unique index on customerIdentificationNumber exists for ON CONFLICT duplicate prevention"""
-        try:
-            with self.get_postgres_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_personaldatainformation_customer_id_unique
-                    ON "personalDataInformation" ("customerIdentificationNumber")
-                """)
-                conn.commit()
-                self.logger.info("Unique index on customerIdentificationNumber verified/created")
-        except Exception as e:
-            self.logger.error(f"Failed to create unique index on customerIdentificationNumber: {e}")
+            self.logger.error(f"Error batch inserting {len(records)} balance with BOT records: {e}")
             raise
     
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Personal Data STREAMING pipeline...")
+        self.logger.info("Starting Balance with BOT STREAMING pipeline...")
         
         try:
-            # Ensure unique index for duplicate prevention
-            self.ensure_unique_index()
-            
-            # Setup queue
             self.setup_rabbitmq_queue()
             
-            # Start consumer thread first
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")
             consumer_thread.start()
             
-            # Small delay to let consumer start
             time.sleep(1)
             
-            # Start producer thread
             producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
             producer_thread.start()
             
-            # Wait for producer to finish
             producer_thread.join()
             self.logger.info("Producer thread completed")
             
-            # Wait for consumer to finish processing remaining messages
-            consumer_thread.join(timeout=60)  # Wait up to 60 seconds
+            consumer_thread.join(timeout=60)
             
             if consumer_thread.is_alive():
                 self.logger.info("Stopping consumer thread...")
                 self.stop_consumer.set()
                 consumer_thread.join(timeout=30)
             
-            # Final statistics
             total_time = time.time() - self.start_time
             avg_rate = self.total_consumed / total_time if total_time > 0 else 0
             success_rate = (self.total_consumed / self.total_produced * 100) if self.total_produced > 0 else 0
             
             self.logger.info(f"""
             ==========================================
-            Personal Data Pipeline Summary:
+            Balance with BOT Pipeline Summary:
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -806,7 +610,7 @@ def main():
     """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Personal Data Streaming Pipeline')
+    parser = argparse.ArgumentParser(description='Balance with BOT Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
@@ -814,15 +618,14 @@ def main():
     
     args = parser.parse_args()
     
-    # Create pipeline
-    pipeline = PersonalDataStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = BalanceWithBotStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
     
     try:
         if args.mode == 'producer':
             pipeline.producer_thread()
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
-        else:  # streaming
+        else:
             pipeline.run_streaming_pipeline()
             
     except KeyboardInterrupt:

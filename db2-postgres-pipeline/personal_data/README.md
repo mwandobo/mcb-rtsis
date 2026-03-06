@@ -1,102 +1,136 @@
 # Personal Data Streaming Pipeline
 
-This pipeline extracts personal data information from DB2 and streams it to PostgreSQL using RabbitMQ as a message queue.
+This pipeline transfers personal/customer data from DB2 to PostgreSQL using a streaming architecture with RabbitMQ as the message queue.
 
-## Features
+## Architecture
 
-- **Streaming Architecture**: Producer and consumer run simultaneously for optimal performance
-- **Batch Processing**: Configurable batch sizes for both DB2 extraction and PostgreSQL insertion
-- **Dead Letter Queue**: Failed messages are sent to a dead letter queue for later analysis
-- **Duplicate Prevention**: Uses ON CONFLICT to handle duplicate records
-- **Thread-Safe**: Uses locks for statistics tracking across threads
-- **Optimized SQL**: Two SQL versions available (v3 original, v4 optimized)
+- **Producer**: Fetches personal data records from DB2 using `personal_data_information-v4.sql` and publishes to RabbitMQ
+- **Consumer**: Reads from RabbitMQ and batch inserts into PostgreSQL
+- **Message Queue**: RabbitMQ with dead-letter queue for failed messages
+- **Database**: PostgreSQL table `personalDataInformation`
 
-## SQL Versions
+## Files
 
-### v3 (Original)
-- Complex location lookups with multiple fallback strategies
-- Location lookup calculations performed for each row
-- More comprehensive but slower due to repeated calculations
+- `personal_data_streaming_pipeline.py` - Main streaming pipeline (producer + consumer)
+- `create_personal_data_table.py` - Creates the personalDataInformation table in PostgreSQL
+- `run_personal_data_pipeline.py` - Runner script to execute the pipeline
+- `check_table.py` - Check table status and statistics
+- `drop_table.py` - Drop the personalDataInformation table
+- `clear_personal_data_queue.py` - Clear RabbitMQ queue
 
-### v4 (Optimized - Default)
-- **Same exact logic and output as v3**
-- Pre-computes location lookups in CTEs to run once instead of per row
-- Moves expensive location matching operations to WITH clauses
-- **No changes to business logic** - only performance optimization through query reorganization
-- Faster execution while maintaining identical data quality and results
+## Setup
 
-## Usage
+### 1. Create the PostgreSQL Table
 
-### Run with default settings (v4 SQL, optimized)
+```bash
+python create_personal_data_table.py
+```
+
+This creates the `personalDataInformation` table with all necessary columns and indexes.
+
+### 2. Run the Pipeline
+
 ```bash
 python run_personal_data_pipeline.py
 ```
 
-### Run with original SQL (v3)
+Or run the streaming pipeline directly:
+
 ```bash
-SQL_VERSION=v3 python run_personal_data_pipeline.py
+python personal_data_streaming_pipeline.py
 ```
 
-### Clear queues before running
+## Table Structure
+
+The `personalDataInformation` table includes 78 columns covering:
+
+- **Personal Information**: Names, gender, marital status, birth details
+- **Identification**: ID type, number, issuance and expiration dates
+- **Contact Information**: Mobile, email, fax, social media
+- **Address Information**: Region, district, ward, street, postal code
+- **Employment**: Status, profession, employer details, monthly income
+- **Education**: Education level, number of dependants
+- **Business**: Business name, registration, license, TIN
+- **Spouse Information**: Spouse name and identification
+- **Location Details**: Birth and current address with region/district/ward mapping
+- **Timestamps**: created_at, updated_at
+
+## Features
+
+- **Streaming Architecture**: Producer and consumer run simultaneously
+- **Batch Processing**: Efficient batch inserts to PostgreSQL
+- **Duplicate Prevention**: ON CONFLICT handling using unique customerIdentificationNumber
+- **Error Handling**: Dead-letter queue for failed messages
+- **Progress Tracking**: Real-time progress reports every 5 minutes
+- **Retry Logic**: Automatic retry for transient failures
+- **Connection Management**: Persistent PostgreSQL connection for better performance
+- **Complex Location Mapping**: Uses bank_location_lookup_v2 for region/district/ward resolution
+
+## Monitoring
+
+### Check Table Status
+
+```bash
+python check_table.py
+```
+
+Shows:
+- Total record count
+- Sample records
+- Statistics by gender
+- Statistics by region
+
+### Clear Queue
+
 ```bash
 python clear_personal_data_queue.py
 ```
 
+Purges all messages from the RabbitMQ queue.
+
 ## Configuration
 
-The pipeline uses the main `config.py` file for:
+The pipeline uses configuration from the parent `config.py`:
+
 - DB2 connection settings
-- PostgreSQL connection settings  
+- PostgreSQL connection settings
 - RabbitMQ connection settings
 
-## Performance Tuning
+## Performance
 
-### Batch Sizes
-- `batch_size`: Records fetched from DB2 per batch (default: 1000)
-- `consumer_batch_size`: Records inserted to PostgreSQL per batch (default: 100)
+- Default batch size: 1000 records per DB2 fetch
+- Default consumer batch size: 100 records per PostgreSQL insert
+- Adjustable via command-line arguments:
 
-### Environment Variables
-- `SQL_VERSION`: Choose between 'v3' (original) or 'v4' (optimized, default)
-
-## Queue Names
-- Main queue: `personal_data_queue`
-- Dead letter queue: `personal_data_dead_letter`
-
-## Database Schema
-
-The pipeline inserts data into the `personal_data_information` table with the following key fields:
-- `customeridentificationnumber` (unique key)
-- `fullnames`
-- `gender`
-- `nationality`
-- `region`, `district`, `ward` (location fields)
-- Contact information (mobile, email, etc.)
-- Identification details
+```bash
+python personal_data_streaming_pipeline.py --batch-size 2000 --consumer-batch-size 200
+```
 
 ## Error Handling
 
-- Invalid records are logged and skipped
-- Database connection failures trigger retries
-- RabbitMQ connection issues are handled gracefully
-- Failed messages go to dead letter queue
+- Failed messages are routed to `personal_data_dead_letter` queue
+- PostgreSQL connection errors trigger automatic reconnection
+- RabbitMQ connection errors trigger automatic retry
+- All errors are logged with full context
 
-## Monitoring
+## Data Source
 
-The pipeline provides real-time statistics:
-- Total records produced
-- Total records consumed
-- Processing rate (records/second)
-- Elapsed time
+Source SQL: `sqls/personal_data_information-v4.sql`
 
-## Files
+The query includes:
+- Customer personal information
+- Address and location mapping using CTEs for performance
+- Identification details with validation
+- Employment and business information
+- Contact information
+- Complex joins with generic_detail, customer_category, and location lookups
+- Filters for valid customer types and identification documents
 
-- `personal_data_streaming_pipeline.py`: Main pipeline implementation
-- `run_personal_data_pipeline.py`: Runner script
-- `clear_personal_data_queue.py`: Queue management utility
-- `README.md`: This documentation
+## Data Quality
 
-## Dependencies
-
-- `pika`: RabbitMQ client
-- `psycopg2`: PostgreSQL client
-- `pyodbc`: DB2 client (via db2_connection module)
+The pipeline filters out:
+- Non-individual customers (only CUST_TYPE = '1')
+- Invalid identification types (OTHER TYPE, BIRTH CERTIFICATE, N/A)
+- Invalid National ID cards (less than 20 characters)
+- Invalid Driving Licenses (less than 10 characters)
+- Invalid Voter IDs (not starting with 'T')

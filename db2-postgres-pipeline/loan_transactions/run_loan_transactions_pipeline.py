@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Runner script for Personal Data Pipeline
+Runner script for Loan Transactions Pipeline
 Runs the streaming pipeline
 """
 
@@ -39,14 +39,14 @@ def run_command(script_name, description):
 def main():
     """Main runner function"""
     print("\n" + "="*60)
-    print("PERSONAL DATA PIPELINE RUNNER")
+    print("LOAN TRANSACTIONS PIPELINE RUNNER")
     print("="*60)
-    print("\nNote: Make sure to run create_personal_data_table.py first if table doesn't exist")
+    print("\nNote: Make sure to run create_loan_transactions_table.py first if table doesn't exist")
     
     start_time = time.time()
     
     # Run streaming pipeline
-    if not run_command("personal_data_streaming_pipeline.py", "Running personal data streaming pipeline"):
+    if not run_command("loan_transactions_streaming_pipeline.py", "Running loan transactions streaming pipeline"):
         print("\n⚠ Pipeline execution failed")
         sys.exit(1)
     

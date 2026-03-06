@@ -49,23 +49,45 @@ SELECT CURRENT_TIMESTAMP      AS reportingDate,
        -- TZS amount: convert from USD using fixed rate, otherwise use original
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
-               THEN gte.DC_AMOUNT * 2500.00 -- Update this rate as needed
+               THEN gte.DC_AMOUNT * fx.RATE
            ELSE gte.DC_AMOUNT
            END                AS tzsTransactionAmount
 
 FROM GLI_TRX_EXTRACT AS gte
          LEFT JOIN LOAN_ACCOUNT AS la
                    ON la.CUST_ID = gte.CUST_ID
-         LEFT JOIN GLG_ACCOUNT AS gl ON gl.ACCOUNT_ID = gte.FK_GLG_ACCOUNTACCO
 
-WHERE gl.EXTERNAL_GLACCOUNT IN (
-                                '110000001', '110000005', '110010001', '110010012',
-                                '110020001', '110020002', '110020003', '110020005',
-                                '110020007', '110020008', '110020009', '110020011',
-                                '110030001', '110030002', '110030003', '110030004',
-                                '120000001', '120000005', '120010001', '120020001',
-                                '120020002', '120010012', '120030002', '120050001',
-                                '120030003', '120030006', '120050005', '120020007',
-                                '130000005'
+    -- Join Currency Using SHORT_DESCR
+    -- =========================================
+         LEFT JOIN CURRENCY curr
+                   ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+
+    -- =============================================
+    -- Latest Fixing Rate Per Currency
+    -- =============================================
+         LEFT JOIN (SELECT fr.fk_currencyid_curr,
+                           fr.rate
+                    FROM fixing_rate fr
+                    WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN
+                          (SELECT fk_currencyid_curr,
+                                  activation_date,
+                                  MAX(activation_time)
+                           FROM fixing_rate
+                           WHERE activation_date = (SELECT MAX(b.activation_date)
+                                                    FROM fixing_rate b
+                                                    WHERE b.activation_date <= CURRENT_DATE)
+                           GROUP BY fk_currencyid_curr, activation_date)) fx
+                   ON fx.fk_currencyid_curr = curr.ID_CURRENCY
+
+WHERE gte.FK_GLG_ACCOUNTACCO IN (
+                                 '1.1.0.00.0001', '1.1.0.00.0005', '1.1.0.01.0001', '1.1.0.01.0012',
+                                 '1.1.0.02.0001', '1.1.0.02.0002', '1.1.0.02.0003', '1.1.0.02.0005',
+                                 '1.1.0.02.0007', '1.1.0.02.0008', '1.1.0.02.0009', '1.1.0.02.0011',
+                                 '1.1.0.03.0001', '1.1.0.03.0002', '1.1.0.03.0003', '1.1.0.03.0004',
+                                 '1.2.0.00.0001', '1.2.0.00.0005', '1.2.0.01.0001', '1.2.0.02.0001',
+                                 '1.2.0.02.0002', '1.2.0.01.0012', '1.2.0.03.0002', '1.2.0.05.0001',
+                                 '1.2.0.03.0003', '1.2.0.03.0006', '1.2.0.05.0005', '1.2.0.02.0007',
+                                 '1.3.0.00.0005'
     )
-  AND gte.PRF_ACCOUNT_NUMBER IS NOT NULL;
+  AND gte.PRF_ACCOUNT_NUMBER IS NOT NULL
+  AND TRIM(gte.PRF_ACCOUNT_NUMBER) <> '';

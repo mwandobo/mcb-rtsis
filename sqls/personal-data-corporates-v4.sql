@@ -507,10 +507,6 @@ FROM corporate_agreements ca
          JOIN CUSTOMER rel
               ON rel.CUST_ID = ca2.FK_CUSTOMERCUST_ID
 
-             LEFT JOIN cust_address c_address
-                   ON c_address.fk_customercust_id = corp.cust_id
-                       AND c_address.communication_addr = '1'
-                       AND c_address.entry_status = '1'
 
          LEFT JOIN other_id id
                    ON id.fk_customercust_id = corp.cust_id

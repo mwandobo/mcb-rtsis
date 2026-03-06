@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Personal Data Streaming Pipeline - Producer and Consumer run simultaneously
-Based on personal_data_information-v4.sql query
+Cards Streaming Pipeline - Producer and Consumer run simultaneously
+Based on card_information.sql query
 """
 
 import pika
@@ -29,89 +29,27 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 @dataclass
-class PersonalDataRecord:
-    """Data class for personal data records based on personal_data_information-v4.sql"""
+class CardRecord:
+    """Data class for card records based on card_information.sql"""
     reportingDate: str
+    bankCode: str
+    cardNumber: str
+    binNumber: str
     customerIdentificationNumber: str
-    firstName: str
-    middleNames: str
-    otherNames: str
-    fullNames: str
-    presentSurname: str
-    birthSurname: str
-    gender: str
-    maritalStatus: str
-    numberSpouse: Optional[str]
-    nationality: Optional[str]
-    citizenship: Optional[str]
-    residency: str
-    profession: Optional[str]
-    sectorSnaClassification: str
-    fateStatus: str
-    socialStatus: str
-    employmentStatus: str
-    monthlyIncome: Optional[str]
-    numberDependants: Optional[int]
-    educationLevel: str
-    averageMonthlyExpenditure: str
-    negativeClientStatus: Optional[str]
-    spousesFullName: Optional[str]
-    spouseIdentificationType: Optional[str]
-    spouseIdentificationNumber: Optional[str]
-    maidenName: Optional[str]
-    monthlyExpenses: Optional[str]
-    birthDate: Optional[str]
-    birthCountry: Optional[str]
-    birthPostalCode: Optional[str]
-    birthHouseNumber: Optional[str]
-    birthRegion: str
-    birthDistrict: Optional[str]
-    birthWard: Optional[str]
-    birthStreet: Optional[str]
-    identificationType: str
-    identificationNumber: Optional[str]
-    issuance_date: Optional[str]
-    expirationDate: Optional[str]
-    issuancePlace: str
-    issuingAuthority: Optional[str]
-    businessName: Optional[str]
-    establishmentDate: Optional[str]
-    businessRegistrationNumber: Optional[str]
-    businessRegistrationDate: Optional[str]
-    businessLicenseNumber: Optional[str]
-    taxIdentificationNumber: Optional[str]
-    employerName: Optional[str]
-    employerRegion: Optional[str]
-    employerDistrict: Optional[str]
-    employerWard: Optional[str]
-    employerStreet: Optional[str]
-    employerHouseNumber: Optional[str]
-    employerPostalCode: Optional[str]
-    businessNature: Optional[str]
-    mobileNumber: Optional[str]
-    alternativeMobileNumber: Optional[str]
-    fixedLineNumber: Optional[str]
-    faxNumber: Optional[str]
-    emailAddress: Optional[str]
-    socialMedia: Optional[str]
-    mainAddress: Optional[str]
-    street: Optional[str]
-    houseNumber: Optional[str]
-    postalCode: Optional[str]
-    region: str
-    district: Optional[str]
-    ward: Optional[str]
-    country: Optional[str]
-    sstreet: Optional[str]
-    shouseNumber: Optional[str]
-    spostalCode: Optional[str]
-    sregion: Optional[str]
-    sdistrict: Optional[str]
-    sward: Optional[str]
-    scountry: Optional[str]
+    cardType: str
+    cardTypeSubCategory: Optional[str]
+    cardIssueDate: str
+    cardIssuer: str
+    cardIssuerCategory: str
+    cardIssuerCountry: str
+    cardHolderName: str
+    cardStatus: str
+    cardScheme: str
+    acquiringPartner: str
+    cardExpireDate: str
 
 
-class PersonalDataStreamingPipeline:
+class CardsStreamingPipeline:
     def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
@@ -136,31 +74,31 @@ class PersonalDataStreamingPipeline:
         
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Personal Data STREAMING Pipeline initialized")
+        self.logger.info("Cards STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_personal_data_query(self):
-        """Get the personal data query from personal_data_information-v4.sql"""
+    def get_cards_query(self):
+        """Get the cards query from card_information.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'personal_data_information-v4.sql'
+            'sqls', 'card_information.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
             return f.read()
     
     def get_total_count(self):
-        """Get approximate total count of personal data records from DB2"""
+        """Get approximate total count of card records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM CUSTOMER WHERE CUST_TYPE = '1'")
+                cursor.execute("SELECT COUNT(*) FROM CMS_CARD")
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from CUSTOMER: {count:,}")
+                self.logger.info(f"Estimated record count from CMS_CARD: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -215,49 +153,48 @@ class PersonalDataStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for personal data with dead-letter exchange"""
+        """Setup RabbitMQ queue for cards with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Declare dead-letter exchange and queue for failed messages
-            channel.exchange_declare(exchange='personal_data_dlx', exchange_type='direct', durable=True)
-            channel.queue_declare(queue='personal_data_dead_letter', durable=True)
+            channel.exchange_declare(exchange='cards_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='cards_dead_letter', durable=True)
             channel.queue_bind(
-                queue='personal_data_dead_letter',
-                exchange='personal_data_dlx',
-                routing_key='personal_data_queue'
+                queue='cards_dead_letter',
+                exchange='cards_dlx',
+                routing_key='cards_queue'
             )
             
             # Declare main queue with dead-letter exchange routing
             try:
                 channel.queue_declare(
-                    queue='personal_data_queue',
+                    queue='cards_queue',
                     durable=True,
                     arguments={
-                        'x-dead-letter-exchange': 'personal_data_dlx',
-                        'x-dead-letter-routing-key': 'personal_data_queue'
+                        'x-dead-letter-exchange': 'cards_dlx',
+                        'x-dead-letter-routing-key': 'cards_queue'
                     }
                 )
                 self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
             except Exception:
                 # Queue may already exist with different arguments
                 self.logger.warning(
-                    "Queue 'personal_data_queue' already exists with different args. "
+                    "Queue 'cards_queue' already exists with different args. "
                     "Delete and recreate it to enable dead-letter support."
                 )
                 connection, channel = self.setup_rabbitmq_connection()
-                channel.queue_declare(queue='personal_data_queue', durable=True)
-                self.logger.info("RabbitMQ queue 'personal_data_queue' setup complete (without DLX)")
+                channel.queue_declare(queue='cards_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'cards_queue' setup complete (without DLX)")
             
             connection.close()
             
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
             raise
-
     
     def process_record(self, row):
-        """Process a single personal data record from DB2"""
+        """Process a single card record from DB2"""
         try:
             # Helper function to safely convert values
             def safe_string(value):
@@ -266,121 +203,50 @@ class PersonalDataStreamingPipeline:
                     return None
                 return str(value).strip()
             
-            def safe_int(value):
-                """Safely convert to int"""
-                if value is None:
-                    return None
-                try:
-                    return int(value)
-                except (ValueError, TypeError):
-                    return None
-            
-            # Map the fields from the SQL query to the dataclass (72 fields)
-            record = PersonalDataRecord(
-                reportingDate=safe_string(row[0]),
-                customerIdentificationNumber=safe_string(row[1]),
-                firstName=safe_string(row[2]),
-                middleNames=safe_string(row[3]),
-                otherNames=safe_string(row[4]),
-                fullNames=safe_string(row[5]),
-                presentSurname=safe_string(row[6]),
-                birthSurname=safe_string(row[7]),
-                gender=safe_string(row[8]),
-                maritalStatus=safe_string(row[9]),
-                numberSpouse=safe_string(row[10]) if row[10] else None,
-                nationality=safe_string(row[11]) if row[11] else None,
-                citizenship=safe_string(row[12]) if row[12] else None,
-                residency=safe_string(row[13]),
-                profession=safe_string(row[14]) if row[14] else None,
-                sectorSnaClassification=safe_string(row[15]),
-                fateStatus=safe_string(row[16]),
-                socialStatus=safe_string(row[17]),
-                employmentStatus=safe_string(row[18]),
-                monthlyIncome=safe_string(row[19]) if row[19] else None,
-                numberDependants=safe_int(row[20]),
-                educationLevel=safe_string(row[21]),
-                averageMonthlyExpenditure=safe_string(row[22]),
-                negativeClientStatus=safe_string(row[23]) if row[23] else None,
-                spousesFullName=safe_string(row[24]) if row[24] else None,
-                spouseIdentificationType=safe_string(row[25]) if row[25] else None,
-                spouseIdentificationNumber=safe_string(row[26]) if row[26] else None,
-                maidenName=safe_string(row[27]) if row[27] else None,
-                monthlyExpenses=safe_string(row[28]) if row[28] else None,
-                birthDate=safe_string(row[29]) if row[29] else None,
-                birthCountry=safe_string(row[30]) if row[30] else None,
-                birthPostalCode=safe_string(row[31]) if row[31] else None,
-                birthHouseNumber=safe_string(row[32]) if row[32] else None,
-                birthRegion=safe_string(row[33]),
-                birthDistrict=safe_string(row[34]) if row[34] else None,
-                birthWard=safe_string(row[35]) if row[35] else None,
-                birthStreet=safe_string(row[36]) if row[36] else None,
-                identificationType=safe_string(row[37]),
-                identificationNumber=safe_string(row[38]) if row[38] else None,
-                issuance_date=safe_string(row[39]) if row[39] else None,
-                expirationDate=safe_string(row[40]) if row[40] else None,
-                issuancePlace=safe_string(row[41]),
-                issuingAuthority=safe_string(row[42]) if row[42] else None,
-                businessName=safe_string(row[43]) if row[43] else None,
-                establishmentDate=safe_string(row[44]) if row[44] else None,
-                businessRegistrationNumber=safe_string(row[45]) if row[45] else None,
-                businessRegistrationDate=safe_string(row[46]) if row[46] else None,
-                businessLicenseNumber=safe_string(row[47]) if row[47] else None,
-                taxIdentificationNumber=safe_string(row[48]) if row[48] else None,
-                employerName=safe_string(row[49]) if row[49] else None,
-                employerRegion=safe_string(row[50]) if row[50] else None,
-                employerDistrict=safe_string(row[51]) if row[51] else None,
-                employerWard=safe_string(row[52]) if row[52] else None,
-                employerStreet=safe_string(row[53]) if row[53] else None,
-                employerHouseNumber=safe_string(row[54]) if row[54] else None,
-                employerPostalCode=safe_string(row[55]) if row[55] else None,
-                businessNature=safe_string(row[56]) if row[56] else None,
-                mobileNumber=safe_string(row[57]) if row[57] else None,
-                alternativeMobileNumber=safe_string(row[58]) if row[58] else None,
-                fixedLineNumber=safe_string(row[59]) if row[59] else None,
-                faxNumber=safe_string(row[60]) if row[60] else None,
-                emailAddress=safe_string(row[61]) if row[61] else None,
-                socialMedia=safe_string(row[62]) if row[62] else None,
-                mainAddress=safe_string(row[63]) if row[63] else None,
-                street=safe_string(row[64]) if row[64] else None,
-                houseNumber=safe_string(row[65]) if row[65] else None,
-                postalCode=safe_string(row[66]) if row[66] else None,
-                region=safe_string(row[67]),
-                district=safe_string(row[68]) if row[68] else None,
-                ward=safe_string(row[69]) if row[69] else None,
-                country=safe_string(row[70]) if row[70] else None,
-                sstreet=safe_string(row[71]) if row[71] else None,
-                shouseNumber=safe_string(row[72]) if row[72] else None,
-                spostalCode=safe_string(row[73]) if row[73] else None,
-                sregion=safe_string(row[74]) if row[74] else None,
-                sdistrict=safe_string(row[75]) if row[75] else None,
-                sward=safe_string(row[76]) if row[76] else None,
-                scountry=safe_string(row[77]) if row[77] else None
+            # Map the fields from the SQL query to the dataclass
+            record = CardRecord(
+                reportingDate=safe_string(row[0]),                      # VARCHAR_FORMAT(CURRENT_TIMESTAMP,'DDMMYYYYHHMM')
+                bankCode=safe_string(row[1]),                           # 'MWCOTZTZ'
+                cardNumber=safe_string(row[2]),                         # CA.FULL_CARD_NO
+                binNumber=safe_string(row[3]),                          # RIGHT(TRIM(CA.FULL_CARD_NO), 10)
+                customerIdentificationNumber=safe_string(row[4]),       # CA.FK_CUST_ID
+                cardType=safe_string(row[5]),                           # 'Debit'
+                cardTypeSubCategory=safe_string(row[6]) if row[6] else None,  # NULL
+                cardIssueDate=safe_string(row[7]),                      # VARCHAR_FORMAT(CA.TUN_DATE,'DDMMYYYYHHMM')
+                cardIssuer=safe_string(row[8]),                         # 'Mwalimu Commercial Bank Plc'
+                cardIssuerCategory=safe_string(row[9]),                 # 'Domestic'
+                cardIssuerCountry=safe_string(row[10]),                 # 'TANZANIA, UNITED REPUBLIC OF'
+                cardHolderName=safe_string(row[11]),                    # CA.CARD_NAME_LATIN
+                cardStatus=safe_string(row[12]),                        # CASE WHEN CURRENT_DATE > CA.CARD_EXPIRY_DATE...
+                cardScheme=safe_string(row[13]),                        # 'VISA'
+                acquiringPartner=safe_string(row[14]),                  # 'UBX Tanzania Limited'
+                cardExpireDate=safe_string(row[15])                     # VARCHAR_FORMAT(CA.CARD_EXPIRY_DATE,'DDMMYYYYHHMM')
             )
             
             return record
             
         except Exception as e:
-            self.logger.error(f"Error processing personal data record: {e}")
+            self.logger.error(f"Error processing card record: {e}")
             self.logger.error(f"Row data: {row}")
             self.logger.error(f"Row length: {len(row)}")
             raise
     
     def validate_record(self, record):
-        """Validate personal data record"""
+        """Validate card record"""
         try:
             # Basic validation
-            if not record.customerIdentificationNumber:
-                self.logger.warning("Missing customer identification number")
+            if not record.cardNumber:
+                self.logger.warning("Missing card number")
                 return False
             
-            if not record.fullNames:
-                self.logger.warning("Missing full names")
+            if not record.customerIdentificationNumber:
+                self.logger.warning("Missing customer identification number")
                 return False
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Error validating personal data record: {e}")
+            self.logger.error(f"Error validating card record: {e}")
             return False
     
     def producer_thread(self):
@@ -391,7 +257,7 @@ class PersonalDataStreamingPipeline:
             # Get dynamic record count
             self.total_available = self.get_total_count()
             
-            self.logger.info(f"Total personal data records available: {self.total_available:,} (estimated)")
+            self.logger.info(f"Total card records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
@@ -399,8 +265,8 @@ class PersonalDataStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_personal_data_query()
-            self.logger.info("Executing personal data query (single execution, streaming results)...")
+            query = self.get_cards_query()
+            self.logger.info("Executing cards query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -434,7 +300,7 @@ class PersonalDataStreamingPipeline:
                                 try:
                                     channel.basic_publish(
                                         exchange='',
-                                        routing_key='personal_data_queue',
+                                        routing_key='cards_queue',
                                         body=message,
                                         properties=pika.BasicProperties(delivery_mode=2)
                                     )
@@ -487,7 +353,6 @@ class PersonalDataStreamingPipeline:
         except Exception as e:
             self.logger.error(f"Producer error: {e}")
             self.producer_finished.set()
-
     
     def consumer_thread(self):
         """Consumer thread - processes messages from queue with batch inserts and persistent connection"""
@@ -509,7 +374,7 @@ class PersonalDataStreamingPipeline:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Batch insert buffer
-            insert_buffer: List[PersonalDataRecord] = []
+            insert_buffer: List[CardRecord] = []
             pending_tags: List[int] = []
             last_flush_time = time.time()
             flush_interval = 5  # seconds
@@ -580,7 +445,7 @@ class PersonalDataStreamingPipeline:
                 nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
-                    record = PersonalDataRecord(**record_data)
+                    record = CardRecord(**record_data)
                     
                     insert_buffer.append(record)
                     pending_tags.append(method.delivery_tag)
@@ -621,7 +486,7 @@ class PersonalDataStreamingPipeline:
             
             # Set QoS to match consumer batch size for efficient batching
             channel.basic_qos(prefetch_count=self.consumer_batch_size)
-            channel.basic_consume(queue='personal_data_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='cards_queue', on_message_callback=process_message)
             
             # Keep consuming until producer is done and queue is empty
             while not self.stop_consumer.is_set():
@@ -638,7 +503,7 @@ class PersonalDataStreamingPipeline:
                         flush_buffer(channel)
                         
                         # Producer is done, check if queue is empty
-                        queue_state = channel.queue_declare(queue='personal_data_queue', durable=True, passive=True)
+                        queue_state = channel.queue_declare(queue='cards_queue', durable=True, passive=True)
                         if queue_state.method.message_count == 0:
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
@@ -652,7 +517,7 @@ class PersonalDataStreamingPipeline:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
                     channel.basic_qos(prefetch_count=self.consumer_batch_size)
-                    channel.basic_consume(queue='personal_data_queue', on_message_callback=process_message)
+                    channel.basic_consume(queue='cards_queue', on_message_callback=process_message)
             
             connection.close()
             with self._stats_lock:
@@ -670,55 +535,29 @@ class PersonalDataStreamingPipeline:
                 except Exception:
                     pass
     
-    def insert_batch_to_postgres(self, records: List[PersonalDataRecord], pg_conn):
-        """Batch insert personal data records to PostgreSQL with duplicate prevention"""
+    def insert_batch_to_postgres(self, records: List[CardRecord], pg_conn):
+        """Batch insert card records to PostgreSQL with duplicate prevention"""
         try:
             cursor = pg_conn.cursor()
             
             insert_query = """
-            INSERT INTO "personalDataInformation" (
-                "reportingDate", "customerIdentificationNumber", "firstName", "middleNames",
-                "otherNames", "fullNames", "presentSurname", "birthSurname", "gender",
-                "maritalStatus", "numberSpouse", "nationality", "citizenship", "residency",
-                "profession", "sectorSnaClassification", "fateStatus", "socialStatus",
-                "employmentStatus", "monthlyIncome", "numberDependants", "educationLevel",
-                "averageMonthlyExpenditure", "negativeClientStatus", "spousesFullName",
-                "spouseIdentificationType", "spouseIdentificationNumber", "maidenName",
-                "monthlyExpenses", "birthDate", "birthCountry", "birthPostalCode",
-                "birthHouseNumber", "birthRegion", "birthDistrict", "birthWard", "birthStreet",
-                "identificationType", "identificationNumber", "issuance_date", "expirationDate",
-                "issuancePlace", "issuingAuthority", "businessName", "establishmentDate",
-                "businessRegistrationNumber", "businessRegistrationDate", "businessLicenseNumber",
-                "taxIdentificationNumber", "employerName", "employerRegion", "employerDistrict",
-                "employerWard", "employerStreet", "employerHouseNumber", "employerPostalCode",
-                "businessNature", "mobileNumber", "alternativeMobileNumber", "fixedLineNumber",
-                "faxNumber", "emailAddress", "socialMedia", "mainAddress", "street",
-                "houseNumber", "postalCode", "region", "district", "ward", "country",
-                "sstreet", "shouseNumber", "spostalCode", "sregion", "sdistrict", "sward", "scountry"
+            INSERT INTO "cardInformation" (
+                "reportingDate", "bankCode", "cardNumber", "binNumber",
+                "customerIdentificationNumber", "cardType", "cardTypeSubCategory",
+                "cardIssueDate", "cardIssuer", "cardIssuerCategory", "cardIssuerCountry",
+                "cardHolderName", "cardStatus", "cardScheme", "acquiringPartner",
+                "cardExpireDate"
             ) VALUES %s
-            ON CONFLICT ("customerIdentificationNumber") DO NOTHING
+            ON CONFLICT ("cardNumber") DO NOTHING
             """
             
             values = [
                 (
-                    r.reportingDate, r.customerIdentificationNumber, r.firstName, r.middleNames,
-                    r.otherNames, r.fullNames, r.presentSurname, r.birthSurname, r.gender,
-                    r.maritalStatus, r.numberSpouse, r.nationality, r.citizenship, r.residency,
-                    r.profession, r.sectorSnaClassification, r.fateStatus, r.socialStatus,
-                    r.employmentStatus, r.monthlyIncome, r.numberDependants, r.educationLevel,
-                    r.averageMonthlyExpenditure, r.negativeClientStatus, r.spousesFullName,
-                    r.spouseIdentificationType, r.spouseIdentificationNumber, r.maidenName,
-                    r.monthlyExpenses, r.birthDate, r.birthCountry, r.birthPostalCode,
-                    r.birthHouseNumber, r.birthRegion, r.birthDistrict, r.birthWard, r.birthStreet,
-                    r.identificationType, r.identificationNumber, r.issuance_date, r.expirationDate,
-                    r.issuancePlace, r.issuingAuthority, r.businessName, r.establishmentDate,
-                    r.businessRegistrationNumber, r.businessRegistrationDate, r.businessLicenseNumber,
-                    r.taxIdentificationNumber, r.employerName, r.employerRegion, r.employerDistrict,
-                    r.employerWard, r.employerStreet, r.employerHouseNumber, r.employerPostalCode,
-                    r.businessNature, r.mobileNumber, r.alternativeMobileNumber, r.fixedLineNumber,
-                    r.faxNumber, r.emailAddress, r.socialMedia, r.mainAddress, r.street,
-                    r.houseNumber, r.postalCode, r.region, r.district, r.ward, r.country,
-                    r.sstreet, r.shouseNumber, r.spostalCode, r.sregion, r.sdistrict, r.sward, r.scountry
+                    r.reportingDate, r.bankCode, r.cardNumber, r.binNumber,
+                    r.customerIdentificationNumber, r.cardType, r.cardTypeSubCategory,
+                    r.cardIssueDate, r.cardIssuer, r.cardIssuerCategory, r.cardIssuerCountry,
+                    r.cardHolderName, r.cardStatus, r.cardScheme, r.acquiringPartner,
+                    r.cardExpireDate
                 )
                 for r in records
             ]
@@ -727,27 +566,27 @@ class PersonalDataStreamingPipeline:
             pg_conn.commit()
             
         except Exception as e:
-            self.logger.error(f"Error batch inserting {len(records)} personal data records: {e}")
+            self.logger.error(f"Error batch inserting {len(records)} card records: {e}")
             raise
     
     def ensure_unique_index(self):
-        """Ensure unique index on customerIdentificationNumber exists for ON CONFLICT duplicate prevention"""
+        """Ensure unique index on cardNumber exists for ON CONFLICT duplicate prevention"""
         try:
             with self.get_postgres_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_personaldatainformation_customer_id_unique
-                    ON "personalDataInformation" ("customerIdentificationNumber")
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_cardinformation_cardnumber_unique
+                    ON "cardInformation" ("cardNumber")
                 """)
                 conn.commit()
-                self.logger.info("Unique index on customerIdentificationNumber verified/created")
+                self.logger.info("Unique index on cardNumber verified/created")
         except Exception as e:
-            self.logger.error(f"Failed to create unique index on customerIdentificationNumber: {e}")
+            self.logger.error(f"Failed to create unique index on cardNumber: {e}")
             raise
     
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Personal Data STREAMING pipeline...")
+        self.logger.info("Starting Cards STREAMING pipeline...")
         
         try:
             # Ensure unique index for duplicate prevention
@@ -786,7 +625,7 @@ class PersonalDataStreamingPipeline:
             
             self.logger.info(f"""
             ==========================================
-            Personal Data Pipeline Summary:
+            Cards Pipeline Summary:
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -806,7 +645,7 @@ def main():
     """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Personal Data Streaming Pipeline')
+    parser = argparse.ArgumentParser(description='Cards Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
@@ -815,7 +654,7 @@ def main():
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = PersonalDataStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = CardsStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
     
     try:
         if args.mode == 'producer':
