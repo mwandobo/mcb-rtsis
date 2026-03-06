@@ -1,10 +1,10 @@
-select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                                      AS reportingDate,
-       out.REFERENCE_NUMBER                                                                   AS transactionId,
-       VARCHAR_FORMAT(out.TRX_DATE, 'DDMMYYYYHHMM')                                           AS transactionDate,
-       'EFT'                                                                                  AS transferChannel,
-       NULL                                                                                   AS subCategoryTransferChannel,
-       out.ISSUER_NAME                                                                        AS senderName,
-       out.ORD_CUST_ACCOUNT                                                                   AS senderAccountNumber,
+select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')              AS reportingDate,
+       out.REFERENCE_NUMBER                                           AS transactionId,
+       VARCHAR_FORMAT(out.TRX_DATE, 'DDMMYYYYHHMM')                   AS transactionDate,
+       'EFT'                                                          AS transferChannel,
+       NULL                                                           AS subCategoryTransferChannel,
+       out.ISSUER_NAME                                                AS senderName,
+       out.ORD_CUST_ACCOUNT                                           AS senderAccountNumber,
        CASE
            -- National ID (NIDA) : 20 numeric digits
            WHEN LENGTH(out.ISSUER_ID_NUM) = 20
@@ -21,11 +21,37 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
            WHEN out.ISSUER_ID_NUM LIKE '400%'
                THEN 'DrivingLicence'
            ELSE null
-           END                                                                                AS senderIdentificationType,
-       out.ISSUER_ID_NUM                                                                      AS senderIdentificationNumber,
-       out.BENEF_NAME                                                                         AS recipientName,
-       out.BENEF_PHONE                                                                        AS recipientMobileNumber,
-       CASE UPPER(TRIM(out.BENEF_COUNTRY)) WHEN 'TZ' THEN 'TANZANIA, UNITED REPUBLIC OF' END  AS recipientCountry,
+           END                                                        AS senderIdentificationType,
+       CASE
+           -- Same validation rules
+           WHEN LENGTH(out.ISSUER_ID_NUM) = 20
+               AND out.ISSUER_ID_NUM NOT LIKE '%[^0-9]%'
+               THEN out.ISSUER_ID_NUM
+
+           WHEN out.ISSUER_ID_NUM LIKE 'T%'
+               THEN out.ISSUER_ID_NUM
+
+           WHEN LENGTH(out.ISSUER_ID_NUM) = 11
+               AND out.ISSUER_ID_NUM NOT LIKE '%[^0-9]%'
+               THEN out.ISSUER_ID_NUM
+
+           WHEN out.ISSUER_ID_NUM LIKE '400%'
+               THEN out.ISSUER_ID_NUM
+
+           ELSE NULL
+           END                                                        AS senderIdentificationNumber,
+       out.BENEF_NAME                                                 AS recipientName,
+       out.BENEF_PHONE                                                AS recipientMobileNumber,
+       CASE
+           WHEN out.BENEF_COUNTRY IS NULL
+               OR TRIM(out.BENEF_COUNTRY) = ''
+               THEN 'TANZANIA, UNITED REPUBLIC OF'
+           WHEN UPPER(TRIM(out.BENEF_COUNTRY)) = 'KE'
+               THEN 'KENYA'
+           WHEN UPPER(TRIM(out.BENEF_COUNTRY)) IN ('TZ', 'TANZANIA')
+               THEN 'TANZANIA, UNITED REPUBLIC OF'
+           ELSE out.BENEF_COUNTRY
+           END                                                        AS recipientCountry,
        CASE UPPER(TRIM(out.ACC_WITH_BANK_SWIF))
            WHEN 'KCBLTZTZXXX' THEN 'KCBLTZTZ'
            WHEN 'ECOCTZTZXXX' THEN 'ECOCTZTZ'
@@ -58,27 +84,39 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                        
            WHEN 'FIRNTZTXXXX' THEN 'EXTNTZTZF'
            WHEN 'NLCBTZTXZAN' THEN 'NLCBTZTX'
            ELSE out.ACC_WITH_BANK_SWIF
-           END                                                                                AS recipientBankOrFspCode,
-       out.BENEF_ACCOUNT                                                                      AS recipientAccountOrWalletNumber,
-       'Mobile banking'                                                                       AS serviceChannel,
-       'Mobile banking'                                                                       AS serviceCategory,
-       'Inter banking'                                                                        AS serviceSubCategory,
-       out.ORDER_PAYABLE_CUR                                                                  AS currency,
-       out.ORDER_AMOUNT                                                                       AS orgAmount,
+           END                                                        AS recipientBankOrFspCode,
+       out.BENEF_ACCOUNT                                              AS recipientAccountOrWalletNumber,
+       'Mobile banking'                                               AS serviceChannel,
+       'Mobile banking'                                               AS serviceCategory,
+       'Inter banking'                                                AS serviceSubCategory,
+       out.ORDER_PAYABLE_CUR                                          AS currency,
+       out.ORDER_AMOUNT                                               AS orgAmount,
        CASE
            WHEN out.ORDER_PAYABLE_CUR = 'USD' THEN out.ORDER_AMOUNT
            WHEN out.ORDER_PAYABLE_CUR = 'TZS' THEN 0
            WHEN out.ORDER_PAYABLE_CUR <> 'USD' THEN DECIMAL(out.ORDER_AMOUNT / fx.RATE, 18, 2)
            ELSE NULL
-           END                                                                                AS usdAmount,
+           END                                                        AS usdAmount,
        CASE
            WHEN out.ORDER_PAYABLE_CUR = 'USD'
                THEN DECIMAL(out.ORDER_AMOUNT * fx.rate, 18, 2)
            ELSE DECIMAL(out.ORDER_AMOUNT, 18, 2)
-           END                                                                                AS tzsAmount,
-       'Salaries and wages'                                                                   AS purposes,
-       COALESCE(out.SPECIAL_TERMS, 'MAINTENANCE EXPENSES FOR FAMILY')                         AS senderInstruction,
-       CASE UPPER(TRIM(out.ISSUER_COUNTRY)) WHEN 'TZ' THEN 'TANZANIA, UNITED REPUBLIC OF' END AS transactionPlace
+           END                                                        AS tzsAmount,
+       'Salaries and wages'                                           AS purposes,
+       COALESCE(out.SPECIAL_TERMS, 'MAINTENANCE EXPENSES FOR FAMILY') AS senderInstruction,
+    CASE
+           WHEN out.ISSUER_COUNTRY IS NULL
+               OR TRIM(out.ISSUER_COUNTRY) = ''
+               OR TRIM(out.ISSUER_COUNTRY) = '0'
+               THEN 'TANZANIA, UNITED REPUBLIC OF'
+           WHEN UPPER(TRIM(out.ISSUER_COUNTRY)) = 'KE'
+               THEN 'KENYA'
+           WHEN UPPER(TRIM(out.ISSUER_COUNTRY)) = 'BE'
+               THEN 'BELGIUM'
+           WHEN UPPER(TRIM(out.ISSUER_COUNTRY)) IN ('TZ', 'TANZANIA')
+               THEN 'TANZANIA, UNITED REPUBLIC OF'
+           ELSE out.ISSUER_COUNTRY
+           END                                                        AS transactionPlace
 from OUTGOING_ORDERS out
          LEFT JOIN (SELECT fr.fk_currencyid_curr,
                            fr.rate
