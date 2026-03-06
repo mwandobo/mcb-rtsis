@@ -425,6 +425,7 @@ class PersonalDataCorporatesStreamingPipeline:
             insert_buffer: List[PersonalDataCorporateRecord] = []
             pending_tags: List[int] = []
             last_flush_time = time.time()
+            last_message_time = time.time()  # Track when we last received a message
             flush_interval = 5
             
             def flush_buffer(ch):
@@ -458,8 +459,9 @@ class PersonalDataCorporatesStreamingPipeline:
                     last_flush_time = time.time()
             
             def process_message(ch, method, properties, body):
-                nonlocal insert_buffer, pending_tags, last_flush_time
+                nonlocal insert_buffer, pending_tags, last_flush_time, last_message_time
                 try:
+                    last_message_time = time.time()  # Update last message time
                     record_data = json.loads(body)
                     record = PersonalDataCorporateRecord(**record_data)
                     insert_buffer.append(record)
@@ -474,18 +476,33 @@ class PersonalDataCorporatesStreamingPipeline:
             channel.basic_qos(prefetch_count=self.consumer_batch_size)
             channel.basic_consume(queue='personal_data_corporates_queue', on_message_callback=process_message)
             
+            idle_timeout = 10  # seconds - if no messages for this long after producer finishes, we're done
+            
             while not self.stop_consumer.is_set():
                 try:
                     connection.process_data_events(time_limit=1)
+                    
+                    # Flush any remaining buffered records on timeout
                     if insert_buffer and time.time() - last_flush_time >= flush_interval:
                         flush_buffer(channel)
                     
+                    # Check if we should stop
                     if self.producer_finished.is_set():
-                        flush_buffer(channel)
-                        queue_state = channel.queue_declare(queue='personal_data_corporates_queue', durable=True, passive=True)
-                        if queue_state.method.message_count == 0:
-                            self.logger.info("Consumer: Queue empty")
-                            break
+                        # Check if we've been idle (no new messages) for the timeout period
+                        idle_time = time.time() - last_message_time
+                        if idle_time >= idle_timeout:
+                            # Flush any remaining buffer
+                            flush_buffer(channel)
+                            
+                            # Double-check queue is empty
+                            queue_state = channel.queue_declare(queue='personal_data_corporates_queue', durable=True, passive=True)
+                            if queue_state.method.message_count == 0:
+                                self.logger.info(f"Consumer: No messages received for {idle_timeout}s and queue empty. Finishing.")
+                                break
+                            else:
+                                self.logger.info(f"Consumer: Queue has {queue_state.method.message_count} messages, continuing...")
+                                last_message_time = time.time()  # Reset idle timer
+                        
                 except Exception as e:
                     self.logger.error(f"Consumer processing error: {e}")
             
