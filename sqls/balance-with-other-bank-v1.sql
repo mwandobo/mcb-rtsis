@@ -76,4 +76,5 @@ FROM GLI_TRX_EXTRACT as gte
 
 
 where gl.EXTERNAL_GLACCOUNT IN ('100050001', '100013000', '100050000')
-  AND pa.ACCOUNT_NUMBER <> '';
+  AND pa.ACCOUNT_NUMBER <> ''
+  AND gte.TMSTAMP > :last_timestamp;

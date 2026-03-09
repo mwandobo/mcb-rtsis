@@ -69,4 +69,5 @@ FROM GLI_TRX_EXTRACT AS gte
                            GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
 WHERE gte.FK_GLG_ACCOUNTACCO IN
-      ('1.0.1.00.0001', '1.0.1.00.0002', '1.0.1.00.0004', '1.0.1.00.0007', '1.0.1.00.0010', '1.0.1.00.0015');
+      ('1.0.1.00.0001', '1.0.1.00.0002', '1.0.1.00.0004', '1.0.1.00.0007', '1.0.1.00.0010', '1.0.1.00.0015')
+  AND gte.TMSTAMP > :last_timestamp

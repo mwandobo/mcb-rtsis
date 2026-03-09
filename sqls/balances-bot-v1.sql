@@ -54,4 +54,5 @@ FROM GLI_TRX_EXTRACT AS gte
                            GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
 
-WHERE gl.EXTERNAL_GLACCOUNT = '100028000';
+WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
+  AND gte.TMSTAMP > :last_timestamp

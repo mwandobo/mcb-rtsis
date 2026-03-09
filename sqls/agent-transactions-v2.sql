@@ -60,6 +60,7 @@ WITH agent_txn AS (
                   ON be.STAFF_NO = gte.TRX_USR
                       AND be.rn = 1
     WHERE gte.FK_GLG_ACCOUNTACCO IN ('2.3.0.00.0079', '1.4.4.00.0054')
+      AND gte.TMSTAMP > :last_timestamp
 ),
 agent_txn_numbered AS (
     SELECT agent_txn.*,

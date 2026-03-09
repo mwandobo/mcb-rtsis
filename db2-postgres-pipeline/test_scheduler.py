@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test Scheduler - Runs a single pipeline every 5 minutes to verify the system works
+Test Scheduler - Runs a single pipeline every 1 minutes to verify the system works
 """
 
 import sys
@@ -37,9 +37,9 @@ class TestScheduler:
         
         # Test pipeline configuration
         self.test_pipeline = {
-            'name': 'personal_data_corporates',
-            'module': 'personal_data_corporates',
-            'class': 'PersonalDataCorporatesStreamingPipeline'
+            'name': 'agent_transactions',
+            'module': 'agent_transactions',
+            'class': 'AgentTransactionsStreamingPipeline'
         }
         
         logging.getLogger('apscheduler').setLevel(logging.WARNING)

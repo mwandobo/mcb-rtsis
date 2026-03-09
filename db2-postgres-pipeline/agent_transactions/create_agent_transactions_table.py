@@ -75,7 +75,13 @@ def create_agent_transactions_table():
         
         for index_sql in indexes:
             cursor.execute(index_sql)
-            logger.info(f"Created index: {index_sql.split('ON')[0].split('CREATE INDEX')[1].strip()}")
+            # Handle both CREATE INDEX and CREATE UNIQUE INDEX
+            index_name = index_sql.split('ON')[0]
+            if 'CREATE UNIQUE INDEX' in index_name:
+                index_name = index_name.split('CREATE UNIQUE INDEX')[1].strip()
+            else:
+                index_name = index_name.split('CREATE INDEX')[1].strip()
+            logger.info(f"Created index: {index_name}")
         
         # Commit changes
         conn.commit()

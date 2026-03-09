@@ -616,6 +616,9 @@ class POSTransactionsStreamingPipeline:
         self.logger.info("Starting POS Transactions STREAMING pipeline...")
 
         try:
+            # Update state to running
+            self._update_state('running')
+
             # Ensure unique index for duplicate prevention
             self.ensure_unique_index()
 
@@ -663,9 +666,29 @@ class POSTransactionsStreamingPipeline:
             ==========================================
             """)
 
+            # Update pipeline state
+            self._update_state('completed')
+
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'pos_transactions',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
+
 
 def main():
     """Main function"""

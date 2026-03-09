@@ -84,15 +84,35 @@ class AgentsStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_agents_query(self):
-        """Get the agents query from agents-from-agents-list-NEW-V5.table.sql"""
+    def get_agents_query(self, last_timestamp=None):
+        """Get the agents query from agents-from-agents-list-NEW-V5.table.sql with optional TMSTAMP filter"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             'sqls', 'agents-from-agents-list-NEW-V5.table.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            sql = f.read()
+        
+        # For incremental mode, add TMSTAMP filter on BANKEMPLOYEE table
+        if last_timestamp:
+            if last_timestamp == 'epoch':
+                timestamp_value = '1900-01-01-00.00.00.000000'
+            else:
+                timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+            sql = sql + f"\n AND be.TMSTAMP > '{timestamp_value}'"
+        
+        return sql
+    
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('agents')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
     
     def get_total_count(self):
         """Get approximate total count of agent records from DB2"""
@@ -273,10 +293,21 @@ class AgentsStreamingPipeline:
             return False
 
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
+            
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: fetching records with TMSTAMP > {last_timestamp}")
+                else:
+                    last_timestamp = 'epoch'
+                    self.logger.info("Incremental mode: first run, fetching all records (epoch)")
+            else:
+                self.logger.info("Full load mode: fetching all records")
             
             self.total_available = self.get_total_count()
             
@@ -286,7 +317,7 @@ class AgentsStreamingPipeline:
             
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
-            query = self.get_agents_query()
+            query = self.get_agents_query(last_timestamp)
             self.logger.info("Executing agents query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
@@ -585,11 +616,14 @@ class AgentsStreamingPipeline:
             self.logger.error(f"Failed to create unique index on agentId: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Agents STREAMING pipeline...")
+        self.logger.info(f"Starting Agents STREAMING pipeline... (incremental={incremental})")
         
         try:
+            # Update state to running
+            self._update_state('running')
+
             self.ensure_unique_index()
             
             self.setup_rabbitmq_queue()
@@ -599,7 +633,7 @@ class AgentsStreamingPipeline:
             
             time.sleep(1)
             
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, name="Producer", args=(incremental,))
             producer_thread.start()
             
             producer_thread.join()
@@ -620,6 +654,7 @@ class AgentsStreamingPipeline:
             ==========================================
             Agents Pipeline Summary:
             ==========================================
+            Mode: {'Incremental' if incremental else 'Full Load'}
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
             Records consumed: {self.total_consumed:,}
@@ -629,9 +664,28 @@ class AgentsStreamingPipeline:
             ==========================================
             """)
             
+            # Update pipeline state
+            self._update_state('completed')
+            
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'agents',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 def main():
@@ -643,6 +697,7 @@ def main():
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     
     args = parser.parse_args()
     
@@ -650,11 +705,11 @@ def main():
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")

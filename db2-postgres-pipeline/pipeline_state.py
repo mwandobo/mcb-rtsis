@@ -29,6 +29,11 @@ class PipelineStateManager:
         'personal_data',
         'personal_data_corporates',
         'deposits',
+        'cash',
+        'balance_with_bot',
+        'balance_with_mnos',
+        'balance_with_other_banks',
+        'agent_transactions',
         # Add other pipelines as they are created
     ]
     

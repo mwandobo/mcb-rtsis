@@ -53,4 +53,5 @@ FROM GLI_TRX_EXTRACT gte
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
 
          LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
-WHERE gte.FK_GLG_ACCOUNTACCO IN ('1.4.4.00.0058', '1.4.4.00.0062');
+WHERE gte.FK_GLG_ACCOUNTACCO IN ('1.4.4.00.0058', '1.4.4.00.0062')
+  AND gte.TMSTAMP > :last_timestamp

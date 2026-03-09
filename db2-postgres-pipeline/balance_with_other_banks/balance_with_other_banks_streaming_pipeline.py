@@ -80,7 +80,7 @@ class BalanceWithOtherBanksStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_balance_with_other_banks_query(self):
+    def get_balance_with_other_banks_query(self, last_timestamp=None):
         """Get the balance with other banks query from balance-with-other-bank-v1.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -88,14 +88,37 @@ class BalanceWithOtherBanksStreamingPipeline:
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            sql = f.read()
+        
+        if last_timestamp:
+            if last_timestamp == 'epoch':
+                timestamp_value = '1900-01-01-00.00.00.000000'
+            else:
+                timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+            sql = sql.replace(':last_timestamp', f"'{timestamp_value}'")
+        else:
+            sql = sql.replace('AND gte.TMSTAMP > :last_timestamp', '')
+        
+        return sql
     
-    def get_total_count(self):
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('balance_with_other_banks')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
+    
+    def get_total_count(self, last_timestamp=None):
         """Get approximate total count of balance with other bank records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                
+                base_where = "WHERE gl.EXTERNAL_GLACCOUNT IN ('100050001', '100013000', '100050000') AND pa.ACCOUNT_NUMBER <> ''"
+                count_query = f"""
                     SELECT COUNT(*) 
                     FROM GLI_TRX_EXTRACT gte
                     LEFT JOIN GLG_ACCOUNT gl ON gte.FK_GLG_ACCOUNTACCO = gl.ACCOUNT_ID
@@ -113,12 +136,20 @@ class BalanceWithOtherBanksStreamingPipeline:
                                                         WHERE b.activation_date <= CURRENT_DATE)
                                GROUP BY fk_currencyid_curr, activation_date)
                     ) fx ON fx.fk_currencyid_curr = curr.ID_CURRENCY
-                    WHERE gl.EXTERNAL_GLACCOUNT IN ('100050001', '100013000', '100050000')
-                      AND pa.ACCOUNT_NUMBER <> ''
-                """)
+                    {base_where}
+                """
+                
+                if last_timestamp and last_timestamp != 'epoch':
+                    if last_timestamp == 'epoch':
+                        timestamp_value = '1900-01-01-00.00.00.000000'
+                    else:
+                        timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+                    count_query += f" AND gte.TMSTAMP > '{timestamp_value}'"
+                
+                cursor.execute(count_query)
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count: {count:,}")
+                self.logger.info(f"Record count: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -282,20 +313,31 @@ class BalanceWithOtherBanksStreamingPipeline:
             return False
 
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
             
-            self.total_available = self.get_total_count()
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: fetching records with TMSTAMP > {last_timestamp}")
+                else:
+                    last_timestamp = 'epoch'
+                    self.logger.info("Incremental mode: first run, fetching all records (epoch)")
+            else:
+                self.logger.info("Full load mode: fetching all records")
             
-            self.logger.info(f"Total balance with other bank records available: {self.total_available:,} (estimated)")
+            self.total_available = self.get_total_count(last_timestamp)
+            
+            self.logger.info(f"Total balance with other bank records available: {self.total_available:,}")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
-            query = self.get_balance_with_other_banks_query()
+            query = self.get_balance_with_other_banks_query(last_timestamp)
             self.logger.info("Executing balance with other banks query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
@@ -578,9 +620,12 @@ class BalanceWithOtherBanksStreamingPipeline:
             self.logger.error(f"Error batch inserting {len(records)} balance with other bank records: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Balance with Other Banks STREAMING pipeline...")
+        self.logger.info(f"Starting Balance with Other Banks STREAMING pipeline... (incremental={incremental})")
+        
+        # Update state to running
+        self._update_state('running')
         
         try:
             self.setup_rabbitmq_queue()
@@ -590,7 +635,7 @@ class BalanceWithOtherBanksStreamingPipeline:
             
             time.sleep(1)
             
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, name="Producer", args=(incremental,))
             producer_thread.start()
             
             producer_thread.join()
@@ -611,6 +656,7 @@ class BalanceWithOtherBanksStreamingPipeline:
             ==========================================
             Balance with Other Banks Pipeline Summary:
             ==========================================
+            Mode: {'Incremental' if incremental else 'Full Load'}
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
             Records consumed: {self.total_consumed:,}
@@ -620,9 +666,28 @@ class BalanceWithOtherBanksStreamingPipeline:
             ==========================================
             """)
             
+            # Update pipeline state
+            self._update_state('completed')
+            
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'balance_with_other_banks',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 def main():
@@ -634,6 +699,8 @@ def main():
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true',
+                       help='Run full load instead of incremental (ignores last run timestamp)')
     
     args = parser.parse_args()
     
@@ -641,11 +708,11 @@ def main():
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")
