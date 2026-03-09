@@ -45,6 +45,7 @@ export class DatabasesService {
         'personal_data': 'Personal Data',
         'card_product': 'Card Product',
         'account_product_category': 'Account Product Category',
+        'account_information': 'Account Information',
       };
 
       const tables: any[] = [];
@@ -266,7 +267,7 @@ export class DatabasesService {
         'balance_with_bot': 'balances-bot-v1.sql',
         'balance_with_mnos': 'balances-with-mnos.sql',
         'balance_with_other_banks': 'balance-with-other-bank-v1.sql',
-        'loans': 'loan-information-v6.sql',
+        'loans': 'loan-information-v7.sql',
         'agent_transactions': 'agent-transactions-v2.sql',
         'mobile_banking': 'mobile-banking-v1.sql',
         'outgoing_fund_transfer': 'outgoing-fund-transfer-v1.sql',
@@ -275,6 +276,7 @@ export class DatabasesService {
         'personal_data': 'personal_data_information-v4.sql',
         'card_product': 'card-product.sql',
         'account_product_category': 'account-product-category.sql',
+        'account_information': 'account-information.sql',
       };
 
       const sqlFile = sqlFileMap[pipelineName];

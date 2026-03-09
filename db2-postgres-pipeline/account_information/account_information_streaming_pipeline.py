@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Loans Streaming Pipeline - Producer and Consumer run simultaneously
-Based on loan-information-v6.sql query
+Account Information Streaming Pipeline - Producer and Consumer run simultaneously
+Based on account-information.sql query
 """
 
 import pika
@@ -29,103 +29,22 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 @dataclass
-class LoanRecord:
-    """Data class for loan records based on loan-information-v7.sql"""
+class AccountInformationRecord:
+    """Data class for account information records based on account-information.sql"""
     reportingDate: str
-    customerIdentificationNumber: str
-    accountNumber: Optional[str]
-    clientName: str
-    borrowerCountry: str
-    ratingStatus: str
-    crRatingBorrower: Optional[str]
-    gradesUnratedBanks: str
-    borrowerCategory: str
-    gender: str
-    disability: str
-    clientType: str
-    clientSubType: Optional[str]
-    groupName: Optional[str]
-    groupCode: Optional[str]
-    relatedParty: str
-    relationshipCategory: str
-    loanNumber: str
-    loanType: str
-    loanEconomicActivity: str
-    loanPhase: str
-    transferStatus: str
-    purposeMortgage: Optional[str]
-    purposeOtherLoans: Optional[str]
-    sourceFundMortgage: str
-    amortizationType: str
-    branchCode: str
-    loanOfficer: str
-    loanSupervisor: str
-    groupVillageNumber: Optional[str]
-    cycleNumber: Optional[int]
-    loanInstallment: Optional[int]
-    repaymentFrequency: str
-    currency: str
-    contractDate: str
-    orgSanctionedAmount: Optional[str]
-    usdSanctionedAmount: Optional[str]
-    tzsSanctionedAmount: Optional[str]
-    orgDisbursedAmount: Optional[str]
-    usdDisbursedAmount: Optional[str]
-    tzsDisbursedAmount: Optional[str]
-    disbursementDate: Optional[str]
-    maturityDate: Optional[str]
-    realEndDate: Optional[str]
-    orgOutstandingPrincipalAmount: Optional[str]
-    usdOutstandingPrincipalAmount: Optional[str]
-    tzsOutstandingPrincipalAmount: Optional[str]
-    orgInstallmentAmount: Optional[str]
-    usdInstallmentAmount: Optional[str]
-    tzsInstallmentAmount: Optional[str]
-    loanInstallmentPaid: Optional[int]
-    gracePeriodPaymentPrincipal: Optional[str]
-    primeLendingRate: Optional[str]
-    interestPricingMethod: Optional[str]
-    annualInterestRate: Optional[str]
-    effectiveAnnualInterestRate: Optional[str]
-    firstInstallmentPaymentDate: Optional[str]
-    lastPaymentDate: Optional[str]
-    collateralPledged: Optional[str]
-    loanFlagType: Optional[str]
-    restructuringDate: Optional[str]
-    pastDueDays: Optional[int]
-    pastDueAmount: Optional[str]
-    internalRiskGroup: Optional[str]
-    orgAccruedInterestAmount: Optional[str]
-    usdAccruedInterestAmount: Optional[str]
-    tzsAccruedInterestAmount: Optional[str]
-    orgPenaltyChargedAmount: Optional[str]
-    usdPenaltyChargedAmount: Optional[str]
-    tzsPenaltyChargedAmount: Optional[str]
-    orgPenaltyPaidAmount: Optional[str]
-    usdPenaltyPaidAmount: Optional[str]
-    tzsPenaltyPaidAmount: Optional[str]
-    orgLoanFeesChargedAmount: Optional[str]
-    usdLoanFeesChargedAmount: Optional[str]
-    tzsLoanFeesChargedAmount: Optional[str]
-    orgLoanFeesPaidAmount: Optional[str]
-    usdLoanFeesPaidAmount: Optional[str]
-    tzsLoanFeesPaidAmount: Optional[str]
-    orgTotMonthlyPaymentAmount: Optional[str]
-    usdTotMonthlyPaymentAmount: Optional[str]
-    tzsTotMonthlyPaymentAmount: Optional[str]
-    sectorSnaClassification: Optional[str]
-    assetClassificationCategory: Optional[str]
-    negStatusContract: Optional[str]
-    customerRole: Optional[str]
-    allowanceProbableLoss: Optional[str]
-    botProvision: Optional[str]
-    tradingIntent: str
-    orgSuspendedInterest: Optional[str]
-    usdSuspendedInterest: Optional[str]
-    tzsSuspendedInterest: Optional[str]
+    customerIdentificationNumber: Optional[str]
+    accountNumber: str
+    accountProductCode: Optional[str]
+    accountOperationStatus: Optional[str]
+    customerType: Optional[str]
+    smrCode: Optional[str]
+    status: Optional[str]
+    orgAccountBalance: Optional[float]
+    usdAccountBalance: Optional[float]
+    tzsAccountBalance: Optional[float]
 
 
-class LoansStreamingPipeline:
+class AccountInformationStreamingPipeline:
     def __init__(self, batch_size=1000, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
@@ -150,31 +69,38 @@ class LoansStreamingPipeline:
         
         self.logger = logging.getLogger(__name__)
         
-        self.logger.info("Loans STREAMING Pipeline initialized")
+        self.logger.info("Account Information STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
         self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_loans_query(self):
-        """Get the loans query from loan-information-v7.sql"""
+    def get_account_information_query(self):
+        """Get the account information query from account-information.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'loan-information-v7.sql'
+            'sqls', 'account-information.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
             return f.read()
     
     def get_total_count(self):
-        """Get approximate total count of loan records from DB2"""
+        """Get approximate total count of account information records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM LOAN_ACCOUNT")
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM PROFITS_ACCOUNT pa
+                    WHERE TRIM(pa.ACCOUNT_NUMBER) <> 'DUMMY TRS-LG'
+                      AND TRIM(pa.ACCOUNT_NUMBER) <> ''
+                      AND pa.PRFT_SYSTEM <> 19
+                      AND pa.PRODUCT_ID NOT IN (38220, 38801)
+                """)
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from LOAN_ACCOUNT: {count:,}")
+                self.logger.info(f"Estimated record count: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -212,8 +138,8 @@ class LoansStreamingPipeline:
                     host=self.config.message_queue.rabbitmq_host,
                     port=self.config.message_queue.rabbitmq_port,
                     credentials=credentials,
-                    heartbeat=600,  # 10 minutes heartbeat
-                    blocked_connection_timeout=300,  # 5 minutes timeout
+                    heartbeat=600,
+                    blocked_connection_timeout=300,
                 )
                 connection = pika.BlockingConnection(parameters)
                 channel = connection.channel()
@@ -229,39 +155,35 @@ class LoansStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for loans with dead-letter exchange"""
+        """Setup RabbitMQ queue for account information with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Declare dead-letter exchange and queue for failed messages
-            channel.exchange_declare(exchange='loans_dlx', exchange_type='direct', durable=True)
-            channel.queue_declare(queue='loans_dead_letter', durable=True)
+            channel.exchange_declare(exchange='account_information_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='account_information_dead_letter', durable=True)
             channel.queue_bind(
-                queue='loans_dead_letter',
-                exchange='loans_dlx',
-                routing_key='loans_queue'
+                queue='account_information_dead_letter',
+                exchange='account_information_dlx',
+                routing_key='account_information_queue'
             )
             
             # Declare main queue with dead-letter exchange routing
             try:
                 channel.queue_declare(
-                    queue='loans_queue',
+                    queue='account_information_queue',
                     durable=True,
                     arguments={
-                        'x-dead-letter-exchange': 'loans_dlx',
-                        'x-dead-letter-routing-key': 'loans_queue'
+                        'x-dead-letter-exchange': 'account_information_dlx',
+                        'x-dead-letter-routing-key': 'account_information_queue'
                     }
                 )
                 self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
             except Exception:
-                # Queue may already exist with different arguments
-                self.logger.warning(
-                    "Queue 'loans_queue' already exists with different args. "
-                    "Delete and recreate it to enable dead-letter support."
-                )
+                self.logger.warning("Queue 'account_information_queue' already exists with different args.")
                 connection, channel = self.setup_rabbitmq_connection()
-                channel.queue_declare(queue='loans_queue', durable=True)
-                self.logger.info("RabbitMQ queue 'loans_queue' setup complete (without DLX)")
+                channel.queue_declare(queue='account_information_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'account_information_queue' setup complete (without DLX)")
             
             connection.close()
             
@@ -270,146 +192,58 @@ class LoansStreamingPipeline:
             raise
     
     def process_record(self, row):
-        """Process a single loan record from DB2"""
+        """Process a single account information record from DB2"""
         try:
-            # Helper function to safely convert values
             def safe_string(value):
                 """Safely convert to string"""
                 if value is None:
                     return None
                 return str(value).strip()
             
-            def safe_int(value):
-                """Safely convert to int"""
+            def safe_decimal(value):
+                """Safely convert to decimal"""
                 if value is None:
                     return None
                 try:
-                    return int(value)
+                    return float(value)
                 except (ValueError, TypeError):
                     return None
             
-            # Map all 92 fields from the SQL query to the dataclass
-            record = LoanRecord(
-                reportingDate=safe_string(row[0]),
-                customerIdentificationNumber=safe_string(row[1]),
-                accountNumber=safe_string(row[2]) if row[2] else None,
-                clientName=safe_string(row[3]),
-                borrowerCountry=safe_string(row[4]),
-                ratingStatus=safe_string(row[5]),
-                crRatingBorrower=safe_string(row[6]) if row[6] else None,
-                gradesUnratedBanks=safe_string(row[7]),
-                borrowerCategory=safe_string(row[8]),
-                gender=safe_string(row[9]),
-                disability=safe_string(row[10]),
-                clientType=safe_string(row[11]),
-                clientSubType=safe_string(row[12]) if row[12] else None,
-                groupName=safe_string(row[13]) if row[13] else None,
-                groupCode=safe_string(row[14]) if row[14] else None,
-                relatedParty=safe_string(row[15]),
-                relationshipCategory=safe_string(row[16]),
-                loanNumber=safe_string(row[17]),
-                loanType=safe_string(row[18]),
-                loanEconomicActivity=safe_string(row[19]),
-                loanPhase=safe_string(row[20]),
-                transferStatus=safe_string(row[21]),
-                purposeMortgage=safe_string(row[22]) if row[22] else None,
-                purposeOtherLoans=safe_string(row[23]) if row[23] else None,
-                sourceFundMortgage=safe_string(row[24]),
-                amortizationType=safe_string(row[25]),
-                branchCode=safe_string(row[26]),
-                loanOfficer=safe_string(row[27]),
-                loanSupervisor=safe_string(row[28]),
-                groupVillageNumber=safe_string(row[29]) if row[29] else None,
-                cycleNumber=safe_int(row[30]),
-                loanInstallment=safe_int(row[31]),
-                repaymentFrequency=safe_string(row[32]),
-                currency=safe_string(row[33]),
-                contractDate=safe_string(row[34]),
-                orgSanctionedAmount=safe_string(row[35]) if row[35] else None,
-                usdSanctionedAmount=safe_string(row[36]) if row[36] else None,
-                tzsSanctionedAmount=safe_string(row[37]) if row[37] else None,
-                orgDisbursedAmount=safe_string(row[38]) if row[38] else None,
-                usdDisbursedAmount=safe_string(row[39]) if row[39] else None,
-                tzsDisbursedAmount=safe_string(row[40]) if row[40] else None,
-                disbursementDate=safe_string(row[41]) if row[41] else None,
-                maturityDate=safe_string(row[42]) if row[42] else None,
-                realEndDate=safe_string(row[43]) if row[43] else None,
-                orgOutstandingPrincipalAmount=safe_string(row[44]) if row[44] else None,
-                usdOutstandingPrincipalAmount=safe_string(row[45]) if row[45] else None,
-                tzsOutstandingPrincipalAmount=safe_string(row[46]) if row[46] else None,
-                orgInstallmentAmount=safe_string(row[47]) if row[47] else None,
-                usdInstallmentAmount=safe_string(row[48]) if row[48] else None,
-                tzsInstallmentAmount=safe_string(row[49]) if row[49] else None,
-                loanInstallmentPaid=safe_int(row[50]),
-                gracePeriodPaymentPrincipal=safe_string(row[51]) if row[51] else None,
-                primeLendingRate=safe_string(row[52]) if row[52] else None,
-                interestPricingMethod=safe_string(row[53]) if row[53] else None,
-                annualInterestRate=safe_string(row[54]) if row[54] else None,
-                effectiveAnnualInterestRate=safe_string(row[55]) if row[55] else None,
-                firstInstallmentPaymentDate=safe_string(row[56]) if row[56] else None,
-                lastPaymentDate=safe_string(row[57]) if row[57] else None,
-                collateralPledged=safe_string(row[58]) if row[58] else None,
-                loanFlagType=safe_string(row[59]) if row[59] else None,
-                restructuringDate=safe_string(row[60]) if row[60] else None,
-                pastDueDays=safe_int(row[61]),
-                pastDueAmount=safe_string(row[62]) if row[62] else None,
-                internalRiskGroup=safe_string(row[63]) if row[63] else None,
-                orgAccruedInterestAmount=safe_string(row[64]) if row[64] else None,
-                usdAccruedInterestAmount=safe_string(row[65]) if row[65] else None,
-                tzsAccruedInterestAmount=safe_string(row[66]) if row[66] else None,
-                orgPenaltyChargedAmount=safe_string(row[67]) if row[67] else None,
-                usdPenaltyChargedAmount=safe_string(row[68]) if row[68] else None,
-                tzsPenaltyChargedAmount=safe_string(row[69]) if row[69] else None,
-                orgPenaltyPaidAmount=safe_string(row[70]) if row[70] else None,
-                usdPenaltyPaidAmount=safe_string(row[71]) if row[71] else None,
-                tzsPenaltyPaidAmount=safe_string(row[72]) if row[72] else None,
-                orgLoanFeesChargedAmount=safe_string(row[73]) if row[73] else None,
-                usdLoanFeesChargedAmount=safe_string(row[74]) if row[74] else None,
-                tzsLoanFeesChargedAmount=safe_string(row[75]) if row[75] else None,
-                orgLoanFeesPaidAmount=safe_string(row[76]) if row[76] else None,
-                usdLoanFeesPaidAmount=safe_string(row[77]) if row[77] else None,
-                tzsLoanFeesPaidAmount=safe_string(row[78]) if row[78] else None,
-                orgTotMonthlyPaymentAmount=safe_string(row[79]) if row[79] else None,
-                usdTotMonthlyPaymentAmount=safe_string(row[80]) if row[80] else None,
-                tzsTotMonthlyPaymentAmount=safe_string(row[81]) if row[81] else None,
-                sectorSnaClassification=safe_string(row[82]) if row[82] else None,
-                assetClassificationCategory=safe_string(row[83]) if row[83] else None,
-                negStatusContract=safe_string(row[84]) if row[84] else None,
-                customerRole=safe_string(row[85]) if row[85] else None,
-                allowanceProbableLoss=safe_string(row[86]) if row[86] else None,
-                botProvision=safe_string(row[87]) if row[87] else None,
-                tradingIntent=safe_string(row[88]),
-                orgSuspendedInterest=safe_string(row[89]) if row[89] else None,
-                usdSuspendedInterest=safe_string(row[90]) if row[90] else None,
-                tzsSuspendedInterest=safe_string(row[91]) if row[91] else None
+            # Map the fields from the SQL query to the dataclass
+            record = AccountInformationRecord(
+                reportingDate=safe_string(row[0]),                      # VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')
+                customerIdentificationNumber=safe_string(row[1]),       # CAST(pa.CUST_ID AS VARCHAR(20))
+                accountNumber=safe_string(row[2]),                      # TRIM(pa.ACCOUNT_NUMBER)
+                accountProductCode=safe_string(row[3]),                 # CASE pa.PRODUCT_ID
+                accountOperationStatus=safe_string(row[4]),             # CASE pa.ACC_STATUS
+                customerType=safe_string(row[5]),                       # CASE wdc.CUST_TYPE_IND
+                smrCode=safe_string(row[6]),                            # CASE WHEN wdc.NON_RESIDENT
+                status=safe_string(row[7]),                             # 'N'
+                orgAccountBalance=safe_decimal(row[8]),                 # COALESCE(sab.BOOK_BALANCE, ...)
+                usdAccountBalance=safe_decimal(row[9]),                 # USD conversion
+                tzsAccountBalance=safe_decimal(row[10]),                # TZS conversion
             )
             
             return record
             
         except Exception as e:
-            self.logger.error(f"Error processing loan record: {e}")
+            self.logger.error(f"Error processing account information record: {e}")
             self.logger.error(f"Row data: {row}")
             self.logger.error(f"Row length: {len(row)}")
             raise
     
     def validate_record(self, record):
-        """Validate loan record"""
+        """Validate account information record"""
         try:
-            # Basic validation
-            if not record.loanNumber:
-                self.logger.warning("Missing loan number")
-                return False
-            
-            if not record.customerIdentificationNumber:
-                self.logger.warning("Missing customer identification number")
+            if not record.accountNumber:
+                self.logger.warning("Missing accountNumber")
                 return False
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Error validating loan record: {e}")
+            self.logger.error(f"Error validating account information record: {e}")
             return False
-
     
     def producer_thread(self):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
@@ -419,7 +253,7 @@ class LoansStreamingPipeline:
             # Get dynamic record count
             self.total_available = self.get_total_count()
             
-            self.logger.info(f"Total loan records available: {self.total_available:,} (estimated)")
+            self.logger.info(f"Total account information records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
@@ -427,8 +261,8 @@ class LoansStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_loans_query()
-            self.logger.info("Executing loans query (single execution, streaming results)...")
+            query = self.get_account_information_query()
+            self.logger.info("Executing account information query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -462,7 +296,7 @@ class LoansStreamingPipeline:
                                 try:
                                     channel.basic_publish(
                                         exchange='',
-                                        routing_key='loans_queue',
+                                        routing_key='account_information_queue',
                                         body=message,
                                         properties=pika.BasicProperties(delivery_mode=2)
                                     )
@@ -536,7 +370,7 @@ class LoansStreamingPipeline:
             connection, channel = self.setup_rabbitmq_connection()
             
             # Batch insert buffer
-            insert_buffer: List[LoanRecord] = []
+            insert_buffer: List[AccountInformationRecord] = []
             pending_tags: List[int] = []
             last_flush_time = time.time()
             flush_interval = 5  # seconds
@@ -607,7 +441,7 @@ class LoansStreamingPipeline:
                 nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
-                    record = LoanRecord(**record_data)
+                    record = AccountInformationRecord(**record_data)
                     
                     insert_buffer.append(record)
                     pending_tags.append(method.delivery_tag)
@@ -648,9 +482,12 @@ class LoansStreamingPipeline:
             
             # Set QoS to match consumer batch size for efficient batching
             channel.basic_qos(prefetch_count=self.consumer_batch_size)
-            channel.basic_consume(queue='loans_queue', on_message_callback=process_message)
+            channel.basic_consume(queue='account_information_queue', on_message_callback=process_message)
             
             # Keep consuming until producer is done and queue is empty
+            empty_checks = 0
+            max_empty_checks = 3  # Check 3 times before stopping
+            
             while not self.stop_consumer.is_set():
                 try:
                     connection.process_data_events(time_limit=1)
@@ -665,10 +502,23 @@ class LoansStreamingPipeline:
                         flush_buffer(channel)
                         
                         # Producer is done, check if queue is empty
-                        queue_state = channel.queue_declare(queue='loans_queue', durable=True, passive=True)
-                        if queue_state.method.message_count == 0:
-                            self.logger.info("Consumer: Queue empty, producer finished")
-                            break
+                        queue_state = channel.queue_declare(queue='account_information_queue', durable=True, passive=True)
+                        message_count = queue_state.method.message_count
+                        
+                        if message_count == 0:
+                            empty_checks += 1
+                            self.logger.info(f"Consumer: Queue appears empty (check {empty_checks}/{max_empty_checks})")
+                            
+                            if empty_checks >= max_empty_checks:
+                                self.logger.info("Consumer: Queue confirmed empty after multiple checks, producer finished")
+                                break
+                            else:
+                                # Wait a bit before checking again
+                                time.sleep(2)
+                        else:
+                            # Reset counter if we find messages
+                            empty_checks = 0
+                            self.logger.info(f"Consumer: {message_count} messages still in queue, continuing...")
                         
                 except Exception as e:
                     self.logger.error(f"Consumer processing error: {e}")
@@ -679,7 +529,7 @@ class LoansStreamingPipeline:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
                     channel.basic_qos(prefetch_count=self.consumer_batch_size)
-                    channel.basic_consume(queue='loans_queue', on_message_callback=process_message)
+                    channel.basic_consume(queue='account_information_queue', on_message_callback=process_message)
             
             connection.close()
             with self._stats_lock:
@@ -697,105 +547,78 @@ class LoansStreamingPipeline:
                 except Exception:
                     pass
     
-    def insert_batch_to_postgres(self, records: List[LoanRecord], pg_conn):
-        """Batch insert loan records to PostgreSQL with duplicate prevention"""
+    def insert_batch_to_postgres(self, records: List[AccountInformationRecord], pg_conn):
+        """Batch insert account information records to PostgreSQL with duplicate prevention"""
         try:
             cursor = pg_conn.cursor()
             
+            # Deduplicate records within the batch by accountNumber (keep last occurrence)
+            unique_records = {}
+            for record in records:
+                unique_records[record.accountNumber] = record
+            
+            deduplicated_records = list(unique_records.values())
+            
+            if len(deduplicated_records) < len(records):
+                duplicates_removed = len(records) - len(deduplicated_records)
+                self.logger.debug(f"Removed {duplicates_removed} duplicate accountNumbers within batch")
+            
             insert_query = """
-            INSERT INTO "loanInformation" (
-                "reportingDate", "customerIdentificationNumber", "accountNumber", "clientName",
-                "borrowerCountry", "ratingStatus", "crRatingBorrower", "gradesUnratedBanks",
-                "borrowerCategory", "gender", "disability", "clientType", "clientSubType",
-                "groupName", "groupCode", "relatedParty", "relationshipCategory", "loanNumber",
-                "loanType", "loanEconomicActivity", "loanPhase", "transferStatus",
-                "purposeMortgage", "purposeOtherLoans", "sourceFundMortgage", "amortizationType",
-                "branchCode", "loanOfficer", "loanSupervisor", "groupVillageNumber",
-                "cycleNumber", "loanInstallment", "repaymentFrequency", "currency",
-                "contractDate", "orgSanctionedAmount", "usdSanctionedAmount", "tzsSanctionedAmount",
-                "orgDisbursedAmount", "usdDisbursedAmount", "tzsDisbursedAmount",
-                "disbursementDate", "maturityDate", "realEndDate",
-                "orgOutstandingPrincipalAmount", "usdOutstandingPrincipalAmount", "tzsOutstandingPrincipalAmount",
-                "orgInstallmentAmount", "usdInstallmentAmount", "tzsInstallmentAmount",
-                "loanInstallmentPaid", "gracePeriodPaymentPrincipal", "primeLendingRate",
-                "interestPricingMethod", "annualInterestRate", "effectiveAnnualInterestRate",
-                "firstInstallmentPaymentDate", "lastPaymentDate", "collateralPledged",
-                "loanFlagType", "restructuringDate", "pastDueDays", "pastDueAmount",
-                "internalRiskGroup", "orgAccruedInterestAmount", "usdAccruedInterestAmount",
-                "tzsAccruedInterestAmount", "orgPenaltyChargedAmount", "usdPenaltyChargedAmount",
-                "tzsPenaltyChargedAmount", "orgPenaltyPaidAmount", "usdPenaltyPaidAmount",
-                "tzsPenaltyPaidAmount", "orgLoanFeesChargedAmount", "usdLoanFeesChargedAmount",
-                "tzsLoanFeesChargedAmount", "orgLoanFeesPaidAmount", "usdLoanFeesPaidAmount",
-                "tzsLoanFeesPaidAmount", "orgTotMonthlyPaymentAmount", "usdTotMonthlyPaymentAmount",
-                "tzsTotMonthlyPaymentAmount", "sectorSnaClassification", "assetClassificationCategory",
-                "negStatusContract", "customerRole", "allowanceProbableLoss", "botProvision",
-                "tradingIntent", "orgSuspendedInterest", "usdSuspendedInterest", "tzsSuspendedInterest"
+            INSERT INTO "accountInformation" (
+                "reportingDate", "customerIdentificationNumber", "accountNumber", "accountProductCode",
+                "accountOperationStatus", "customerType", "smrCode", status,
+                "orgAccountBalance", "usdAccountBalance", "tzsAccountBalance"
             ) VALUES %s
-            ON CONFLICT ("loanNumber") DO NOTHING
+            ON CONFLICT ("accountNumber") DO UPDATE SET
+                "reportingDate" = EXCLUDED."reportingDate",
+                "customerIdentificationNumber" = EXCLUDED."customerIdentificationNumber",
+                "accountProductCode" = EXCLUDED."accountProductCode",
+                "accountOperationStatus" = EXCLUDED."accountOperationStatus",
+                "customerType" = EXCLUDED."customerType",
+                "smrCode" = EXCLUDED."smrCode",
+                status = EXCLUDED.status,
+                "orgAccountBalance" = EXCLUDED."orgAccountBalance",
+                "usdAccountBalance" = EXCLUDED."usdAccountBalance",
+                "tzsAccountBalance" = EXCLUDED."tzsAccountBalance",
+                updated_at = CURRENT_TIMESTAMP
             """
             
             values = [
                 (
-                    r.reportingDate, r.customerIdentificationNumber, r.accountNumber, r.clientName,
-                    r.borrowerCountry, r.ratingStatus, r.crRatingBorrower, r.gradesUnratedBanks,
-                    r.borrowerCategory, r.gender, r.disability, r.clientType, r.clientSubType,
-                    r.groupName, r.groupCode, r.relatedParty, r.relationshipCategory, r.loanNumber,
-                    r.loanType, r.loanEconomicActivity, r.loanPhase, r.transferStatus,
-                    r.purposeMortgage, r.purposeOtherLoans, r.sourceFundMortgage, r.amortizationType,
-                    r.branchCode, r.loanOfficer, r.loanSupervisor, r.groupVillageNumber,
-                    r.cycleNumber, r.loanInstallment, r.repaymentFrequency, r.currency,
-                    r.contractDate, r.orgSanctionedAmount, r.usdSanctionedAmount, r.tzsSanctionedAmount,
-                    r.orgDisbursedAmount, r.usdDisbursedAmount, r.tzsDisbursedAmount,
-                    r.disbursementDate, r.maturityDate, r.realEndDate,
-                    r.orgOutstandingPrincipalAmount, r.usdOutstandingPrincipalAmount, r.tzsOutstandingPrincipalAmount,
-                    r.orgInstallmentAmount, r.usdInstallmentAmount, r.tzsInstallmentAmount,
-                    r.loanInstallmentPaid, r.gracePeriodPaymentPrincipal, r.primeLendingRate,
-                    r.interestPricingMethod, r.annualInterestRate, r.effectiveAnnualInterestRate,
-                    r.firstInstallmentPaymentDate, r.lastPaymentDate, r.collateralPledged,
-                    r.loanFlagType, r.restructuringDate, r.pastDueDays, r.pastDueAmount,
-                    r.internalRiskGroup, r.orgAccruedInterestAmount, r.usdAccruedInterestAmount,
-                    r.tzsAccruedInterestAmount, r.orgPenaltyChargedAmount, r.usdPenaltyChargedAmount,
-                    r.tzsPenaltyChargedAmount, r.orgPenaltyPaidAmount, r.usdPenaltyPaidAmount,
-                    r.tzsPenaltyPaidAmount, r.orgLoanFeesChargedAmount, r.usdLoanFeesChargedAmount,
-                    r.tzsLoanFeesChargedAmount, r.orgLoanFeesPaidAmount, r.usdLoanFeesPaidAmount,
-                    r.tzsLoanFeesPaidAmount, r.orgTotMonthlyPaymentAmount, r.usdTotMonthlyPaymentAmount,
-                    r.tzsTotMonthlyPaymentAmount, r.sectorSnaClassification, r.assetClassificationCategory,
-                    r.negStatusContract, r.customerRole, r.allowanceProbableLoss, r.botProvision,
-                    r.tradingIntent, r.orgSuspendedInterest, r.usdSuspendedInterest, r.tzsSuspendedInterest
+                    r.reportingDate, r.customerIdentificationNumber, r.accountNumber, r.accountProductCode,
+                    r.accountOperationStatus, r.customerType, r.smrCode, r.status,
+                    r.orgAccountBalance, r.usdAccountBalance, r.tzsAccountBalance
                 )
-                for r in records
+                for r in deduplicated_records
             ]
             
             psycopg2.extras.execute_values(cursor, insert_query, values, page_size=len(values))
             pg_conn.commit()
             
         except Exception as e:
-            self.logger.error(f"Error batch inserting {len(records)} loan records: {e}")
+            self.logger.error(f"Error batch inserting {len(records)} account information records: {e}")
             raise
     
     def ensure_unique_index(self):
-        """Ensure unique index on loanNumber exists for ON CONFLICT duplicate prevention"""
+        """Ensure unique index on accountNumber exists for ON CONFLICT duplicate prevention"""
         try:
             with self.get_postgres_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_loaninformation_loan_number_unique
-                    ON "loanInformation" ("loanNumber")
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_account_unique
+                    ON "accountInformation"("accountNumber")
                 """)
                 conn.commit()
-                self.logger.info("Unique index on loanNumber verified/created")
+                self.logger.info("Unique index on accountNumber verified/created")
         except Exception as e:
-            self.logger.error(f"Failed to create unique index on loanNumber: {e}")
+            self.logger.error(f"Failed to create unique index on accountInformation: {e}")
             raise
     
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Loans STREAMING pipeline...")
+        self.logger.info("Starting Account Information STREAMING pipeline...")
         
         try:
-            # Update state to running
-            self._update_state('running')
-
             # Ensure unique index for duplicate prevention
             self.ensure_unique_index()
             
@@ -818,7 +641,7 @@ class LoansStreamingPipeline:
             self.logger.info("Producer thread completed")
             
             # Wait for consumer to finish processing remaining messages
-            consumer_thread.join(timeout=60)  # Wait up to 60 seconds
+            consumer_thread.join(timeout=60)
             
             if consumer_thread.is_alive():
                 self.logger.info("Stopping consumer thread...")
@@ -828,75 +651,27 @@ class LoansStreamingPipeline:
             # Final statistics
             total_time = time.time() - self.start_time
             avg_rate = self.total_consumed / total_time if total_time > 0 else 0
-            success_rate = (self.total_consumed / self.total_produced * 100) if self.total_produced > 0 else 0
             
-            self.logger.info(f"""
-            ==========================================
-            Loans Pipeline Summary:
-            ==========================================
-            Total available records: {self.total_available:,}
-            Records produced: {self.total_produced:,}
-            Records consumed: {self.total_consumed:,}
-            Success rate: {success_rate:.1f}%
-            Total processing time: {total_time/3600:.2f} hours
-            Average rate: {avg_rate:.1f} records/second
-            ==========================================
-            """)
+            self.logger.info("=" * 60)
+            self.logger.info("Account Information STREAMING Pipeline Complete!")
+            self.logger.info("=" * 60)
+            self.logger.info(f"Total records processed: {self.total_consumed:,}")
+            self.logger.info(f"Total time: {total_time:.1f} seconds")
+            self.logger.info(f"Average rate: {avg_rate:.1f} records/second")
+            self.logger.info("=" * 60)
             
-            # Update pipeline state
-            self._update_state('completed')
+            return {
+                'total_produced': self.total_produced,
+                'total_consumed': self.total_consumed,
+                'total_time': total_time,
+                'avg_rate': avg_rate
+            }
             
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
-            self._update_state('failed', str(e))
             raise
-    
-    def _update_state(self, status, error_message=None):
-        """Update pipeline state in the state table"""
-        try:
-            from pipeline_state import PipelineStateManager
-            state_manager = PipelineStateManager()
-            state_manager.update_run(
-                'loans',
-                status,
-                self.total_consumed,
-                error_message
-            )
-            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
-        except Exception as e:
-            self.logger.warning(f"Could not update state: {e}")
-
-
-def main():
-    """Main function"""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Loans Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
-    parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
-    parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
-                       help='Pipeline mode: producer only, consumer only, or full streaming')
-    
-    args = parser.parse_args()
-    
-    # Create pipeline
-    pipeline = LoansStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
-    
-    try:
-        if args.mode == 'producer':
-            pipeline.producer_thread()
-        elif args.mode == 'consumer':
-            pipeline.consumer_thread()
-        else:  # streaming
-            pipeline.run_streaming_pipeline()
-            
-    except KeyboardInterrupt:
-        pipeline.logger.info("Pipeline stopped by user")
-    except Exception as e:
-        pipeline.logger.error(f"Pipeline failed: {e}")
-        import sys
-        sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    pipeline = AccountInformationStreamingPipeline()
+    pipeline.run_streaming_pipeline()

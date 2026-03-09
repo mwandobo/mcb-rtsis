@@ -85,6 +85,8 @@ def create_overdraft_table():
             "annualInterestRate" DECIMAL(8,4),
             "collateralPledged" JSONB,
             "restructuredLoans" INTEGER,
+            "pastDueDays" INTEGER,
+            "pastDueAmount" DECIMAL(18,2),
             "orgAccruedInterestAmount" DECIMAL(18,2),
             "usdAccruedInterestAmount" DECIMAL(18,2),
             "tzsAccruedInterestAmount" DECIMAL(18,2),

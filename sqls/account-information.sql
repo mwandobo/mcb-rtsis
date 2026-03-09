@@ -5,6 +5,7 @@ SELECT
 
     TRIM(pa.ACCOUNT_NUMBER)                                AS accountNumber,
 
+    -- Product code: map overdrafts to parent current account product
     CASE
         WHEN pa.PRODUCT_ID = 40030 THEN '31705TZS'
         WHEN pa.PRODUCT_ID = 40034 THEN '31704TZS'
@@ -16,17 +17,19 @@ SELECT
             TRIM(COALESCE(curr.SHORT_DESCR, 'TZS'))
     END                                                    AS accountProductCode,
 
+    -- Account operation status mapped to BOT D64
     CASE pa.ACC_STATUS
         WHEN '1' THEN 'active'
-        WHEN '6' THEN 'closed'
+        WHEN '6' THEN 'dormant'
         WHEN '3' THEN 'dormant'
-        WHEN '2' THEN 'inactive'
+        WHEN '2' THEN 'closed'
         WHEN '0' THEN 'inactive'
         WHEN '5' THEN 'abandoned'
         WHEN '4' THEN 'non contributing'
         ELSE          'inactive'
     END                                                    AS accountOperationStatus,
 
+    -- Customer type mapped to BOT D01
     CASE wdc.CUST_TYPE_IND
         WHEN 'Natural'      THEN 'Individual'
         WHEN 'Corporate'    THEN 'Private company'
@@ -34,13 +37,18 @@ SELECT
         ELSE                     'Individual'
     END                                                    AS customerType,
 
+    -- SMR code mapped to BOT Table 144
     CASE
         WHEN wdc.NON_RESIDENT = '1' THEN 'Not Applicable'
         WHEN wdc.CUST_TYPE_IND IS NOT NULL THEN 'Non-Government'
         ELSE 'Others'
     END                                                    AS smrCode,
 
-    'N'                                                    AS status,
+    -- KYC flag: Y if account locked due to KYC (ACC_STATUS = 2)
+    CASE pa.ACC_STATUS
+        WHEN '2' THEN 'Y'
+        ELSE          'N'
+    END                                                    AS status,
 
     -- Original balance in account currency
     COALESCE(
@@ -149,7 +157,7 @@ FROM PROFITS_ACCOUNT pa
          AND lnb.FK0LOAN_ACCOUNTACC  = pa.LNS_TYPE
          AND lnb.FK_LOAN_ACCOUNTACC  = pa.LNS_SN
 
-    -- Fixing rate for account currency
+    -- Fixing rate for account currency (TZS per 1 foreign unit)
     LEFT JOIN (
         SELECT fr.fk_currencyid_curr, fr.rate
         FROM fixing_rate fr
@@ -194,4 +202,4 @@ WHERE TRIM(pa.ACCOUNT_NUMBER) <> 'DUMMY TRS-LG'
   AND pa.PRFT_SYSTEM <> 19
   AND pa.PRODUCT_ID NOT IN (38220, 38801)
 
-ORDER BY pa.ACCOUNT_NUMBER
+ORDER BY pa.ACCOUNT_NUMBER;

@@ -106,6 +106,7 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN ag.AGR_LIMIT
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL(ag.AGR_LIMIT / fx.RATE, 18, 2)
                  ELSE NULL
@@ -122,6 +123,7 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN la.TOT_DRAWDOWN_AMN
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL(la.TOT_DRAWDOWN_AMN / fx.RATE, 18, 2)
                  ELSE NULL
@@ -138,9 +140,9 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN gte.DC_AMOUNT
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
-                     THEN gte.DC_AMOUNT / fx.RATE
-                 ELSE NULL
+                     THEN DECIMAL(gte.DC_AMOUNT / fx.RATE, 18, 2)
                  END                                                                    AS usdCrUsageLast30DaysAmount,
 
              CASE
@@ -160,7 +162,11 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
                      + (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)
-                 ELSE NULL
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
+                 WHEN gte.CURRENCY_SHORT_DES <> 'USD' THEN
+                     DECIMAL(((la.NRM_CAP_BAL + la.OV_CAP_BAL)
+                         + (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL)) / fx.RATE, 18, 2)
+                 ELSE 0
                  END                                                                    AS usdOutstandingAmount,
 
              CASE
@@ -179,9 +185,10 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL((la.NRM_CAP_BAL + la.OV_CAP_BAL) / fx.RATE, 18, 2)
-                 ELSE NULL
+                 ELSE 0
                  END                                                                    AS usdOutstandingPrincipalAmount,
 
              CASE
@@ -198,16 +205,22 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CollateralAgg.collateralPledged                                            AS collateralPledged,
 
              0                                                                          AS restructuredLoans,
-
+             CASE
+                 WHEN la.OV_CAP_BAL > 0 AND la.OV_EXP_DT IS NOT NULL
+                     THEN DAYS(CURRENT_DATE) - DAYS(la.OV_EXP_DT)
+                 ELSE 0
+                 END                                                                    AS pastDueDays,
+             la.OV_CAP_BAL                                                              AS pastDueAmount,
              la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL         AS orgAccruedInterestAmount,
 
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL(
                          (la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL) / fx.RATE, 18, 2)
-                 ELSE NULL
+                 ELSE 0
                  END                                                                    AS usdAccruedInterestAmount,
 
              CASE
@@ -222,9 +235,10 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN la.OV_RL_PNL_INT_BAL + la.OV_URL_PNL_INT_BAL
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL((la.OV_RL_PNL_INT_BAL + la.OV_URL_PNL_INT_BAL) / fx.RATE, 18, 2)
-                 ELSE NULL
+                 ELSE 0
                  END                                                                    AS usdPenaltyChargedAmount,
 
              CASE
@@ -238,9 +252,10 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN COALESCE(la.OV_RL_PNL_INT_BAL, 0)
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL(COALESCE(la.OV_RL_PNL_INT_BAL, 0) / fx.RATE, 18, 2)
-                 ELSE NULL
+                 ELSE 0
                  END                                                                    AS usdPenaltyPaidAmount,
 
              CASE
@@ -254,9 +269,10 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN la.TOT_COMMISSION_AMN
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL(la.TOT_COMMISSION_AMN / fx.RATE, 18, 2)
-                 ELSE NULL
+                 ELSE 0
                  END                                                                    AS usdLoanFeesChargedAmount,
 
              CASE
@@ -270,9 +286,10 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN la.TOT_EXPENSE_AMN
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL(la.TOT_EXPENSE_AMN / fx.RATE, 18, 2)
-                 ELSE NULL
+                 ELSE 0
                  END                                                                    AS usdLoanFeesPaidAmount,
 
              CASE
@@ -290,9 +307,10 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
              CASE
                  WHEN gte.CURRENCY_SHORT_DES = 'USD'
                      THEN DECIMAL(la.TOT_NRM_INT_AMN + la.TOT_PNL_INT_AMN, 18, 2)
+                 WHEN gte.CURRENCY_SHORT_DES = 'TZS' THEN 0
                  WHEN gte.CURRENCY_SHORT_DES <> 'USD'
                      THEN DECIMAL((la.TOT_NRM_INT_AMN + la.TOT_PNL_INT_AMN) / fx.RATE, 18, 2)
-                 ELSE NULL
+                 ELSE 0
                  END                                                                    AS usdInterestPaidTotal,
 
              CASE
@@ -360,9 +378,9 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
                LEFT JOIN COUNTRIES_LOOKUP cl
                          ON cl.COUNTRY_NAME = id_country.description
 
---                LEFT JOIN LOAN_ACCOUNT la
---                          ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
---                              AND la.CUST_ID = gte.CUST_ID
+          --                          LEFT JOIN LOAN_ACCOUNT wela
+--                          ON gte.ID_PRODUCT = wela.FK_LOANFK_PRODUCTI
+--                              AND wela.CUST_ID = gte.CUST_ID
 
 
                INNER JOIN (SELECT la.*,
@@ -374,6 +392,11 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
                           ON gte.ID_PRODUCT = la.FK_LOANFK_PRODUCTI
                               AND la.CUST_ID = gte.CUST_ID
                               AND la.rn = 1 -- Only the most recent loan
+
+               LEFT JOIN (SELECT li.*,
+                                 ROW_NUMBER() OVER (PARTITION BY li.ACC_SN ORDER BY li.INSTALL_SN DESC) AS rn
+                          FROM LOAN_INSTALLMENTS li) li
+                         ON li.ACC_SN = la.ACC_SN AND li.rn = 1
 
                LEFT JOIN CollateralAgg ON CollateralAgg.COLLTBL_CUST_ID = la.CUST_ID
                JOIN AGREEMENT ag

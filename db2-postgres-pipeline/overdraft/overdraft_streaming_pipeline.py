@@ -6,13 +6,14 @@ Uses overdraft-v3.sql query for comprehensive overdraft data extraction
 
 import pika
 import psycopg2
+import psycopg2.extras
 import json
 import logging
 import threading
 import time
 from dataclasses import dataclass, asdict
 from contextlib import contextmanager
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import sys
 import os
@@ -74,6 +75,8 @@ class OverdraftRecord:
     annualInterestRate: Optional[float]
     collateralPledged: Optional[str]  # JSON string
     restructuredLoans: int
+    pastDueDays: int
+    pastDueAmount: Optional[float]
     orgAccruedInterestAmount: Optional[float]
     usdAccruedInterestAmount: Optional[float]
     tzsAccruedInterestAmount: Optional[float]
@@ -104,17 +107,19 @@ class OverdraftRecord:
 
 
 class OverdraftStreamingPipeline:
-    def __init__(self, batch_size=50):
+    def __init__(self, batch_size=50, consumer_batch_size=100):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
+        self.consumer_batch_size = consumer_batch_size
         
         # Threading control
         self.producer_finished = threading.Event()
         self.consumer_finished = threading.Event()
         self.stop_consumer = threading.Event()
         
-        # Statistics
+        # Thread-safe statistics
+        self._stats_lock = threading.Lock()
         self.total_produced = 0
         self.total_consumed = 0
         self.total_available = 0
@@ -130,6 +135,7 @@ class OverdraftStreamingPipeline:
         
         self.logger.info("Overdraft STREAMING Pipeline initialized")
         self.logger.info(f"Batch size: {self.batch_size} records per batch")
+        self.logger.info(f"Consumer batch size: {self.consumer_batch_size} records per flush")
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
@@ -281,15 +287,37 @@ class OverdraftStreamingPipeline:
                     raise
     
     def setup_rabbitmq_queue(self):
-        """Setup RabbitMQ queue for overdraft"""
+        """Setup RabbitMQ queue for overdraft with dead-letter exchange"""
         try:
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Declare queue with durability
-            channel.queue_declare(queue='overdraft_queue', durable=True)
+            # Declare dead-letter exchange and queue for failed messages
+            channel.exchange_declare(exchange='overdraft_dlx', exchange_type='direct', durable=True)
+            channel.queue_declare(queue='overdraft_dead_letter', durable=True)
+            channel.queue_bind(
+                queue='overdraft_dead_letter',
+                exchange='overdraft_dlx',
+                routing_key='overdraft_queue'
+            )
+            
+            # Declare main queue with dead-letter exchange routing
+            try:
+                channel.queue_declare(
+                    queue='overdraft_queue',
+                    durable=True,
+                    arguments={
+                        'x-dead-letter-exchange': 'overdraft_dlx',
+                        'x-dead-letter-routing-key': 'overdraft_queue'
+                    }
+                )
+                self.logger.info("RabbitMQ queues setup complete (main + dead-letter)")
+            except Exception:
+                self.logger.warning("Queue 'overdraft_queue' already exists with different args.")
+                connection, channel = self.setup_rabbitmq_connection()
+                channel.queue_declare(queue='overdraft_queue', durable=True)
+                self.logger.info("RabbitMQ queue 'overdraft_queue' setup complete (without DLX)")
             
             connection.close()
-            self.logger.info("RabbitMQ queue 'overdraft_queue' setup complete")
             
         except Exception as e:
             self.logger.error(f"Failed to setup RabbitMQ: {e}")
@@ -404,33 +432,35 @@ class OverdraftStreamingPipeline:
                 annualInterestRate=safe_float(row[44]),
                 collateralPledged=safe_string(row[45], 2000),  # JSON can be longer
                 restructuredLoans=safe_int(row[46]),
-                orgAccruedInterestAmount=safe_float(row[47]),
-                usdAccruedInterestAmount=safe_float(row[48]),
-                tzsAccruedInterestAmount=safe_float(row[49]),
-                orgPenaltyChargedAmount=safe_float(row[50]),
-                usdPenaltyChargedAmount=safe_float(row[51]),
-                tzsPenaltyChargedAmount=safe_float(row[52]),
-                orgPenaltyPaidAmount=safe_float(row[53]),
-                usdPenaltyPaidAmount=safe_float(row[54]),
-                tzsPenaltyPaidAmount=safe_float(row[55]),
-                orgLoanFeesChargedAmount=safe_float(row[56]),
-                usdLoanFeesChargedAmount=safe_float(row[57]),
-                tzsLoanFeesChargedAmount=safe_float(row[58]),
-                orgLoanFeesPaidAmount=safe_float(row[59]),
-                usdLoanFeesPaidAmount=safe_float(row[60]),
-                tzsLoanFeesPaidAmount=safe_float(row[61]),
-                orgTotMonthlyPaymentAmount=safe_float(row[62]) or 0.0,
-                usdTotMonthlyPaymentAmount=safe_float(row[63]) or 0.0,
-                tzsTotMonthlyPaymentAmount=safe_float(row[64]) or 0.0,
-                orgInterestPaidTotal=safe_float(row[65]),
-                usdInterestPaidTotal=safe_float(row[66]),
-                tzsInterestPaidTotal=safe_float(row[67]),
-                assetClassificationCategory=safe_string(row[68]),
-                sectorSnaClassification=safe_string(row[69]),
-                negStatusContract=safe_string(row[70]),
-                customerRole=safe_string(row[71]),
-                allowanceProbableLoss=safe_int(row[72]),
-                botProvision=safe_int(row[73])
+                pastDueDays=safe_int(row[47]),
+                pastDueAmount=safe_float(row[48]),
+                orgAccruedInterestAmount=safe_float(row[49]),
+                usdAccruedInterestAmount=safe_float(row[50]),
+                tzsAccruedInterestAmount=safe_float(row[51]),
+                orgPenaltyChargedAmount=safe_float(row[52]),
+                usdPenaltyChargedAmount=safe_float(row[53]),
+                tzsPenaltyChargedAmount=safe_float(row[54]),
+                orgPenaltyPaidAmount=safe_float(row[55]),
+                usdPenaltyPaidAmount=safe_float(row[56]),
+                tzsPenaltyPaidAmount=safe_float(row[57]),
+                orgLoanFeesChargedAmount=safe_float(row[58]),
+                usdLoanFeesChargedAmount=safe_float(row[59]),
+                tzsLoanFeesChargedAmount=safe_float(row[60]),
+                orgLoanFeesPaidAmount=safe_float(row[61]),
+                usdLoanFeesPaidAmount=safe_float(row[62]),
+                tzsLoanFeesPaidAmount=safe_float(row[63]),
+                orgTotMonthlyPaymentAmount=safe_float(row[64]) or 0.0,
+                usdTotMonthlyPaymentAmount=safe_float(row[65]) or 0.0,
+                tzsTotMonthlyPaymentAmount=safe_float(row[66]) or 0.0,
+                orgInterestPaidTotal=safe_float(row[67]),
+                usdInterestPaidTotal=safe_float(row[68]),
+                tzsInterestPaidTotal=safe_float(row[69]),
+                assetClassificationCategory=safe_string(row[70]),
+                sectorSnaClassification=safe_string(row[71]),
+                negStatusContract=safe_string(row[72]),
+                customerRole=safe_string(row[73]),
+                allowanceProbableLoss=safe_int(row[74]),
+                botProvision=safe_int(row[75])
             )
             
             return record
@@ -581,104 +611,280 @@ class OverdraftStreamingPipeline:
             self.producer_finished.set()
     
     def consumer_thread(self):
-        """Consumer thread - processes messages from queue with retry logic"""
+        """Consumer thread - processes messages from queue with batch inserts and persistent connection"""
+        pg_conn = None
         try:
             self.logger.info("Consumer thread started")
+            
+            # Setup persistent PostgreSQL connection
+            pg_conn = psycopg2.connect(
+                host=self.config.database.pg_host,
+                port=self.config.database.pg_port,
+                database=self.config.database.pg_database,
+                user=self.config.database.pg_user,
+                password=self.config.database.pg_password
+            )
+            self.logger.info("Consumer: Persistent PostgreSQL connection established")
             
             # Setup RabbitMQ connection with retry
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Initialize progress tracking variable
+            # Batch insert buffer
+            insert_buffer: List[OverdraftRecord] = []
+            pending_tags: List[int] = []
+            last_flush_time = time.time()
+            flush_interval = 5  # seconds
             last_progress_report = time.time()
             
+            def flush_buffer(ch):
+                """Flush buffered records to PostgreSQL in a single batch insert"""
+                nonlocal insert_buffer, pending_tags, last_flush_time, pg_conn
+                if not insert_buffer:
+                    return
+                
+                batch_size = len(insert_buffer)
+                try:
+                    self.insert_batch_to_postgres(insert_buffer, pg_conn)
+                    
+                    # Batch acknowledge all messages at once
+                    if pending_tags:
+                        ch.basic_ack(delivery_tag=pending_tags[-1], multiple=True)
+                    
+                    with self._stats_lock:
+                        self.total_consumed += batch_size
+                    
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+                    
+                except psycopg2.OperationalError as e:
+                    self.logger.error(f"PostgreSQL connection lost during batch insert: {e}")
+                    # Reconnect PostgreSQL
+                    try:
+                        pg_conn.close()
+                    except Exception:
+                        pass
+                    pg_conn = psycopg2.connect(
+                        host=self.config.database.pg_host,
+                        port=self.config.database.pg_port,
+                        database=self.config.database.pg_database,
+                        user=self.config.database.pg_user,
+                        password=self.config.database.pg_password
+                    )
+                    # Nack all to requeue for retry
+                    for tag in pending_tags:
+                        try:
+                            ch.basic_nack(delivery_tag=tag, requeue=True)
+                        except Exception:
+                            pass
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+                    
+                except Exception as e:
+                    self.logger.error(f"Batch insert failed: {e}")
+                    try:
+                        pg_conn.rollback()
+                    except Exception:
+                        pass
+                    # Nack all messages - they go to dead-letter queue
+                    for tag in pending_tags:
+                        try:
+                            ch.basic_nack(delivery_tag=tag, requeue=False)
+                        except Exception:
+                            pass
+                    insert_buffer = []
+                    pending_tags = []
+                    last_flush_time = time.time()
+            
             def process_message(ch, method, properties, body):
-                nonlocal last_progress_report  # Allow modification of the outer variable
+                nonlocal insert_buffer, pending_tags, last_progress_report, last_flush_time
                 try:
                     record_data = json.loads(body)
                     record = OverdraftRecord(**record_data)
                     
-                    # Insert to PostgreSQL with retry
-                    inserted = False
-                    for attempt in range(self.max_retries):
-                        try:
-                            with self.get_postgres_connection() as conn:
-                                cursor = conn.cursor()
-                                self.insert_to_postgres(record, cursor)
-                                conn.commit()
-                            inserted = True
-                            break
-                        except Exception as e:
-                            self.logger.warning(f"PostgreSQL insert attempt {attempt + 1} failed: {e}")
-                            if attempt < self.max_retries - 1:
-                                time.sleep(self.retry_delay)
-                            else:
-                                self.logger.error(f"Failed to insert record after {self.max_retries} attempts")
+                    insert_buffer.append(record)
+                    pending_tags.append(method.delivery_tag)
                     
-                    if inserted:
-                        self.total_consumed += 1
-                        
-                        # Progress monitoring
-                        if self.total_consumed % (self.batch_size * 2) == 0:  # Every 2 batches
-                            elapsed_time = time.time() - self.start_time
-                            rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
-                            progress_percent = (self.total_consumed / self.total_available * 100) if self.total_available > 0 else 0
-                            
-                            self.logger.info(f"Consumer: Processed {self.total_consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
-                        
-                        # Detailed progress report every 5 minutes
-                        current_time = time.time()
-                        if current_time - last_progress_report >= 300:  # 5 minutes
-                            elapsed_time = current_time - self.start_time
-                            rate = self.total_consumed / elapsed_time if elapsed_time > 0 else 0
-                            remaining_records = self.total_available - self.total_consumed if self.total_available > 0 else 0
-                            eta_seconds = remaining_records / rate if rate > 0 else 0
-                            eta_hours = eta_seconds / 3600
-                            
-                            self.logger.info(f"CONSUMER PROGRESS: {self.total_consumed:,}/{self.total_available:,} records - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
-                            last_progress_report = current_time
+                    # Flush if buffer is full or time interval exceeded
+                    if len(insert_buffer) >= self.consumer_batch_size or \
+                       time.time() - last_flush_time >= flush_interval:
+                        flush_buffer(ch)
                     
-                    # Acknowledge message
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    # Progress monitoring
+                    with self._stats_lock:
+                        consumed = self.total_consumed
+                    
+                    if consumed > 0 and consumed % self.batch_size == 0:
+                        elapsed_time = time.time() - self.start_time
+                        rate = consumed / elapsed_time if elapsed_time > 0 else 0
+                        progress_percent = (consumed / self.total_available * 100) if self.total_available > 0 else 0
+                        
+                        self.logger.info(f"Consumer: Processed {consumed:,} records ({progress_percent:.2f}% of total) - Rate: {rate:.1f} rec/sec")
+                    
+                    # Detailed progress report every 5 minutes
+                    current_time = time.time()
+                    if current_time - last_progress_report >= 300:
+                        elapsed_time = current_time - self.start_time
+                        with self._stats_lock:
+                            consumed = self.total_consumed
+                        rate = consumed / elapsed_time if elapsed_time > 0 else 0
+                        remaining_records = self.total_available - consumed if self.total_available > 0 else 0
+                        eta_seconds = remaining_records / rate if rate > 0 else 0
+                        eta_hours = eta_seconds / 3600
+                        
+                        self.logger.info(f"CONSUMER PROGRESS: {consumed:,}/{self.total_available:,} records - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
+                        last_progress_report = current_time
                     
                 except Exception as e:
                     self.logger.error(f"Consumer error processing message: {e}")
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             
-            # Set QoS for controlled processing
-            channel.basic_qos(prefetch_count=10)
+            # Set QoS to match consumer batch size for efficient batching
+            channel.basic_qos(prefetch_count=self.consumer_batch_size)
             channel.basic_consume(queue='overdraft_queue', on_message_callback=process_message)
             
             # Keep consuming until producer is done and queue is empty
+            empty_checks = 0
+            max_empty_checks = 3  # Check 3 times before stopping
+            
             while not self.stop_consumer.is_set():
                 try:
                     connection.process_data_events(time_limit=1)
                     
+                    # Flush any remaining buffered records on timeout
+                    if insert_buffer and time.time() - last_flush_time >= flush_interval:
+                        flush_buffer(channel)
+                    
                     # Check if we should stop
                     if self.producer_finished.is_set():
+                        # Flush remaining buffer before checking queue
+                        flush_buffer(channel)
+                        
                         # Producer is done, check if queue is empty
-                        method = channel.queue_declare(queue='overdraft_queue', durable=True, passive=True)
-                        if method.method.message_count == 0:
-                            self.logger.info("Consumer: Queue empty, producer finished")
-                            break
+                        queue_state = channel.queue_declare(queue='overdraft_queue', durable=True, passive=True)
+                        message_count = queue_state.method.message_count
+                        
+                        if message_count == 0:
+                            empty_checks += 1
+                            self.logger.info(f"Consumer: Queue appears empty (check {empty_checks}/{max_empty_checks})")
+                            
+                            if empty_checks >= max_empty_checks:
+                                self.logger.info("Consumer: Queue confirmed empty after multiple checks, producer finished")
+                                break
+                            else:
+                                # Wait a bit before checking again
+                                time.sleep(2)
+                        else:
+                            # Reset counter if we find messages
+                            empty_checks = 0
+                            self.logger.info(f"Consumer: {message_count} messages still in queue, continuing...")
                         
                 except Exception as e:
                     self.logger.error(f"Consumer processing error: {e}")
-                    # Try to reconnect
+                    # Try to reconnect RabbitMQ
                     try:
                         connection.close()
-                    except:
+                    except Exception:
                         pass
                     connection, channel = self.setup_rabbitmq_connection()
-                    channel.basic_qos(prefetch_count=10)
+                    channel.basic_qos(prefetch_count=self.consumer_batch_size)
                     channel.basic_consume(queue='overdraft_queue', on_message_callback=process_message)
             
             connection.close()
-            self.logger.info(f"Consumer finished: {self.total_consumed:,} records processed")
+            with self._stats_lock:
+                consumed = self.total_consumed
+            self.logger.info(f"Consumer finished: {consumed:,} records processed")
             self.consumer_finished.set()
             
         except Exception as e:
             self.logger.error(f"Consumer error: {e}")
             self.consumer_finished.set()
+        finally:
+            if pg_conn:
+                try:
+                    pg_conn.close()
+                except Exception:
+                    pass
+    
+    
+    def insert_batch_to_postgres(self, records: List[OverdraftRecord], pg_conn):
+        """Batch insert overdraft records to PostgreSQL"""
+        try:
+            cursor = pg_conn.cursor()
+            
+            # Prepare batch data
+            values_list = []
+            for record in records:
+                # Handle JSONB conversion for collateralPledged
+                collateral_json = None
+                if record.collateralPledged:
+                    try:
+                        if isinstance(record.collateralPledged, str):
+                            parsed = json.loads(record.collateralPledged)
+                            collateral_json = json.dumps(parsed)
+                        else:
+                            collateral_json = json.dumps(record.collateralPledged)
+                    except (json.JSONDecodeError, TypeError):
+                        collateral_json = json.dumps({"raw_value": str(record.collateralPledged)})
+                
+                values_list.append((
+                    record.reportingDate, record.accountNumber, record.customerIdentificationNumber,
+                    record.clientName, record.clientType, record.borrowerCountry, record.ratingStatus,
+                    record.crRatingBorrower, record.gradesUnratedBanks, record.groupCode, record.relatedEntityName,
+                    record.relatedParty, record.relationshipCategory, record.loanProductType,
+                    record.overdraftEconomicActivity, record.loanPhase, record.transferStatus, record.purposeOtherLoans,
+                    record.contractDate, record.branchCode, record.loanOfficer, record.loanSupervisor, record.currency,
+                    record.orgSanctionedAmount, record.usdSanctionedAmount, record.tzsSanctionedAmount,
+                    record.orgUtilisedAmount, record.usdUtilisedAmount, record.tzsUtilisedAmount,
+                    record.orgCrUsageLast30DaysAmount, record.usdCrUsageLast30DaysAmount, record.tzsCrUsageLast30DaysAmount,
+                    record.disbursementDate, record.expiryDate, record.realEndDate,
+                    record.orgOutstandingAmount, record.usdOutstandingAmount, record.tzsOutstandingAmount,
+                    record.orgOutstandingPrincipalAmount, record.usdOutstandingPrincipalAmount, record.tzsOutstandingPrincipalAmount,
+                    record.latestCustomerCreditDate, record.latestCreditAmount, record.primeLendingRate, record.annualInterestRate,
+                    collateral_json, record.restructuredLoans, record.pastDueDays, record.pastDueAmount, record.orgAccruedInterestAmount, record.usdAccruedInterestAmount, record.tzsAccruedInterestAmount,
+                    record.orgPenaltyChargedAmount, record.usdPenaltyChargedAmount, record.tzsPenaltyChargedAmount,
+                    record.orgPenaltyPaidAmount, record.usdPenaltyPaidAmount, record.tzsPenaltyPaidAmount,
+                    record.orgLoanFeesChargedAmount, record.usdLoanFeesChargedAmount, record.tzsLoanFeesChargedAmount,
+                    record.orgLoanFeesPaidAmount, record.usdLoanFeesPaidAmount, record.tzsLoanFeesPaidAmount,
+                    record.orgTotMonthlyPaymentAmount, record.usdTotMonthlyPaymentAmount, record.tzsTotMonthlyPaymentAmount,
+                    record.orgInterestPaidTotal, record.usdInterestPaidTotal, record.tzsInterestPaidTotal,
+                    record.assetClassificationCategory, record.sectorSnaClassification, record.negStatusContract,
+                    record.customerRole, record.allowanceProbableLoss, record.botProvision
+                ))
+            
+            insert_query = """
+            INSERT INTO overdraft (
+                "reportingDate", "accountNumber", "customerIdentificationNumber", "clientName",
+                "clientType", "borrowerCountry", "ratingStatus", "crRatingBorrower", "gradesUnratedBanks",
+                "groupCode", "relatedEntityName", "relatedParty", "relationshipCategory", "loanProductType",
+                "overdraftEconomicActivity", "loanPhase", "transferStatus", "purposeOtherLoans",
+                "contractDate", "branchCode", "loanOfficer", "loanSupervisor", "currency",
+                "orgSanctionedAmount", "usdSanctionedAmount", "tzsSanctionedAmount",
+                "orgUtilisedAmount", "usdUtilisedAmount", "tzsUtilisedAmount",
+                "orgCrUsageLast30DaysAmount", "usdCrUsageLast30DaysAmount", "tzsCrUsageLast30DaysAmount",
+                "disbursementDate", "expiryDate", "realEndDate",
+                "orgOutstandingAmount", "usdOutstandingAmount", "tzsOutstandingAmount",
+                "orgOutstandingPrincipalAmount", "usdOutstandingPrincipalAmount", "tzsOutstandingPrincipalAmount",
+                "latestCustomerCreditDate", "latestCreditAmount", "primeLendingRate", "annualInterestRate",
+                "collateralPledged", "restructuredLoans", "pastDueDays", "pastDueAmount", "orgAccruedInterestAmount", "usdAccruedInterestAmount", "tzsAccruedInterestAmount",
+                "orgPenaltyChargedAmount", "usdPenaltyChargedAmount", "tzsPenaltyChargedAmount",
+                "orgPenaltyPaidAmount", "usdPenaltyPaidAmount", "tzsPenaltyPaidAmount",
+                "orgLoanFeesChargedAmount", "usdLoanFeesChargedAmount", "tzsLoanFeesChargedAmount",
+                "orgLoanFeesPaidAmount", "usdLoanFeesPaidAmount", "tzsLoanFeesPaidAmount",
+                "orgTotMonthlyPaymentAmount", "usdTotMonthlyPaymentAmount", "tzsTotMonthlyPaymentAmount",
+                "orgInterestPaidTotal", "usdInterestPaidTotal", "tzsInterestPaidTotal",
+                "assetClassificationCategory", "sectorSnaClassification", "negStatusContract",
+                "customerRole", "allowanceProbableLoss", "botProvision"
+            ) VALUES %s
+            """
+            
+            psycopg2.extras.execute_values(cursor, insert_query, values_list, page_size=len(values_list))
+            pg_conn.commit()
+            
+        except Exception as e:
+            self.logger.error(f"Error batch inserting {len(records)} overdraft records: {e}")
+            raise
     
     def insert_to_postgres(self, record, cursor):
         """Insert overdraft record to PostgreSQL"""
@@ -713,7 +919,7 @@ class OverdraftStreamingPipeline:
                 "orgOutstandingAmount", "usdOutstandingAmount", "tzsOutstandingAmount",
                 "orgOutstandingPrincipalAmount", "usdOutstandingPrincipalAmount", "tzsOutstandingPrincipalAmount",
                 "latestCustomerCreditDate", "latestCreditAmount", "primeLendingRate", "annualInterestRate",
-                "collateralPledged", "restructuredLoans", "orgAccruedInterestAmount", "usdAccruedInterestAmount", "tzsAccruedInterestAmount",
+                "collateralPledged", "restructuredLoans", "pastDueDays", "pastDueAmount", "orgAccruedInterestAmount", "usdAccruedInterestAmount", "tzsAccruedInterestAmount",
                 "orgPenaltyChargedAmount", "usdPenaltyChargedAmount", "tzsPenaltyChargedAmount",
                 "orgPenaltyPaidAmount", "usdPenaltyPaidAmount", "tzsPenaltyPaidAmount",
                 "orgLoanFeesChargedAmount", "usdLoanFeesChargedAmount", "tzsLoanFeesChargedAmount",
@@ -730,7 +936,7 @@ class OverdraftStreamingPipeline:
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s
             )
             """
             
@@ -748,7 +954,7 @@ class OverdraftStreamingPipeline:
                 record.orgOutstandingAmount, record.usdOutstandingAmount, record.tzsOutstandingAmount,
                 record.orgOutstandingPrincipalAmount, record.usdOutstandingPrincipalAmount, record.tzsOutstandingPrincipalAmount,
                 record.latestCustomerCreditDate, record.latestCreditAmount, record.primeLendingRate, record.annualInterestRate,
-                collateral_json, record.restructuredLoans, record.orgAccruedInterestAmount, record.usdAccruedInterestAmount, record.tzsAccruedInterestAmount,
+                collateral_json, record.restructuredLoans, record.pastDueDays, record.pastDueAmount, record.orgAccruedInterestAmount, record.usdAccruedInterestAmount, record.tzsAccruedInterestAmount,
                 record.orgPenaltyChargedAmount, record.usdPenaltyChargedAmount, record.tzsPenaltyChargedAmount,
                 record.orgPenaltyPaidAmount, record.usdPenaltyPaidAmount, record.tzsPenaltyPaidAmount,
                 record.orgLoanFeesChargedAmount, record.usdLoanFeesChargedAmount, record.tzsLoanFeesChargedAmount,
