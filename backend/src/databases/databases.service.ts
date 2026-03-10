@@ -6,6 +6,10 @@ import * as path from 'path';
 @Injectable()
 export class DatabasesService {
   private readonly logger = new Logger(DatabasesService.name);
+  
+  // Cache for DB2 tables with 5-minute TTL
+  private db2TablesCache: { data: any[]; timestamp: number } | null = null;
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -17,6 +21,12 @@ export class DatabasesService {
   }
 
   async getDb2Tables(): Promise<any[]> {
+    // Check cache first
+    if (this.db2TablesCache && Date.now() - this.db2TablesCache.timestamp < this.CACHE_TTL) {
+      this.logger.log(`📦 Returning cached DB2 tables (${this.db2TablesCache.data.length} tables)`);
+      return this.db2TablesCache.data;
+    }
+
     try {
       const { ibmdb, connStr } = this.getDb2Connection();
       
@@ -26,8 +36,16 @@ export class DatabasesService {
       
       this.logger.log(`✅ DB2: Connected successfully`);
 
-      // Pipeline summary queries folder - go up one level from backend to project root
-      const summariesDir = path.resolve(process.cwd(), '..', 'sqls', 'db2-summaries');
+      // Pipeline summary queries folder - handle multiple path scenarios
+      let summariesDir = path.resolve(process.cwd(), '..', 'sqls', 'db2-summaries');
+      
+      // If directory doesn't exist, try other paths
+      if (!fs.existsSync(summariesDir)) {
+        summariesDir = path.resolve(process.cwd(), 'sqls', 'db2-summaries');
+      }
+      if (!fs.existsSync(summariesDir)) {
+        summariesDir = path.resolve('sqls', 'db2-summaries');
+      }
       
       // Pipeline name mapping
       const pipelineNames: Record<string, string> = {
@@ -70,19 +88,20 @@ export class DatabasesService {
               });
             });
             
-            const recordCount = result.length > 0 ? parseInt(result[0].record_count, 10) : 0;
+            // DB2 returns column names in uppercase by default
+            const recordCount = result.length > 0 ? parseInt(result[0].RECORD_COUNT || result[0].record_count, 10) : 0;
             
             tables.push({
               name: pipelineName,
               displayName: displayName,
-              recordCount: recordCount,
+              recordCount: isNaN(recordCount) ? 0 : recordCount,
               schema: 'pipeline',
               remarks: `Pipeline: ${displayName}`,
             });
             
-            totalRecords += recordCount;
+            totalRecords += isNaN(recordCount) ? 0 : recordCount;
             
-            this.logger.log(`📊 ${displayName}: ${recordCount.toLocaleString()} records`);
+            this.logger.log(`📊 ${displayName}: ${isNaN(recordCount) ? 0 : recordCount.toLocaleString()} records`);
           } catch (err: any) {
             this.logger.warn(`Could not get count for ${pipelineName}: ${err.message}`);
             tables.push({
@@ -100,6 +119,14 @@ export class DatabasesService {
 
       connection.close();
       this.logger.log(`📊 DB2: Found ${tables.length} pipelines with ${totalRecords.toLocaleString()} total records`);
+      
+      // Store in cache
+      this.db2TablesCache = {
+        data: tables,
+        timestamp: Date.now(),
+      };
+      this.logger.log(`💾 Cached DB2 tables for ${this.CACHE_TTL / 1000 / 60} minutes`);
+      
       return tables;
     } catch (error: any) {
       this.logger.error(`❌ DB2 Connection Failed: ${error.message}`);
@@ -254,7 +281,7 @@ export class DatabasesService {
     }
   }
 
-  async getDb2TableData(pipelineName: string, limit = 100, offset = 0): Promise<{ data: any[]; total: number; columns: string[] }> {
+  async getDb2TableData(pipelineName: string, limit = 10, offset = 0): Promise<{ data: any[]; total: number; columns: string[] }> {
     try {
       const { ibmdb, connStr } = this.getDb2Connection();
       
@@ -286,9 +313,19 @@ export class DatabasesService {
         return { data: [], total: 0, columns: [] };
       }
 
-      // Read the SQL file - go up one level from backend to project root
+      // Read the SQL file - handle both development and production paths
       const pipelinesDir = this.configService.get<string>('PIPELINES_DIR') || '..';
-      const sqlPath = path.resolve(process.cwd(), pipelinesDir, 'sqls', sqlFile);
+      let sqlPath = path.resolve(process.cwd(), pipelinesDir, 'sqls', sqlFile);
+      
+      // If file doesn't exist, try relative to workspace root
+      if (!fs.existsSync(sqlPath)) {
+        sqlPath = path.resolve(process.cwd(), '..', 'sqls', sqlFile);
+      }
+      
+      // If still doesn't exist, try direct sqls path
+      if (!fs.existsSync(sqlPath)) {
+        sqlPath = path.resolve('sqls', sqlFile);
+      }
       
       if (!fs.existsSync(sqlPath)) {
         connection.close();
@@ -298,8 +335,80 @@ export class DatabasesService {
 
       let sql = fs.readFileSync(sqlPath, 'utf-8');
 
-      // Get total count first
-      const countSql = `SELECT COUNT(*) as count FROM (${sql})`;
+      // Remove or replace :last_timestamp parameter for table viewing
+      sql = sql.replace(/:last_timestamp/g, "'1900-01-01 00:00:00'");
+
+      // Remove trailing semicolon
+      sql = sql.trim().replace(/;$/, '');
+
+      // Detect query complexity
+      const hasGroupBy = /GROUP\s+BY/i.test(sql);
+      const hasWithClause = /^\s*WITH\s+/i.test(sql);
+      const hasInlineCTE = /\)\s+\w+\s+AS\s*\(/i.test(sql); // Detect inline CTEs like ") loc_region AS ("
+      const hasOrderBy = /ORDER\s+BY/i.test(sql);
+      const hasRowNumber = /ROW_NUMBER\s*\(\s*OVER\s*\(/i.test(sql);
+
+      let paginatedSql: string;
+      let countSql: string;
+
+      if (hasWithClause || hasInlineCTE || hasRowNumber) {
+        // For complex queries with CTEs or ROW_NUMBER, fetch all and paginate in JavaScript
+        // This is slower but more reliable for complex DB2 queries
+        
+        // Get all data directly (no subquery wrapping)
+        const allData = await new Promise<any[]>((resolve, reject) => {
+          connection.query(sql, (err: any, data: any[]) => {
+            if (err) {
+              this.logger.error(`Query failed for ${pipelineName}: ${err.message}`);
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        });
+
+        // Count and paginate in JavaScript
+        const total = allData.length;
+        const paginatedData = allData.slice(offset, offset + limit);
+        const columns = paginatedData.length > 0 ? Object.keys(paginatedData[0]) : [];
+
+        connection.close();
+
+        this.logger.log(`📥 ${pipelineName}: ${paginatedData.length} rows (${offset}-${offset + limit}) of ${total} total (JS pagination)`);
+
+        return {
+          data: paginatedData,
+          total,
+          columns,
+        };
+      } else if (hasGroupBy) {
+        // For GROUP BY queries, use CTE with ROW_NUMBER
+        countSql = `SELECT COUNT(*) as count FROM (${sql})`;
+        
+        paginatedSql = `
+          WITH base_query AS (
+            ${sql}
+          )
+          SELECT * FROM (
+            SELECT base_query.*, ROW_NUMBER() OVER (ORDER BY 1) as rn
+            FROM base_query
+          ) AS wrapped
+          WHERE rn > ${offset} AND rn <= ${offset + limit}
+        `.trim();
+      } else {
+        // For simple queries, use OFFSET/FETCH
+        countSql = `SELECT COUNT(*) as count FROM (${sql})`;
+        
+        if (hasOrderBy) {
+          // Remove ORDER BY for pagination, then add it back
+          const sqlWithoutOrder = sql.replace(/ORDER\s+BY\s+[^)]+$/i, '');
+          paginatedSql = `${sqlWithoutOrder} OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
+        } else {
+          paginatedSql = `${sql} ORDER BY 1 OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
+        }
+      }
+
+      // Get total count
       const countResult = await new Promise<any[]>((resolve, reject) => {
         connection.query(countSql, (err: any, data: any[]) => {
           if (err) reject(err);
@@ -307,16 +416,17 @@ export class DatabasesService {
         });
       });
 
-      const total = parseInt(countResult[0].count, 10);
+      const total = parseInt(countResult[0]?.COUNT || countResult[0]?.count || '0', 10);
 
-      // Add pagination to the query
-      const paginatedSql = `${sql} ORDER BY 1 OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
-      
-      // Get data with pagination
+      // Get paginated data
       const dataResult = await new Promise<any[]>((resolve, reject) => {
         connection.query(paginatedSql, (err: any, data: any[]) => {
-          if (err) reject(err);
-          else resolve(data);
+          if (err) {
+            this.logger.error(`Pagination query failed for ${pipelineName}: ${err.message}`);
+            reject(err);
+          } else {
+            resolve(data);
+          }
         });
       });
 
@@ -381,5 +491,23 @@ export class DatabasesService {
       this.logger.error(`Error fetching pipeline stats: ${error.message}`);
       return [];
     }
+  }
+
+  clearDb2Cache(): void {
+    this.db2TablesCache = null;
+    this.logger.log('🗑️  DB2 cache cleared');
+  }
+
+  getCacheInfo(): { cached: boolean; age?: number; ttl: number } {
+    if (!this.db2TablesCache) {
+      return { cached: false, ttl: this.CACHE_TTL };
+    }
+    
+    const age = Date.now() - this.db2TablesCache.timestamp;
+    return {
+      cached: true,
+      age,
+      ttl: this.CACHE_TTL,
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Query, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { DatabasesService } from './databases.service';
 
@@ -82,5 +82,21 @@ export class DatabasesController {
   async getPipelineStats() {
     this.logger.log('📥 GET /databases/postgres/pipeline-stats');
     return this.databasesService.getPipelineStats();
+  }
+
+  @Delete('db2/cache')
+  @ApiOperation({ summary: 'Clear DB2 tables cache' })
+  @ApiResponse({ status: 200, description: 'Cache cleared successfully' })
+  clearDb2Cache() {
+    this.logger.log('📥 DELETE /databases/db2/cache - Clearing cache...');
+    this.databasesService.clearDb2Cache();
+    return { success: true, message: 'DB2 cache cleared' };
+  }
+
+  @Get('db2/cache-info')
+  @ApiOperation({ summary: 'Get DB2 cache information' })
+  @ApiResponse({ status: 200, description: 'Cache information' })
+  getDb2CacheInfo() {
+    return this.databasesService.getCacheInfo();
   }
 }

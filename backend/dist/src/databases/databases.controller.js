@@ -58,6 +58,14 @@ let DatabasesController = DatabasesController_1 = class DatabasesController {
         this.logger.log('📥 GET /databases/postgres/pipeline-stats');
         return this.databasesService.getPipelineStats();
     }
+    clearDb2Cache() {
+        this.logger.log('📥 DELETE /databases/db2/cache - Clearing cache...');
+        this.databasesService.clearDb2Cache();
+        return { success: true, message: 'DB2 cache cleared' };
+    }
+    getDb2CacheInfo() {
+        return this.databasesService.getCacheInfo();
+    }
 };
 exports.DatabasesController = DatabasesController;
 __decorate([
@@ -113,6 +121,22 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], DatabasesController.prototype, "getPipelineStats", null);
+__decorate([
+    (0, common_1.Delete)('db2/cache'),
+    (0, swagger_1.ApiOperation)({ summary: 'Clear DB2 tables cache' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Cache cleared successfully' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], DatabasesController.prototype, "clearDb2Cache", null);
+__decorate([
+    (0, common_1.Get)('db2/cache-info'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get DB2 cache information' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Cache information' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], DatabasesController.prototype, "getDb2CacheInfo", null);
 exports.DatabasesController = DatabasesController = DatabasesController_1 = __decorate([
     (0, swagger_1.ApiTags)('databases'),
     (0, common_1.Controller)('databases'),

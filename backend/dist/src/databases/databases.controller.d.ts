@@ -16,4 +16,13 @@ export declare class DatabasesController {
         columns: string[];
     }>;
     getPipelineStats(): Promise<any>;
+    clearDb2Cache(): {
+        success: boolean;
+        message: string;
+    };
+    getDb2CacheInfo(): {
+        cached: boolean;
+        age?: number;
+        ttl: number;
+    };
 }
