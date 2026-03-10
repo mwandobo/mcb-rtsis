@@ -197,7 +197,6 @@ SELECT CURRENT_TIMESTAMP                                                        
        NULL                                                                                             AS sward,
        NULL                                                                                             AS scountry
 FROM customer c
-
          LEFT JOIN cust_address c_address
                    ON c_address.fk_customercust_id = c.cust_id
                        AND c_address.communication_addr = '1'
