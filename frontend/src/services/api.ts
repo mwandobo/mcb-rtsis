@@ -12,7 +12,7 @@ import type {
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 10000,
+  timeout: 60000, // Increased to 60 seconds for DB2 queries
 });
 
 export const pipelinesApi = {

@@ -1,9 +1,6 @@
 -- DB2 Summary Query for Personal Data Pipeline
 SELECT COUNT(*) as record_count
 FROM CUSTOMER c
-         JOIN CUSTOMER_ADDRESS ca ON ca.CUST_ID = c.CUST_ID
-         JOIN CUSTOMER_CONTACT cc ON cc.CUST_ID = c.CUST_ID
-         JOIN GENDER g ON g.GENDER_ID = c.GENDER_ID
-         JOIN MARITAL_STATUS ms ON ms.MARITAL_STATUS_ID = c.MARITAL_STATUS_ID
-         JOIN COUNTRY co ON co.ID_COUNTRY = c.NATIONALITY
-         JOIN CUSTOMER_IDENTIFICATION ci ON ci.CUST_ID = c.CUST_ID
+         LEFT JOIN CUST_ADDRESS c_address ON c_address.fk_customercust_id = c.cust_id
+             AND c_address.communication_addr = '1'
+             AND c_address.entry_status = '1'

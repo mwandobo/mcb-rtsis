@@ -27,18 +27,36 @@ export function DB2Source() {
   const [tableLoading, setTableLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [offset, setOffset] = useState(0);
-  const limit = 100;
+  const limit = 10;
 
   const [error, setError] = useState<string | null>(null);
+  const [cacheInfo, setCacheInfo] = useState<{ cached: boolean; age?: number; ttl: number } | null>(null);
 
-  const fetchTables = async () => {
+  const fetchTables = async (forceRefresh = false) => {
     try {
       setError(null);
-      const data = await api.get('/databases/db2/tables');
+      
+      // Clear cache if force refresh
+      if (forceRefresh) {
+        await api.delete('/databases/db2/cache');
+      }
+      
+      const response = await api.get('/databases/db2/tables');
+      const data = response.data; // Extract data from axios response
       setTables(Array.isArray(data) ? data : []);
+      
+      // Fetch cache info
+      const cacheResponse = await api.get('/databases/db2/cache-info');
+      setCacheInfo(cacheResponse.data);
     } catch (err: any) {
       console.error('Failed to load DB2 tables:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to connect to DB2');
+      
+      // Better error message for timeout
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('DB2 query is taking longer than expected. The backend is still processing - please wait and try refreshing in a moment.');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Failed to connect to DB2');
+      }
       setTables([]);
     } finally {
       setLoading(false);
@@ -55,8 +73,8 @@ export function DB2Source() {
     setOffset(0);
     
     try {
-      const data = await api.get(`/databases/db2/table/${tableName}`, { params: { limit, offset: 0 } });
-      setTableData(data);
+      const response = await api.get(`/databases/db2/table/${tableName}`, { params: { limit, offset: 0 } });
+      setTableData(response.data);
     } catch (err) {
       console.error('Failed to load table data:', err);
       setTableData({ data: [], total: 0, columns: [] });
@@ -72,10 +90,10 @@ export function DB2Source() {
     setOffset(newOffset);
     
     try {
-      const data = await api.get(`/databases/db2/table/${selectedTable}`, { params: { limit, offset: newOffset } });
+      const response = await api.get(`/databases/db2/table/${selectedTable}`, { params: { limit, offset: newOffset } });
       setTableData({
-        ...data,
-        data: [...tableData.data, ...data.data],
+        ...response.data,
+        data: [...tableData.data, ...response.data.data],
       });
     } catch (err) {
       console.error('Failed to load more data:', err);
@@ -107,16 +125,34 @@ export function DB2Source() {
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             {tables.length} tables • {totalRecords.toLocaleString()} total records
+            {cacheInfo?.cached && (
+              <span className="ml-2 text-xs text-blue-600">
+                • Cached {Math.floor((cacheInfo.age || 0) / 1000)}s ago
+              </span>
+            )}
           </p>
         </div>
-        <button
-          onClick={fetchTables}
-          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-opacity"
-          style={{ backgroundColor: BRAND_BLUE }}
-        >
-          <FiRefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => fetchTables(false)}
+            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: BRAND_BLUE }}
+          >
+            <FiRefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          {cacheInfo?.cached && (
+            <button
+              onClick={() => fetchTables(true)}
+              className="flex items-center gap-2 px-4 py-2 border-2 rounded-lg hover:bg-gray-50 transition-colors"
+              style={{ borderColor: BRAND_BLUE, color: BRAND_BLUE }}
+              title="Force refresh from DB2 (clears cache)"
+            >
+              <FiRefreshCw className="w-4 h-4" />
+              Force Refresh
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search */}

@@ -2,6 +2,8 @@ import { ConfigService } from '../config/config.service';
 export declare class DatabasesService {
     private readonly configService;
     private readonly logger;
+    private db2TablesCache;
+    private readonly CACHE_TTL;
     constructor(configService: ConfigService);
     private getDb2Connection;
     getDb2Tables(): Promise<any[]>;
@@ -17,4 +19,10 @@ export declare class DatabasesService {
         columns: string[];
     }>;
     getPipelineStats(): Promise<any>;
+    clearDb2Cache(): void;
+    getCacheInfo(): {
+        cached: boolean;
+        age?: number;
+        ttl: number;
+    };
 }
