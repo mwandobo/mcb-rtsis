@@ -74,6 +74,14 @@ FROM GLI_TRX_EXTRACT as gte
                            GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
 
+--          LEFT JOIN (SELECT *
+--                     FROM (SELECT pa.*,
+--                                  ROW_NUMBER() OVER (PARTITION BY CUST_ID ORDER BY ACCOUNT_NUMBER) rn
+--                           FROM PROFITS_ACCOUNT pa
+--                           WHERE PRFT_SYSTEM = 3)
+--                     WHERE rn = 1) pa ON pa.CUST_ID = gte.CUST_ID
+
 
 where gl.EXTERNAL_GLACCOUNT IN ('100050001', '100013000', '100050000')
-  AND pa.ACCOUNT_NUMBER <> '';
+  AND gte.CUST_ID <> ''
+;
