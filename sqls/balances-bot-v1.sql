@@ -1,5 +1,4 @@
 select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
-       gte.CUST_ID                                       as cust_id,
        pa.ACCOUNT_NUMBER                                 as accountNumber,
        'BANK OF TANZANIA'                                as accountName,
        'TIPS'                                            as accountType,
