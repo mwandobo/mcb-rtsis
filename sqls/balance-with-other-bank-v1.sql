@@ -17,7 +17,7 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
 
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'TZS'
-               THEN  0
+               THEN 0
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
 
@@ -38,8 +38,8 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        'Current'                                          as assetsClassificationCategory,
        gte.TRN_DATE                                       as contractDate,
        gte.AVAILABILITY_DATE                              as maturityDate,
-       'Unrated'      as externalRatingCorrespondentBank,
-       'Grade B'                                               as gradesUnratedBanks
+       'Unrated'                                          as externalRatingCorrespondentBank,
+       'Grade B'                                          as gradesUnratedBanks
 
 FROM GLI_TRX_EXTRACT as gte
 
@@ -48,14 +48,18 @@ FROM GLI_TRX_EXTRACT as gte
          LEFT JOIN
      CUSTOMER c ON gte.CUST_ID = c.CUST_ID
 
-         LEFT JOIN
-     PROFITS.PROFITS_ACCOUNT pa ON gte.CUST_ID = pa.CUST_ID and PRFT_SYSTEM = 3
-
          -- =========================================
 -- Join Currency Using SHORT_DESCR
 -- =========================================
          LEFT JOIN CURRENCY curr
                    ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+
+         LEFT JOIN (SELECT *
+                    FROM (SELECT pa.*,
+                                 ROW_NUMBER() OVER (PARTITION BY CUST_ID ORDER BY ACCOUNT_NUMBER) rn
+                          FROM PROFITS_ACCOUNT pa
+                          WHERE PRFT_SYSTEM = 3)
+                    WHERE rn = 1) pa ON pa.CUST_ID = gte.CUST_ID
 
     -- =========================================
 -- Latest Fixing Rate Per Currency
@@ -73,8 +77,6 @@ FROM GLI_TRX_EXTRACT as gte
                                                     WHERE b.activation_date <= CURRENT_DATE)
                            GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
-
-
 where gl.EXTERNAL_GLACCOUNT IN ('100050001', '100013000', '100050000')
-  AND pa.ACCOUNT_NUMBER <> ''
-  AND gte.TMSTAMP > :last_timestamp;
+  AND gte.CUST_ID <> 0
+;

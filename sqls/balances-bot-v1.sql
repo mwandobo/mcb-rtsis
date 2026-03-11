@@ -1,4 +1,5 @@
 select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
+       gte.CUST_ID                                       as cust_id,
        pa.ACCOUNT_NUMBER                                 as accountNumber,
        'BANK OF TANZANIA'                                as accountName,
        'TIPS'                                            as accountType,
@@ -6,6 +7,8 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
        gte.CURRENCY_SHORT_DES                            as currency,
        gte.DC_AMOUNT                                     AS orgAmount,
        CASE
+           WHEN gte.CURRENCY_SHORT_DES = 'TZS'
+               THEN 0
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN DECIMAL(gte.DC_AMOUNT, 18, 2)
 
@@ -36,9 +39,13 @@ FROM GLI_TRX_EXTRACT AS gte
 
          LEFT JOIN CURRENCY curr
                    ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
+         LEFT JOIN (SELECT *
+                    FROM (SELECT pa.*,
+                                 ROW_NUMBER() OVER (PARTITION BY CUST_ID ORDER BY ACCOUNT_NUMBER) rn
+                          FROM PROFITS_ACCOUNT pa
+                          WHERE PRFT_SYSTEM = 3)
+                    WHERE rn = 1) pa ON pa.CUST_ID = gte.CUST_ID
 
-         JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
-    AND pa.PRFT_SYSTEM = 3
 
          LEFT JOIN (SELECT fr.fk_currencyid_curr,
                            fr.rate
@@ -54,5 +61,4 @@ FROM GLI_TRX_EXTRACT AS gte
                            GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
 
-WHERE gl.EXTERNAL_GLACCOUNT = '100028000'
-  AND gte.TMSTAMP > :last_timestamp
+WHERE gl.EXTERNAL_GLACCOUNT = '100028000' and gte.CUST_ID <> 0
