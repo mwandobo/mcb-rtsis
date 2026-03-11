@@ -31,7 +31,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class BalanceWithBotRecord:
     """Data class for balance with BOT records based on balances-bot-v1.sql"""
     reportingDate: str
-    cust_id: Optional[int]  # Added missing cust_id field
     accountNumber: Optional[str]
     accountName: str
     accountType: str
@@ -276,19 +275,18 @@ class BalanceWithBotStreamingPipeline:
             
             record = BalanceWithBotRecord(
                 reportingDate=safe_string(row[0]),
-                cust_id=safe_int(row[1]) if row[1] else None,  # Added cust_id field
-                accountNumber=safe_string(row[2]) if row[2] else None,
-                accountName=safe_string(row[3]),
-                accountType=safe_string(row[4]),
-                subAccountType=safe_string(row[5]) if row[5] else None,
-                currency=safe_string(row[6]),
-                orgAmount=safe_decimal(row[7]),
-                usdAmount=safe_decimal(row[8]),
-                tzsAmount=safe_decimal(row[9]),
-                transactionDate=safe_string(row[10]),
-                maturityDate=safe_string(row[11]),
-                allowanceProbableLoss=safe_int(row[12]),
-                botProvision=safe_int(row[13])
+                accountNumber=safe_string(row[1]) if row[1] else None,
+                accountName=safe_string(row[2]),
+                accountType=safe_string(row[3]),
+                subAccountType=safe_string(row[4]) if row[4] else None,
+                currency=safe_string(row[5]),
+                orgAmount=safe_decimal(row[6]),
+                usdAmount=safe_decimal(row[7]),
+                tzsAmount=safe_decimal(row[8]),
+                transactionDate=safe_string(row[9]),
+                maturityDate=safe_string(row[10]),
+                allowanceProbableLoss=safe_int(row[11]),
+                botProvision=safe_int(row[12])
             )
             
             return record
