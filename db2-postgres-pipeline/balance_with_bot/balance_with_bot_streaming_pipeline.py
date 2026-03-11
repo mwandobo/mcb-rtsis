@@ -15,6 +15,7 @@ from dataclasses import dataclass, asdict
 from contextlib import contextmanager
 from typing import Optional, List
 from decimal import Decimal
+import decimal
 import sys
 import os
 
@@ -30,6 +31,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class BalanceWithBotRecord:
     """Data class for balance with BOT records based on balances-bot-v1.sql"""
     reportingDate: str
+    cust_id: Optional[int]  # Added missing cust_id field
     accountNumber: Optional[str]
     accountName: str
     accountType: str
@@ -88,10 +90,10 @@ class BalanceWithBotStreamingPipeline:
                 timestamp_value = '1900-01-01-00.00.00.000000'
             else:
                 timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
-            sql = sql.replace(':last_timestamp', f"'{timestamp_value}'")
-        else:
-            # Full load mode - remove the timestamp filter
-            sql = sql.replace('AND gte.TMSTAMP > :last_timestamp', '')
+            # Add timestamp filter to the WHERE clause
+            sql = sql.replace('WHERE gl.EXTERNAL_GLACCOUNT = \'100028000\' and gte.CUST_ID <> 0', 
+                            f'WHERE gl.EXTERNAL_GLACCOUNT = \'100028000\' and gte.CUST_ID <> 0 AND gte.TMSTAMP > \'{timestamp_value}\'')
+        # For full load mode, no timestamp filter needed
         
         return sql
     
@@ -111,7 +113,7 @@ class BalanceWithBotStreamingPipeline:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
                 
-                base_where = "WHERE gl.EXTERNAL_GLACCOUNT = '100028000'"
+                base_where = "WHERE gl.EXTERNAL_GLACCOUNT = '100028000' and gte.CUST_ID <> 0"
                 count_query = f"""
                     SELECT COUNT(*) 
                     FROM GLI_TRX_EXTRACT gte
@@ -119,7 +121,12 @@ class BalanceWithBotStreamingPipeline:
                     JOIN CUSTOMER c ON c.CUST_ID = gte.CUST_ID
                     LEFT JOIN CURRENCY cu ON UPPER(TRIM(cu.SHORT_DESCR)) = UPPER(TRIM(gte.CURRENCY_SHORT_DES))
                     LEFT JOIN CURRENCY curr ON curr.SHORT_DESCR = gte.CURRENCY_SHORT_DES
-                    JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID AND pa.PRFT_SYSTEM = 3
+                    LEFT JOIN (SELECT *
+                               FROM (SELECT pa.*,
+                                            ROW_NUMBER() OVER (PARTITION BY CUST_ID ORDER BY ACCOUNT_NUMBER) rn
+                                     FROM PROFITS_ACCOUNT pa
+                                     WHERE PRFT_SYSTEM = 3)
+                               WHERE rn = 1) pa ON pa.CUST_ID = gte.CUST_ID
                     LEFT JOIN (
                         SELECT fr.fk_currencyid_curr, fr.rate
                         FROM fixing_rate fr
@@ -252,8 +259,11 @@ class BalanceWithBotStreamingPipeline:
                 if value is None:
                     return None
                 try:
+                    # If it's already a Decimal, return it as-is
+                    if isinstance(value, Decimal):
+                        return value
                     return Decimal(str(value))
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, decimal.ConversionSyntax, decimal.InvalidOperation):
                     return None
             
             def safe_int(value):
@@ -266,18 +276,19 @@ class BalanceWithBotStreamingPipeline:
             
             record = BalanceWithBotRecord(
                 reportingDate=safe_string(row[0]),
-                accountNumber=safe_string(row[1]) if row[1] else None,
-                accountName=safe_string(row[2]),
-                accountType=safe_string(row[3]),
-                subAccountType=safe_string(row[4]) if row[4] else None,
-                currency=safe_string(row[5]),
-                orgAmount=safe_decimal(row[6]),
-                usdAmount=safe_decimal(row[7]),
-                tzsAmount=safe_decimal(row[8]),
-                transactionDate=safe_string(row[9]),
-                maturityDate=safe_string(row[10]),
-                allowanceProbableLoss=safe_int(row[11]),
-                botProvision=safe_int(row[12])
+                cust_id=safe_int(row[1]) if row[1] else None,  # Added cust_id field
+                accountNumber=safe_string(row[2]) if row[2] else None,
+                accountName=safe_string(row[3]),
+                accountType=safe_string(row[4]),
+                subAccountType=safe_string(row[5]) if row[5] else None,
+                currency=safe_string(row[6]),
+                orgAmount=safe_decimal(row[7]),
+                usdAmount=safe_decimal(row[8]),
+                tzsAmount=safe_decimal(row[9]),
+                transactionDate=safe_string(row[10]),
+                maturityDate=safe_string(row[11]),
+                allowanceProbableLoss=safe_int(row[12]),
+                botProvision=safe_int(row[13])
             )
             
             return record
@@ -291,9 +302,19 @@ class BalanceWithBotStreamingPipeline:
     def validate_record(self, record):
         """Validate balance with BOT record"""
         try:
-            if not record.currency:
-                self.logger.warning("Missing currency")
+            # Allow records with missing currency - they are valid in the source data
+            # Only reject records with critical missing data
+            if not record.accountName:
+                self.logger.warning("Missing account name - rejecting record")
                 return False
+            
+            if not record.accountType:
+                self.logger.warning("Missing account type - rejecting record")
+                return False
+            
+            # Log missing currency but don't reject the record
+            if not record.currency:
+                self.logger.debug("Record has missing currency but will be processed")
             
             return True
             
