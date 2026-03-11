@@ -125,6 +125,7 @@ WITH LatestInstallments AS (SELECT *
                           VARCHAR_FORMAT(la.ACC_OPEN_DT, 'DDMMYYYYHHMM')                        AS contractDate,
                           la.ACC_LIMIT_AMN                                                      AS orgSanctionedAmount,
                           CASE
+                              WHEN cu.SHORT_DESCR = 'TZS' THEN 0
                               WHEN cu.SHORT_DESCR = 'USD' THEN la.ACC_LIMIT_AMN
                               WHEN cu.SHORT_DESCR <> 'USD'
                                   THEN DECIMAL(la.ACC_LIMIT_AMN / fx.rate, 18, 2)
@@ -134,6 +135,7 @@ WITH LatestInstallments AS (SELECT *
                               ELSE la.ACC_LIMIT_AMN END                                         AS tzsSanctionedAmount,
                           la.TOT_DRAWDOWN_AMN                                                   AS orgDisbursedAmount,
                           CASE
+                              WHEN cu.SHORT_DESCR = 'TZS' THEN 0
                               WHEN cu.SHORT_DESCR = 'USD' THEN la.TOT_DRAWDOWN_AMN
                               WHEN cu.SHORT_DESCR <> 'USD' THEN la.ACC_LIMIT_AMN / fx.RATE
                               ELSE NULL
@@ -146,6 +148,7 @@ WITH LatestInstallments AS (SELECT *
                           VARCHAR_FORMAT(COALESCE(la.OV_EXP_DT, la.ACC_EXP_DT), 'DDMMYYYYHHMM') AS realEndDate,
                           (la.NRM_CAP_BAL + la.OV_CAP_BAL)                                      AS orgOutstandingPrincipalAmount,
                           CASE
+                              WHEN cu.SHORT_DESCR = 'TZS' THEN 0
                               WHEN cu.SHORT_DESCR = 'USD' THEN (la.NRM_CAP_BAL + la.OV_CAP_BAL)
                               WHEN cu.SHORT_DESCR <> 'USD'
                                   THEN DECIMAL((la.NRM_CAP_BAL + la.OV_CAP_BAL) / fx.rate, 18, 2)
@@ -155,6 +158,8 @@ WITH LatestInstallments AS (SELECT *
                               ELSE (la.NRM_CAP_BAL + la.OV_CAP_BAL) END                         AS tzsOutstandingPrincipalAmount,
                           li.INSTALL_AMN                                                        AS orgInstallmentAmount,
                           CASE
+                              WHEN cu.SHORT_DESCR = 'TZS' THEN 0
+
                               WHEN cu.SHORT_DESCR = 'USD' THEN li.INSTALL_AMN
                               ELSE NULL
                               END                                                               AS usdInstallmentAmount,
