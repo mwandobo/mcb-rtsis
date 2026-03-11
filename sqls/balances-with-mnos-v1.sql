@@ -53,7 +53,5 @@ FROM GLI_TRX_EXTRACT gte
                                                     WHERE b.activation_date <= CURRENT_DATE)
                            GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = curr.ID_CURRENCY
-
-         LEFT JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = gte.CUST_ID
 WHERE gte.FK_GLG_ACCOUNTACCO IN ('1.4.4.00.0058', '1.4.4.00.0062')
-  AND gte.TMSTAMP > :last_timestamp
+--   AND gte.TMSTAMP > :last_timestamp
