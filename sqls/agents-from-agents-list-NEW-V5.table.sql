@@ -132,6 +132,7 @@ FROM AGENTS_LIST_V4 al
                                                '_', ''),
                                        ',', '')
                                || '%'
+
          LEFT JOIN (SELECT REGION,
                            DISTRICT,
                            WARD,
@@ -145,4 +146,4 @@ FROM AGENTS_LIST_V4 al
                                    loc_district_from_region.DISTRICT
                            ) = loc_ward_from_district.DISTRICT
 
---end of district
+--end of ward

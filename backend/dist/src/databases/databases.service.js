@@ -199,32 +199,34 @@ let DatabasesService = DatabasesService_1 = class DatabasesService {
                 password: dbConfig.password,
             });
             await client.connect();
+            const tableParts = tableName.includes('.') ? tableName.split('.') : ['public', tableName];
+            const schemaName = tableParts[0];
+            const tableNameOnly = tableParts[1];
             const checkResult = await client.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE LOWER(table_schema) = LOWER(SPLIT_PART($1, '.', 1)) 
-            AND LOWER(table_name) = LOWER(SPLIT_PART($1, '.', 2))
-        )
-      `, [tableName]);
-            if (!checkResult.rows[0].exists) {
+        SELECT table_schema, table_name
+        FROM information_schema.tables 
+        WHERE LOWER(table_schema) = LOWER($1) 
+          AND LOWER(table_name) = LOWER($2)
+        LIMIT 1
+      `, [schemaName, tableNameOnly]);
+            if (checkResult.rows.length === 0) {
                 await client.end();
-                this.logger.warn(`Table ${tableName} does not exist`);
+                this.logger.warn(`Table ${schemaName}.${tableNameOnly} does not exist`);
                 return { data: [], total: 0, columns: [] };
             }
+            const actualSchema = checkResult.rows[0].table_schema;
+            const actualTable = checkResult.rows[0].table_name;
             const columnsResult = await client.query(`
         SELECT column_name, data_type
         FROM information_schema.columns
-        WHERE LOWER(table_schema) = LOWER(SPLIT_PART($1, '.', 1)) 
-          AND LOWER(table_name) = LOWER(SPLIT_PART($1, '.', 2))
+        WHERE table_schema = $1 AND table_name = $2
         ORDER BY ordinal_position
-      `, [tableName]);
+      `, [actualSchema, actualTable]);
             const columns = columnsResult.rows.map(row => row.column_name);
             if (columnsResult.rows.length === 0) {
                 await client.end();
                 return { data: [], total: 0, columns: [] };
             }
-            const actualSchema = columnsResult.rows[0].table_schema;
-            const actualTable = columnsResult.rows[0].table_name;
             const dataResult = await client.query(`SELECT * FROM "${actualSchema}"."${actualTable}" ORDER BY 1 LIMIT $1 OFFSET $2`, [limit, offset]);
             const countResult = await client.query(`SELECT COUNT(*) as count FROM "${actualSchema}"."${actualTable}"`);
             await client.end();
@@ -281,38 +283,52 @@ let DatabasesService = DatabasesService_1 = class DatabasesService {
             }
             let sql = fs.readFileSync(sqlPath, 'utf-8');
             sql = sql.replace(/:last_timestamp/g, "'1900-01-01 00:00:00'");
-            sql = sql.trim().replace(/;$/, '');
+            sql = sql.trim().replace(/;+\s*$/, '');
+            const openParens = (sql.match(/\(/g) || []).length;
+            const closeParens = (sql.match(/\)/g) || []).length;
+            if (openParens !== closeParens) {
+                this.logger.warn(`⚠️  SQL parentheses mismatch for ${pipelineName}: ${openParens} open, ${closeParens} close`);
+            }
             const hasGroupBy = /GROUP\s+BY/i.test(sql);
             const hasWithClause = /^\s*WITH\s+/i.test(sql);
             const hasInlineCTE = /\)\s+\w+\s+AS\s*\(/i.test(sql);
             const hasOrderBy = /ORDER\s+BY/i.test(sql);
             const hasRowNumber = /ROW_NUMBER\s*\(\s*OVER\s*\(/i.test(sql);
+            const isComplexQuery = hasWithClause || hasInlineCTE || hasRowNumber || hasGroupBy;
+            if (isComplexQuery) {
+                try {
+                    this.logger.log(`🔍 Executing complex query for ${pipelineName} (${sql.length} chars)`);
+                    this.logger.log(`🔍 Query preview: ${sql.substring(0, 200)}...`);
+                    const allData = await new Promise((resolve, reject) => {
+                        connection.query(sql, (err, data) => {
+                            if (err) {
+                                this.logger.error(`Complex query failed for ${pipelineName}: ${err.message}`);
+                                this.logger.error(`🔍 Full SQL causing error: ${sql}`);
+                                reject(err);
+                            }
+                            else {
+                                resolve(data);
+                            }
+                        });
+                    });
+                    const total = allData.length;
+                    const paginatedData = allData.slice(offset, offset + limit);
+                    const columns = paginatedData.length > 0 ? Object.keys(paginatedData[0]) : [];
+                    connection.close();
+                    this.logger.log(`📥 ${pipelineName}: ${paginatedData.length} rows (${offset}-${offset + limit}) of ${total} total (JS pagination)`);
+                    return {
+                        data: paginatedData,
+                        total,
+                        columns,
+                    };
+                }
+                catch (error) {
+                    this.logger.error(`Complex query execution failed, falling back to simple pagination: ${error.message}`);
+                }
+            }
             let paginatedSql;
             let countSql;
-            if (hasWithClause || hasInlineCTE || hasRowNumber) {
-                const allData = await new Promise((resolve, reject) => {
-                    connection.query(sql, (err, data) => {
-                        if (err) {
-                            this.logger.error(`Query failed for ${pipelineName}: ${err.message}`);
-                            reject(err);
-                        }
-                        else {
-                            resolve(data);
-                        }
-                    });
-                });
-                const total = allData.length;
-                const paginatedData = allData.slice(offset, offset + limit);
-                const columns = paginatedData.length > 0 ? Object.keys(paginatedData[0]) : [];
-                connection.close();
-                this.logger.log(`📥 ${pipelineName}: ${paginatedData.length} rows (${offset}-${offset + limit}) of ${total} total (JS pagination)`);
-                return {
-                    data: paginatedData,
-                    total,
-                    columns,
-                };
-            }
-            else if (hasGroupBy) {
+            if (hasGroupBy) {
                 countSql = `SELECT COUNT(*) as count FROM (${sql})`;
                 paginatedSql = `
           WITH base_query AS (
@@ -327,13 +343,13 @@ let DatabasesService = DatabasesService_1 = class DatabasesService {
             }
             else {
                 countSql = `SELECT COUNT(*) as count FROM (${sql})`;
-                if (hasOrderBy) {
-                    const sqlWithoutOrder = sql.replace(/ORDER\s+BY\s+[^)]+$/i, '');
-                    paginatedSql = `${sqlWithoutOrder} OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
-                }
-                else {
-                    paginatedSql = `${sql} ORDER BY 1 OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
-                }
+                paginatedSql = `
+          SELECT * FROM (
+            SELECT q.*, ROW_NUMBER() OVER (ORDER BY 1) as rn
+            FROM (${sql}) q
+          ) AS paginated
+          WHERE rn > ${offset} AND rn <= ${offset + limit}
+        `.trim();
             }
             const countResult = await new Promise((resolve, reject) => {
                 connection.query(countSql, (err, data) => {

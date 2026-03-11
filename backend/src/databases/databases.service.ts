@@ -227,29 +227,37 @@ export class DatabasesService {
 
       await client.connect();
 
+      // Parse table name - handle both "table" and "schema.table" formats
+      const tableParts = tableName.includes('.') ? tableName.split('.') : ['public', tableName];
+      const schemaName = tableParts[0];
+      const tableNameOnly = tableParts[1];
+
       // Check if table exists (case-insensitive)
       const checkResult = await client.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE LOWER(table_schema) = LOWER(SPLIT_PART($1, '.', 1)) 
-            AND LOWER(table_name) = LOWER(SPLIT_PART($1, '.', 2))
-        )
-      `, [tableName]);
+        SELECT table_schema, table_name
+        FROM information_schema.tables 
+        WHERE LOWER(table_schema) = LOWER($1) 
+          AND LOWER(table_name) = LOWER($2)
+        LIMIT 1
+      `, [schemaName, tableNameOnly]);
 
-      if (!checkResult.rows[0].exists) {
+      if (checkResult.rows.length === 0) {
         await client.end();
-        this.logger.warn(`Table ${tableName} does not exist`);
+        this.logger.warn(`Table ${schemaName}.${tableNameOnly} does not exist`);
         return { data: [], total: 0, columns: [] };
       }
 
-      // Get column names (case-insensitive)
+      // Get the actual case-sensitive table and schema names
+      const actualSchema = checkResult.rows[0].table_schema;
+      const actualTable = checkResult.rows[0].table_name;
+
+      // Get column names using actual table name
       const columnsResult = await client.query(`
         SELECT column_name, data_type
         FROM information_schema.columns
-        WHERE LOWER(table_schema) = LOWER(SPLIT_PART($1, '.', 1)) 
-          AND LOWER(table_name) = LOWER(SPLIT_PART($1, '.', 2))
+        WHERE table_schema = $1 AND table_name = $2
         ORDER BY ordinal_position
-      `, [tableName]);
+      `, [actualSchema, actualTable]);
 
       const columns = columnsResult.rows.map(row => row.column_name);
 
@@ -257,10 +265,6 @@ export class DatabasesService {
         await client.end();
         return { data: [], total: 0, columns: [] };
       }
-
-      // Get actual schema and table name from result (preserves case)
-      const actualSchema = columnsResult.rows[0].table_schema;
-      const actualTable = columnsResult.rows[0].table_name;
 
       // Get data - use actual table name with proper quoting
       const dataResult = await client.query(`SELECT * FROM "${actualSchema}"."${actualTable}" ORDER BY 1 LIMIT $1 OFFSET $2`, [limit, offset]);
@@ -338,8 +342,16 @@ export class DatabasesService {
       // Remove or replace :last_timestamp parameter for table viewing
       sql = sql.replace(/:last_timestamp/g, "'1900-01-01 00:00:00'");
 
-      // Remove trailing semicolon
-      sql = sql.trim().replace(/;$/, '');
+      // Clean up the SQL - remove trailing semicolons and whitespace
+      sql = sql.trim().replace(/;+\s*$/, '');
+
+      // Basic SQL validation without modifying the query
+      const openParens = (sql.match(/\(/g) || []).length;
+      const closeParens = (sql.match(/\)/g) || []).length;
+      
+      if (openParens !== closeParens) {
+        this.logger.warn(`⚠️  SQL parentheses mismatch for ${pipelineName}: ${openParens} open, ${closeParens} close`);
+      }
 
       // Detect query complexity
       const hasGroupBy = /GROUP\s+BY/i.test(sql);
@@ -348,40 +360,53 @@ export class DatabasesService {
       const hasOrderBy = /ORDER\s+BY/i.test(sql);
       const hasRowNumber = /ROW_NUMBER\s*\(\s*OVER\s*\(/i.test(sql);
 
+      // For complex queries that might have syntax issues, try JavaScript pagination first
+      const isComplexQuery = hasWithClause || hasInlineCTE || hasRowNumber || hasGroupBy;
+      
+      if (isComplexQuery) {
+        try {
+          // Add debugging for complex queries
+          this.logger.log(`🔍 Executing complex query for ${pipelineName} (${sql.length} chars)`);
+          this.logger.log(`🔍 Query preview: ${sql.substring(0, 200)}...`);
+          
+          // Try to execute the query as-is and paginate in JavaScript
+          const allData = await new Promise<any[]>((resolve, reject) => {
+            connection.query(sql, (err: any, data: any[]) => {
+              if (err) {
+                this.logger.error(`Complex query failed for ${pipelineName}: ${err.message}`);
+                this.logger.error(`🔍 Full SQL causing error: ${sql}`);
+                reject(err);
+              } else {
+                resolve(data);
+              }
+            });
+          });
+
+          // Count and paginate in JavaScript
+          const total = allData.length;
+          const paginatedData = allData.slice(offset, offset + limit);
+          const columns = paginatedData.length > 0 ? Object.keys(paginatedData[0]) : [];
+
+          connection.close();
+
+          this.logger.log(`📥 ${pipelineName}: ${paginatedData.length} rows (${offset}-${offset + limit}) of ${total} total (JS pagination)`);
+
+          return {
+            data: paginatedData,
+            total,
+            columns,
+          };
+        } catch (error: any) {
+          this.logger.error(`Complex query execution failed, falling back to simple pagination: ${error.message}`);
+          // Fall through to simple pagination attempt
+        }
+      }
+
       let paginatedSql: string;
       let countSql: string;
 
-      if (hasWithClause || hasInlineCTE || hasRowNumber) {
-        // For complex queries with CTEs or ROW_NUMBER, fetch all and paginate in JavaScript
-        // This is slower but more reliable for complex DB2 queries
-        
-        // Get all data directly (no subquery wrapping)
-        const allData = await new Promise<any[]>((resolve, reject) => {
-          connection.query(sql, (err: any, data: any[]) => {
-            if (err) {
-              this.logger.error(`Query failed for ${pipelineName}: ${err.message}`);
-              reject(err);
-            } else {
-              resolve(data);
-            }
-          });
-        });
-
-        // Count and paginate in JavaScript
-        const total = allData.length;
-        const paginatedData = allData.slice(offset, offset + limit);
-        const columns = paginatedData.length > 0 ? Object.keys(paginatedData[0]) : [];
-
-        connection.close();
-
-        this.logger.log(`📥 ${pipelineName}: ${paginatedData.length} rows (${offset}-${offset + limit}) of ${total} total (JS pagination)`);
-
-        return {
-          data: paginatedData,
-          total,
-          columns,
-        };
-      } else if (hasGroupBy) {
+      // Simple pagination for basic queries
+      if (hasGroupBy) {
         // For GROUP BY queries, use CTE with ROW_NUMBER
         countSql = `SELECT COUNT(*) as count FROM (${sql})`;
         
@@ -396,16 +421,17 @@ export class DatabasesService {
           WHERE rn > ${offset} AND rn <= ${offset + limit}
         `.trim();
       } else {
-        // For simple queries, use OFFSET/FETCH
+        // For simple queries, use DB2-compatible pagination with ROW_NUMBER
         countSql = `SELECT COUNT(*) as count FROM (${sql})`;
         
-        if (hasOrderBy) {
-          // Remove ORDER BY for pagination, then add it back
-          const sqlWithoutOrder = sql.replace(/ORDER\s+BY\s+[^)]+$/i, '');
-          paginatedSql = `${sqlWithoutOrder} OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
-        } else {
-          paginatedSql = `${sql} ORDER BY 1 OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
-        }
+        // Use ROW_NUMBER for DB2 compatibility instead of OFFSET/FETCH
+        paginatedSql = `
+          SELECT * FROM (
+            SELECT q.*, ROW_NUMBER() OVER (ORDER BY 1) as rn
+            FROM (${sql}) q
+          ) AS paginated
+          WHERE rn > ${offset} AND rn <= ${offset + limit}
+        `.trim();
       }
 
       // Get total count
