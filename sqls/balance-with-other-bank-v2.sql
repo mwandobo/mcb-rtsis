@@ -48,8 +48,12 @@ FROM GLI_TRX_EXTRACT as gte
          LEFT JOIN
      CUSTOMER c ON gte.CUST_ID = c.CUST_ID
 
-         LEFT JOIN
-     PROFITS.PROFITS_ACCOUNT pa ON gte.CUST_ID = pa.CUST_ID and PRFT_SYSTEM = 3
+         LEFT JOIN (SELECT *
+                    FROM (SELECT pa.*,
+                                 ROW_NUMBER() OVER (PARTITION BY CUST_ID ORDER BY ACCOUNT_NUMBER) rn
+                          FROM PROFITS_ACCOUNT pa
+                          WHERE PRFT_SYSTEM = 3)
+                    WHERE rn = 1) pa ON pa.CUST_ID = gte.CUST_ID
 
          -- =========================================
 -- Join Currency Using SHORT_DESCR
