@@ -103,4 +103,4 @@ from CUSTOMER cust
          LEFT JOIN generic_detail id_country
                    ON id.fkgh_has_been_issu = id_country.fk_generic_headpar
                        AND id.fkgd_has_been_issu = id_country.serial_num
-         JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = cust.CUST_ID AND pa.PRODUCT_ID = 31704;
+--          JOIN PROFITS_ACCOUNT pa ON pa.CUST_ID = cust.CUST_ID AND pa.PRODUCT_ID = 31704;
