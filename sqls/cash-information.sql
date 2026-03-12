@@ -41,7 +41,7 @@ SELECT varchar_format(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
            ELSE
                gte.DC_AMOUNT
            END                                           AS tzsAmount,
-       VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYHHMM')       as transactionDate,
+       VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')       as transactionDate,
        varchar_format(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as maturityDate,
        0                                                 as allowanceProbableLoss,
        0                                                 as botProvision

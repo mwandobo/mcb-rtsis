@@ -17,7 +17,7 @@ WITH CollateralAgg AS (SELECT COLLTBL_CUST_ID,
                        GROUP BY COLLTBL_CUST_ID)
 SELECT *
 FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                        AS reportingDate,
---              LTRIM(RTRIM(pa.ACCOUNT_NUMBER))                                            AS accountNumber,
+             LTRIM(RTRIM(pa.ACCOUNT_NUMBER))                                            AS accountNumber,
              LTRIM(RTRIM(gte.CUST_ID))                                                  AS customerIdentificationNumber,
              TRIM(
                      COALESCE(TRIM(c.FIRST_NAME), '') ||

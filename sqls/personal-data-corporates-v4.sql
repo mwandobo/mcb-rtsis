@@ -37,11 +37,12 @@ WITH corporate_customers AS
                    JOIN corporate_customers cc
                         ON cc.CUST_ID = ca.FK_CUSTOMERCUST_ID
 
-          WHERE EXISTS
-                    (SELECT 1
-                     FROM PROFITS_ACCOUNT pa
-                     WHERE pa.CUST_ID = ca.FK_CUSTOMERCUST_ID
-                       AND pa.PRODUCT_ID = 31704))
+        --   WHERE EXISTS
+        --             (SELECT 1
+        --              FROM PROFITS_ACCOUNT pa
+        --              WHERE pa.CUST_ID = ca.FK_CUSTOMERCUST_ID
+        --                AND pa.PRODUCT_ID = 31704))
+         )
 
 SELECT CURRENT_TIMESTAMP                               AS reportingDate,
        corp.SURNAME                                    AS companyName,
