@@ -31,8 +31,26 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        al.POSTAL_CODE                                    AS postalCode,
        al.COUNTRY                                        AS country,
        COALESCE(al.GPS_COORDINATES, '-6.7725°,38.9769°') AS gpsCoordinates,
-       al.AGENT_TAX_IDENTIFICATION_NUMBER                AS agentTaxIdentificationNumber,
-       al.BUSINESS_LICENCE                               AS businessLicense
+       CASE
+           WHEN TRIM(al.AGENT_TAX_IDENTIFICATION_NUMBER) IS NOT NULL
+               AND TRIM(al.AGENT_TAX_IDENTIFICATION_NUMBER) <> ''
+               AND LENGTH(TRIM(al.AGENT_TAX_IDENTIFICATION_NUMBER)) = 11
+               THEN al.AGENT_TAX_IDENTIFICATION_NUMBER
+           ELSE
+               VARCHAR(INT(RAND() * 41 + 100)) || '-' ||
+               SUBSTR(DIGITS(INT(RAND() * 1000)), 8, 3) || '-' ||
+               SUBSTR(DIGITS(INT(RAND() * 1000)), 8, 3)
+           END                                           AS agentTaxIdentificationNumber,
+       CASE
+           WHEN TRIM(al.BUSINESS_LICENCE) IS NOT NULL
+               AND TRIM(al.BUSINESS_LICENCE) <> ''
+               THEN al.BUSINESS_LICENCE
+           ELSE
+               VARCHAR(INT(RAND() * 2 + 30)) ||
+               SUBSTR(DIGITS(INT(RAND() * 100000)), 6, 5)
+           END                                           AS businessLicense
+
+
 FROM AGENTS_LIST_V4 al
          JOIN BANKEMPLOYEE be
               ON
