@@ -13,9 +13,8 @@ SELECT varchar_format(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
        CASE
            WHEN gte.FK_GLG_ACCOUNTACCO = '1.0.1.00.0001' THEN 'CleanNotes'
            WHEN gte.FK_GLG_ACCOUNTACCO = '1.0.1.00.0002' OR
-                gte.FK_GLG_ACCOUNTACCO = '1.0.1.00.0010' OR
                 gte.FK_GLG_ACCOUNTACCO = '1.0.1.00.0004' OR
-                gte.FK_GLG_ACCOUNTACCO = '1.0.1.00.0015' OR gte.FK_GLG_ACCOUNTACCO = '1.0.1.00.0011' THEN 'Notes'
+                gte.FK_GLG_ACCOUNTACCO = '1.0.1.00.0011' THEN 'Notes'
            ELSE NULL
            END                                           as cashSubCategory,
        'Business Hours'                                  as cashSubmissionTime,
