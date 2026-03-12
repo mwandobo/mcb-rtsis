@@ -1,4 +1,3 @@
-
 WITH corporate_customers AS
          (SELECT CUST_ID,
                  ID_NO
@@ -37,11 +36,12 @@ WITH corporate_customers AS
                    JOIN corporate_customers cc
                         ON cc.CUST_ID = ca.FK_CUSTOMERCUST_ID
 
-          WHERE EXISTS
-                    (SELECT 1
-                     FROM PROFITS_ACCOUNT pa
-                     WHERE pa.CUST_ID = ca.FK_CUSTOMERCUST_ID
-                       AND pa.PRODUCT_ID = 31704))
+--           WHERE EXISTS
+--                     (SELECT 1
+--                      FROM PROFITS_ACCOUNT pa
+--                      WHERE pa.CUST_ID = ca.FK_CUSTOMERCUST_ID
+--                        AND pa.PRODUCT_ID = 31704)
+         )
 
 SELECT CURRENT_TIMESTAMP                               AS reportingDate,
        corp.SURNAME                                    AS companyName,
@@ -57,8 +57,14 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                THEN 'TANZANIA, UNITED REPUBLIC OF'
            ELSE 'TANZANIA, UNITED REPUBLIC OF'
            END                                         AS registrationCountry,
-       id.id_no                                        AS registrationNumber,
-       cc.ID_NO                                        AS taxIdentificationNumber,
+       null                                            AS registrationNumber,
+       CASE
+           WHEN LENGTH(TRIM(cc.ID_NO)) = 9
+               AND cc.ID_NO NOT LIKE '%[^0-9]%' -- ensures only digits
+               THEN cc.ID_NO
+           ELSE NULL
+           END                                         AS taxIdentificationNumber,
+--        cc.ID_NO                                        AS taxIdentificationNumber,
        corp.SURNAME                                    AS tradeName,
        NULL                                            AS parentName,
        NULL                                            AS parentIncorporationNumber,
