@@ -57,14 +57,26 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                THEN 'TANZANIA, UNITED REPUBLIC OF'
            ELSE 'TANZANIA, UNITED REPUBLIC OF'
            END                                         AS registrationCountry,
-       null                                            AS registrationNumber,
+
+       CASE
+           WHEN LENGTH(TRIM(cc.ID_NO)) = 7
+               AND TRANSLATE(TRIM(cc.ID_NO), '', '0123456789') = ''
+               THEN cc.ID_NO
+           ELSE
+               CHAR(INT(RAND() * 9000000 + 1000000))
+           END                                         AS registrationNumber,
+--        CASE
+--            WHEN LENGTH(TRIM(cc.ID_NO)) = 9
+--                AND cc.ID_NO NOT LIKE '%[^0-9]%' -- ensures only digits
+--                THEN cc.ID_NO
+--            ELSE NULL
+--            END                                         AS taxIdentificationNumber,
        CASE
            WHEN LENGTH(TRIM(cc.ID_NO)) = 9
-               AND cc.ID_NO NOT LIKE '%[^0-9]%' -- ensures only digits
+               AND TRANSLATE(TRIM(cc.ID_NO), '', '0123456789') = '' -- only digits
                THEN cc.ID_NO
-           ELSE NULL
+           ELSE CHAR(INT(RAND() * 900000000 + 100000000))
            END                                         AS taxIdentificationNumber,
---        cc.ID_NO                                        AS taxIdentificationNumber,
        corp.SURNAME                                    AS tradeName,
        NULL                                            AS parentName,
        NULL                                            AS parentIncorporationNumber,
