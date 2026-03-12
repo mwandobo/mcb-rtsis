@@ -17,7 +17,7 @@ WITH CollateralAgg AS (SELECT COLLTBL_CUST_ID,
                        GROUP BY COLLTBL_CUST_ID)
 SELECT *
 FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                        AS reportingDate,
-             LTRIM(RTRIM(pa.ACCOUNT_NUMBER))                                            AS accountNumber,
+--              LTRIM(RTRIM(pa.ACCOUNT_NUMBER))                                            AS accountNumber,
              LTRIM(RTRIM(gte.CUST_ID))                                                  AS customerIdentificationNumber,
              TRIM(
                      COALESCE(TRIM(c.FIRST_NAME), '') ||
@@ -352,12 +352,15 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
 
                LEFT JOIN CUSTOMER_TYPES_LOOKUP ctl
                          ON ctl.CUSTOMER_TYPE_CODE = c.CUST_TYPE
-
-               JOIN PROFITS_ACCOUNT pa
-                    ON pa.CUST_ID = gte.CUST_ID
-                        AND pa.PRFT_SYSTEM = 4
-                        AND pa.ACCOUNT_NUMBER IS NOT NULL
-                        AND pa.PRODUCT_ID IN (40030, 40034, 40035, 40036, 40037, 40040)
+               LEFT JOIN (SELECT *
+                          FROM (SELECT pa.*,
+                                       ROW_NUMBER() OVER (PARTITION BY CUST_ID ORDER BY ACCOUNT_NUMBER) rn
+                                FROM PROFITS_ACCOUNT pa
+                                WHERE PRFT_SYSTEM = 4
+                                  AND ACCOUNT_NUMBER IS NOT NULL
+                                  AND PRODUCT_ID IN (40030, 40034, 40035, 40036, 40037, 40040)) x
+                          WHERE rn = 1) pa
+                         ON pa.CUST_ID = gte.CUST_ID
 
                LEFT JOIN PRODUCT p
                          ON p.ID_PRODUCT = gte.ID_PRODUCT
