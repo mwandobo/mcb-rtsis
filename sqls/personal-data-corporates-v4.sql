@@ -27,6 +27,7 @@ WITH corporate_customers AS
 
      corporate_agreements AS
          (SELECT DISTINCT a.AGR_SN,
+         a.TMSTAMP,
                           ca.FK_CUSTOMERCUST_ID AS corporate_cust_id
           FROM AGREEMENT a
                    JOIN CUST_ADDRESS ca
