@@ -3,7 +3,7 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                 AS repo
        c.CUST_ID                                                         AS customerIdentifcationNumber,
        pa.ACCOUNT_NUMBER                                                 AS accountNumber,
        'Subscriber'                                                      as customerCategory,
-       'Mobile Banking, Point Of Sale, Automated Teller Machine, Branch' AS subscribedChannel,
+       'Mobile Banking' AS subscribedChannel,
        VARCHAR_FORMAT(c.TMSTAMP, 'DDMMYYYYHHMM')                         AS subscriptionDate,
        VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                 AS lastTransactionDate,
        'Active'                                                          AS channelStatus
