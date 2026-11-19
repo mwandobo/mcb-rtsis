@@ -172,7 +172,7 @@ class PersonalDataStreamingPipeline:
         try:
             from pipeline_state import PipelineStateManager
             state_manager = PipelineStateManager()
-            return state_manager.get_last_successful_run('personal_data')
+            return state_manager.get_last_successful_run('personal_data_information')
         except Exception as e:
             self.logger.warning(f"Could not get last successful run: {e}")
             return None
@@ -848,7 +848,7 @@ class PersonalDataStreamingPipeline:
         try:
             from pipeline_state import PipelineStateManager
             state_manager = PipelineStateManager()
-            state_manager.update_run('personal_data', status, self.total_consumed, error_message)
+            state_manager.update_run('personal_data_information', status, self.total_consumed, error_message)
             self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
         except Exception as e:
             self.logger.warning(f"Could not update state: {e}")

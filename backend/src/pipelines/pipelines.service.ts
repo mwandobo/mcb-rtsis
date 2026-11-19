@@ -9,7 +9,7 @@ import { ConfigService } from '../config/config.service';
 
 // Pipelines pinned to the front of the list, in display order, as they're
 // migrated to incremental mode (matches run_all_pipelines.py's order).
-const PINNED_ORDER = ['branch', 'agents', 'pos', 'atm', 'personal_data'];
+const PINNED_ORDER = ['branch', 'agents', 'pos', 'atm', 'personal_data_information'];
 
 export interface RunPipelineDto {
   fullLoad?: boolean;

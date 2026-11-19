@@ -25,7 +25,7 @@ class PipelineStateManager:
         'agents',
         'pos',
         'atm',
-        'personal_data',
+        'personal_data_information',
         'incoming_fund_transfer',
         'outgoing_fund_transfer',
         'cards',
