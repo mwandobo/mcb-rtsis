@@ -9,6 +9,7 @@ import psycopg2
 import psycopg2.extras
 import json
 import logging
+import re
 import threading
 import time
 from dataclasses import dataclass, asdict
@@ -116,16 +117,55 @@ class PersonalDataCorporatesStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_personal_data_corporates_query(self):
-        """Get the corporate personal data query from personal-data-corporates-v4.sql"""
+    def get_personal_data_corporates_query(self, last_timestamp=None):
+        """Get the corporate personal data query from personal-data-corporates-v4.sql,
+        with optional TMSTAMP filter for incremental mode"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             'sqls', 'personal-data-corporates-v4.sql'
         )
-        
+
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    
+            sql = f.read().strip()
+
+        if sql.endswith(';'):
+            sql = sql[:-1]
+
+        # Query's top-level WHERE is a pure AND-chain with no OR, so it's
+        # safe to just AND the filter on. It must land before GROUP BY /
+        # ORDER BY though, not just before ORDER BY.
+        if last_timestamp:
+            if last_timestamp == 'epoch':
+                timestamp_value = '1900-01-01-00.00.00.000000'
+            else:
+                timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+
+            # The file has many GROUP BY/ORDER BY inside CTE window functions
+            # (PARTITION BY ... ORDER BY ..., a nested GROUP BY in a CTE), so
+            # a filter must land before the LAST GROUP BY if one exists (the
+            # real top-level one always comes after all CTEs) - landing it
+            # before ORDER BY instead would put it after GROUP BY, which is
+            # invalid SQL.
+            group_by_matches = list(re.finditer(r'\bGROUP\s+BY\b', sql, re.IGNORECASE))
+            if group_by_matches:
+                insert_at = group_by_matches[-1].start()
+            else:
+                order_by_matches = list(re.finditer(r'\bORDER\s+BY\b', sql, re.IGNORECASE))
+                insert_at = order_by_matches[-1].start() if order_by_matches else len(sql)
+            sql = sql[:insert_at] + f"AND corp.TMSTAMP > '{timestamp_value}'\n" + sql[insert_at:]
+
+        return sql
+
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('personal_data_corporates')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
+
     def get_total_count(self):
         """Get approximate total count of corporate records from DB2"""
         try:
@@ -323,15 +363,27 @@ class PersonalDataCorporatesStreamingPipeline:
             self.logger.error(f"Error validating record: {e}")
             return False
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread"""
         try:
             self.logger.info("Producer thread started")
+
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: fetching records with TMSTAMP > {last_timestamp}")
+                else:
+                    last_timestamp = 'epoch'
+                    self.logger.info("Incremental mode: first run, fetching all records (epoch)")
+            else:
+                self.logger.info("Full load mode: fetching all records")
+
             self.total_available = self.get_total_count()
             self.logger.info(f"Total corporate records available: {self.total_available:,} (estimated)")
-            
+
             rmq_connection, channel = self.setup_rabbitmq_connection()
-            query = self.get_personal_data_corporates_query()
+            query = self.get_personal_data_corporates_query(last_timestamp)
             self.logger.info("Executing corporate query...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
@@ -577,37 +629,40 @@ class PersonalDataCorporatesStreamingPipeline:
             self.logger.error(f"Failed to create unique index: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline"""
-        self.logger.info("Starting Personal Data Corporates STREAMING pipeline...")
-        
+        self.logger.info(f"Starting Personal Data Corporates STREAMING pipeline... (incremental={incremental})")
+
         try:
+            self._update_state('running')
+
             self.ensure_unique_index()
             self.setup_rabbitmq_queue()
-            
+
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")
             consumer_thread.start()
             time.sleep(1)
-            
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+
+            producer_thread = threading.Thread(target=self.producer_thread, name="Producer", args=(incremental,))
             producer_thread.start()
-            
+
             producer_thread.join()
             self.logger.info("Producer completed")
-            
+
             consumer_thread.join(timeout=60)
             if consumer_thread.is_alive():
                 self.stop_consumer.set()
                 consumer_thread.join(timeout=30)
-            
+
             total_time = time.time() - self.start_time
             avg_rate = self.total_consumed / total_time if total_time > 0 else 0
             success_rate = (self.total_consumed / self.total_produced * 100) if self.total_produced > 0 else 0
-            
+
             self.logger.info(f"""
             ==========================================
             Personal Data Corporates Pipeline Summary:
             ==========================================
+            Mode: {'Incremental' if incremental else 'Full Load'}
             Total available: {self.total_available:,}
             Produced: {self.total_produced:,}
             Consumed: {self.total_consumed:,}
@@ -647,12 +702,13 @@ def main():
     parser = argparse.ArgumentParser(description='Personal Data Corporates Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=1000)
     parser.add_argument('--consumer-batch-size', type=int, default=100)
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     args = parser.parse_args()
-    
+
     pipeline = PersonalDataCorporatesStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
-    
+
     try:
-        pipeline.run_streaming_pipeline()
+        pipeline.run_streaming_pipeline(incremental=not args.full_load)
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")
     except Exception as e:
