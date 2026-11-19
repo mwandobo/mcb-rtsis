@@ -26,13 +26,13 @@ def run_command(script_name, description):
             check=True,
             capture_output=False
         )
-        print(f"\n✓ {description} completed successfully")
+        print(f"\n[OK] {description} completed successfully")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"\n✗ {description} failed with error code {e.returncode}")
+        print(f"\n[FAILED] {description} failed with error code {e.returncode}")
         return False
     except Exception as e:
-        print(f"\n✗ {description} failed: {e}")
+        print(f"\n[FAILED] {description} failed: {e}")
         return False
 
 
@@ -47,7 +47,7 @@ def main():
     
     # Run streaming pipeline
     if not run_command("personal_data_streaming_pipeline.py", "Running personal data streaming pipeline"):
-        print("\n⚠ Pipeline execution failed")
+        print("\n[WARNING] Pipeline execution failed")
         sys.exit(1)
     
     # Summary
@@ -63,8 +63,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\n⚠ Pipeline interrupted by user")
+        print("\n\n[WARNING] Pipeline interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n\n✗ Pipeline failed: {e}")
+        print(f"\n\n[FAILED] Pipeline failed: {e}")
         sys.exit(1)

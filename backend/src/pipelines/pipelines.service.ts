@@ -7,6 +7,10 @@ import * as amqp from 'amqplib';
 import { PipelineState } from './entities/pipeline-state.entity';
 import { ConfigService } from '../config/config.service';
 
+// Pipelines pinned to the front of the list, in display order, as they're
+// migrated to incremental mode (matches run_all_pipelines.py's order).
+const PINNED_ORDER = ['branch', 'agents', 'pos', 'atm', 'personal_data'];
+
 export interface RunPipelineDto {
   fullLoad?: boolean;
 }
@@ -30,9 +34,23 @@ export class PipelinesService {
   ) {}
 
   async findAll(): Promise<PipelineState[]> {
-    return this.pipelineStateRepository.find({
+    const pipelines = await this.pipelineStateRepository.find({
       order: { pipelineName: 'ASC' },
     });
+
+    // Pipelines are pinned in the same order they run in run_all_pipelines.py
+    // (branch first as foundational master data, agents next, etc.); anything
+    // not yet pinned falls back after them in alphabetical order.
+    pipelines.sort((a, b) => {
+      const indexA = PINNED_ORDER.indexOf(a.pipelineName);
+      const indexB = PINNED_ORDER.indexOf(b.pipelineName);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    });
+
+    return pipelines;
   }
 
   async findOne(name: string): Promise<PipelineState> {
@@ -78,30 +96,32 @@ export class PipelinesService {
     }
 
     const pipelinesDir = this.configService.get<string>('PIPELINES_DIR');
-    const scriptPath = join(pipelinesDir, name, `${name}_streaming_pipeline.py`);
+    const scriptPath = join(pipelinesDir, 'run_continuous.py');
 
-    // Check if script exists
+    // Check if the continuous runner exists
     const fs = require('fs');
     if (!fs.existsSync(scriptPath)) {
-      this.logger.error(`Pipeline script not found: ${scriptPath}`);
+      this.logger.error(`Continuous runner not found: ${scriptPath}`);
       return {
         success: false,
         pipelineName: name,
-        message: `Pipeline script not found: ${scriptPath}`,
+        message: `Continuous runner not found: ${scriptPath}`,
       };
     }
 
-    const args = ['--full-load'];
+    const args: string[] = [name];
     if (options.fullLoad) {
       args.push('--full-load');
     }
 
-    this.logger.log(`Starting pipeline: ${name}`);
+    this.logger.log(`Starting pipeline (continuous): ${name}`);
     this.logger.log(`Script path: ${scriptPath}`);
     this.logger.log(`Args: ${args.join(' ')}`);
 
+    // This process is expected to keep running indefinitely - it stays
+    // alive until it errors out on its own or is stopped via stopPipeline().
     const childProcess = spawn('python', [scriptPath, ...args], {
-      cwd: join(pipelinesDir, name),
+      cwd: pipelinesDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, PYTHONUNBUFFERED: '1' },
     });

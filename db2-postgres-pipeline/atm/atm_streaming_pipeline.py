@@ -84,15 +84,44 @@ class AtmStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_atm_query(self):
-        """Get the ATM query from atm.sql"""
+    def get_atm_query(self, last_timestamp=None):
+        """Get the ATM query from atm.sql with optional TMSTAMP filter"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             'sqls', 'atm.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            sql = f.read().strip()
+
+        if sql.endswith(';'):
+            sql = sql[:-1]
+
+        # For incremental mode, add TMSTAMP filter on ATM_TRX_RECORDING table
+        if last_timestamp:
+            if last_timestamp == 'epoch':
+                timestamp_value = '1900-01-01-00.00.00.000000'
+            else:
+                timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+            
+            # Check if SQL already has WHERE clause
+            sql_upper = sql.upper()
+            if 'WHERE' in sql_upper:
+                sql = sql + f"\n AND be.TMSTAMP > '{timestamp_value}'"
+            else:
+                sql = sql + f"\n WHERE be.TMSTAMP > '{timestamp_value}'"
+        
+        return sql
+    
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('atm')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
     
     def get_total_count(self):
         """Get approximate total count of ATM records from DB2"""
@@ -274,10 +303,21 @@ class AtmStreamingPipeline:
             return False
 
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
+            
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: fetching records with TMSTAMP > {last_timestamp}")
+                else:
+                    last_timestamp = 'epoch'
+                    self.logger.info("Incremental mode: first run, fetching all records (epoch)")
+            else:
+                self.logger.info("Full load mode: fetching all records")
             
             # Get dynamic record count
             self.total_available = self.get_total_count()
@@ -290,7 +330,7 @@ class AtmStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_atm_query()
+            query = self.get_atm_query(last_timestamp)
             self.logger.info("Executing ATM query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
@@ -566,7 +606,7 @@ class AtmStreamingPipeline:
             cursor = pg_conn.cursor()
             
             insert_query = """
-            INSERT INTO atm (
+            INSERT INTO "atmInformation" (
                 "reportingDate", "atmName", "branchCode", "atmCode", "tillNumber",
                 "mobileMoneyServices", "qrFsrCode", "postalCode", region, district,
                 ward, street, "houseNumber", "gpsCoordinates", "linkedAccount",
@@ -599,7 +639,7 @@ class AtmStreamingPipeline:
                 cursor = conn.cursor()
                 cursor.execute("""
                     CREATE UNIQUE INDEX IF NOT EXISTS idx_atm_code_unique
-                    ON atm ("atmCode")
+                    ON "atmInformation" ("atmCode")
                 """)
                 conn.commit()
                 self.logger.info("Unique index on atmCode verified/created")
@@ -607,11 +647,14 @@ class AtmStreamingPipeline:
             self.logger.error(f"Failed to create unique index on atmCode: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting ATM STREAMING pipeline...")
+        self.logger.info(f"Starting ATM STREAMING pipeline... (incremental={incremental})")
         
         try:
+            # Update state to running
+            self._update_state('running')
+            
             # Ensure unique index for duplicate prevention
             self.ensure_unique_index()
             
@@ -626,7 +669,7 @@ class AtmStreamingPipeline:
             time.sleep(1)
             
             # Start producer thread
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, name="Producer", args=(incremental,))
             producer_thread.start()
             
             # Wait for producer to finish
@@ -650,6 +693,7 @@ class AtmStreamingPipeline:
             ==========================================
             ATM Pipeline Summary:
             ==========================================
+            Mode: {'Incremental' if incremental else 'Full Load'}
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
             Records consumed: {self.total_consumed:,}
@@ -659,9 +703,28 @@ class AtmStreamingPipeline:
             ==========================================
             """)
             
+            # Update pipeline state
+            self._update_state('completed')
+            
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'atm',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 def main():
@@ -673,6 +736,7 @@ def main():
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     
     args = parser.parse_args()
     
@@ -681,11 +745,11 @@ def main():
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:  # streaming
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")

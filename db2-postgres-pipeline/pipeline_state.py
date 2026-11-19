@@ -21,12 +21,16 @@ class PipelineStateManager:
     """Manages state for all streaming pipelines"""
     
     PIPELINES = [
+        'branch',
+        'agents',
+        'pos',
+        'atm',
+        'personal_data',
         'incoming_fund_transfer',
         'outgoing_fund_transfer',
         'cards',
         'loans',
         'loan_transactions',
-        'personal_data',
         'personal_data_corporates',
         'deposits',
         'cash',
@@ -34,6 +38,9 @@ class PipelineStateManager:
         'balance_with_mnos',
         'balance_with_other_banks',
         'agent_transactions',
+        'ibcm_transactions',
+        'account_information',
+        'card_transactions',
         # Add other pipelines as they are created
     ]
     
