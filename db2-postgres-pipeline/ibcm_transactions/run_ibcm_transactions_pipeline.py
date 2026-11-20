@@ -1,32 +1,34 @@
 #!/usr/bin/env python3
 """
-Run IBCM Transactions Streaming Pipeline
+Simple runner for IBCM Transactions Pipeline
+Runs incremental processing by default (no arguments needed)
 """
-import logging
+
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from ibcm_transactions_streaming_pipeline import IBCMTransactionsStreamingPipeline
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from ibcm_transactions.ibcm_transactions_streaming_pipeline import IBCMTransactionsStreamingPipeline
 
 def main():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    logger = logging.getLogger(__name__)
-    
-    logger.info("=" * 60)
-    logger.info("STARTING IBCM TRANSACTIONS STREAMING PIPELINE")
-    logger.info("=" * 60)
+    """Run IBCM transactions pipeline"""
+    pipeline = IBCMTransactionsStreamingPipeline()
+
+    full_load = "--full-load" in sys.argv
+    incremental = not full_load
+
+    if full_load:
+        pipeline.logger.info("Running in FULL LOAD mode (--full-load flag detected)")
+
     try:
-        pipeline = IBCMTransactionsStreamingPipeline(batch_size=1000, consumer_batch_size=100)
-        pipeline.run_streaming_pipeline()
-        logger.info("=" * 60)
-        logger.info("IBCM TRANSACTIONS PIPELINE COMPLETED SUCCESSFULLY")
-        logger.info("=" * 60)
+        pipeline.run_streaming_pipeline(incremental=incremental)
     except KeyboardInterrupt:
-        logger.info("Pipeline stopped by user (Ctrl+C)")
+        pipeline.logger.info("Pipeline stopped by user")
     except Exception as e:
-        logger.error(f"Pipeline failed with error: {e}")
-        logger.error("=" * 60)
-        logger.error("IBCM TRANSACTIONS PIPELINE FAILED")
+        pipeline.logger.error(f"Pipeline failed: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

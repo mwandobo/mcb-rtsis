@@ -152,7 +152,13 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
                  END                                                                    AS tzsCrUsageLast30DaysAmount,
 
              VARCHAR_FORMAT(la.DRAWDOWN_FST_DT, 'DDMMYYYYHHMM')                         AS disbursementDate,
-             VARCHAR_FORMAT(la.ACC_EXP_DT, 'DDMMYYYYHHMM')                              AS expiryDate,
+             CASE
+                 WHEN la.ACC_EXP_DT IS NOT NULL
+                     THEN VARCHAR_FORMAT(la.ACC_EXP_DT, 'DDMMYYYYHHMM')
+                 WHEN la.ACC_OPEN_DT IS NOT NULL
+                     THEN VARCHAR_FORMAT(ADD_MONTHS(la.ACC_OPEN_DT, 3), 'DDMM') || '21001200'
+                 ELSE NULL
+                 END                                                                    AS expiryDate,
              VARCHAR_FORMAT(COALESCE(la.OV_EXP_DT, la.ACC_EXP_DT), 'DDMMYYYYHHMM')      AS realEndDate,
 
              (la.NRM_CAP_BAL + la.OV_CAP_BAL)
@@ -413,5 +419,12 @@ FROM (SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHH24MI')                
 
       WHERE gte.FK_GLG_ACCOUNTACCO IN
             ('1.1.0.05.0001', '1.1.0.05.0002', '1.1.0.05.0005')) t
-WHERE LENGTH(TRIM(TRANSLATE(t.loanOfficer, '', '0123456789'))) = LENGTH(TRIM(t.loanOfficer))
+WHERE t.contractDate IS NOT NULL
+  AND TRIM(t.contractDate) <> ''
+  AND t.contractDate NOT IN ('010100011201', '250720161207', '000000000000')
+  AND t.loanOfficer IS NOT NULL
+  AND TRIM(t.loanOfficer) <> ''
+  AND t.loanSupervisor IS NOT NULL
+  AND TRIM(t.loanSupervisor) <> ''
+  AND LENGTH(TRIM(TRANSLATE(t.loanOfficer, '', '0123456789'))) = LENGTH(TRIM(t.loanOfficer))
   AND LENGTH(TRIM(TRANSLATE(t.loanSupervisor, '', '0123456789'))) = LENGTH(TRIM(t.loanSupervisor));

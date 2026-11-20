@@ -58,7 +58,8 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
            END
                                                          as tzsAmount,
        REMITTANCE_INFO                                   as senderInstruction,
-       'Salaries and wages'                              as purposes
+       'Salaries and wages'                              as purposes,
+       im.ORDER_TIMESTAMP                               as orderTmstamp
 
 FROM IPS_MESSAGE_HEADER im
          JOIN CUSTOMER cust ON cust.CUST_ID = im.BENEF_CUST_ID
@@ -76,4 +77,5 @@ FROM IPS_MESSAGE_HEADER im
                                                     FROM fixing_rate b
                                                     WHERE b.activation_date <= CURRENT_DATE)
                            GROUP BY fk_currencyid_curr, activation_date)) fx
-                   ON fx.fk_currencyid_curr = curr.ID_CURRENCY;
+                   ON fx.fk_currencyid_curr = curr.ID_CURRENCY
+ORDER BY im.ORDER_TIMESTAMP;

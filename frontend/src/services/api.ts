@@ -8,12 +8,43 @@ import type {
   RunPipelineRequest,
   RunPipelineResponse,
   HealthStatus,
+  LoginResponse,
 } from '../types';
+
+export const TOKEN_KEY = 'rtsis_token';
+export const USER_KEY = 'rtsis_user';
 
 const api = axios.create({
   baseURL: '/api',
   timeout: 60000, // Increased to 60 seconds for DB2 queries
 });
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const authApi = {
+  login: (email: string, password: string) =>
+    api.post<LoginResponse>('/auth/login', { email, password }).then((r) => r.data),
+};
 
 export const pipelinesApi = {
   getAll: () => api.get<PipelineState[]>('/pipelines').then((r) => r.data),

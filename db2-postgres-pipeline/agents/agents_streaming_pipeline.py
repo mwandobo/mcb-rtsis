@@ -92,7 +92,7 @@ class AgentsStreamingPipeline:
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            sql = f.read()
+            sql = f.read().strip()
         
         # For incremental mode, add TMSTAMP filter on BANKEMPLOYEE table
         if last_timestamp:
@@ -100,7 +100,13 @@ class AgentsStreamingPipeline:
                 timestamp_value = '1900-01-01-00.00.00.000000'
             else:
                 timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
-            sql = sql + f"\n AND be.TMSTAMP > '{timestamp_value}'"
+            
+            # Check if SQL already has WHERE clause
+            sql_upper = sql.upper()
+            if 'WHERE' in sql_upper:
+                sql = sql + f"\n AND be.TMSTAMP > '{timestamp_value}'"
+            else:
+                sql = sql + f"\n WHERE be.TMSTAMP > '{timestamp_value}'"
         
         return sql
     

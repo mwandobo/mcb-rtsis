@@ -90,7 +90,12 @@ def create_card_transactions_table():
         
         for index_sql in indexes:
             cursor.execute(index_sql)
-            logger.info(f"Created index: {index_sql.split('ON')[0].split('CREATE INDEX')[1].strip()}")
+            # Extract index name more safely
+            if 'CREATE UNIQUE INDEX' in index_sql:
+                index_name = index_sql.split('CREATE UNIQUE INDEX')[1].split('ON')[0].strip()
+            else:
+                index_name = index_sql.split('CREATE INDEX')[1].split('ON')[0].strip()
+            logger.info(f"Created index: {index_name}")
         
         # Commit changes
         conn.commit()

@@ -33,12 +33,12 @@ def clear_queue():
         queue_name = 'balance_with_other_banks_queue'
         result = channel.queue_purge(queue_name)
         
-        print(f"✅ Cleared {result.method.message_count} messages from '{queue_name}'")
+        print(f"Cleared {result.method.message_count} messages from '{queue_name}'")
         
         connection.close()
         
     except Exception as e:
-        print(f"❌ Error clearing queue: {e}")
+        print(f"Error clearing queue: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

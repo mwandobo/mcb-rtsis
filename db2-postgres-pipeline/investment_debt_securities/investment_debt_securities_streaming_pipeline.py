@@ -97,7 +97,7 @@ class InvestmentDebtSecuritiesStreamingPipeline:
         """Get the investment debt securities query from investment_debt_securities.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'investment_debt_securities.sql'
+            'sqls', 'investment_debt_securities_v1.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
@@ -269,35 +269,35 @@ class InvestmentDebtSecuritiesStreamingPipeline:
             
             # Map the fields from the SQL query to the dataclass (30 fields total)
             record = InvestmentDebtSecuritiesRecord(
-                reportingDate=safe_string(row[0]),                      # VARCHAR_FORMAT(tdr.TMSTAMP, 'DDMMYYYYHHMM')
-                securityNumber=safe_string(row[1]),                     # COALESCE(NULLIF(TRIM(coll.BOND_ISIN), ''), ...)
-                securityType=safe_string(row[2]),                       # 'Treasury bonds'
-                securityIssuerName=safe_string(row[3]),                 # COALESCE(TRIM(cust_iss.SURNAME), ...)
-                ratingStatus=safe_string(row[4]),                       # CASE WHEN mm.FK_CORRESP_CUST IS NOT NULL...
-                externalIssuerRating=safe_string(row[5]),               # CASE WHEN cb.DOM_CENTRAL_BANK = '1'...
-                gradesUnratedBanks=safe_string(row[6]) if row[6] else None,  # CASE WHEN cb.DOM_CENTRAL_BANK = '1'...
-                securityIssuerCountry=safe_string(row[7]),              # COALESCE(TRIM(cl.COUNTRY_NAME), ...)
-                sectorSnaClassification=safe_string(row[8]),            # CASE WHEN cb.DOM_CENTRAL_BANK = '1'...
-                currency=safe_string(row[9]),                           # TRIM(tdr.BUY_CURRENCY)
-                orgCostValueAmount=safe_string(row[10]),                # COALESCE(NULLIF(mm.SETTLEMENT_AMT, 0), ...)
-                usdCostValueAmount=safe_string(row[11]),                # USD conversion
-                tzsCostValueAmount=safe_string(row[12]),                # TZS conversion
-                faceValueAmount=safe_string(row[13]),                   # COALESCE(NULLIF(mm.GROSS_PRINC_AMOUNT, 0), ...)
-                usdFaceValueAmount=safe_string(row[14]),                # USD face value conversion
-                tzsFaceValueAmount=safe_string(row[15]),                # TZS face value conversion
-                orgFairValueAmount=safe_string(row[16]),                # Fair value with market price
-                usdFairValueAmount=safe_string(row[17]),                # USD fair value conversion
-                tzsFairValueAmount=safe_string(row[18]),                # TZS fair value conversion
-                interestRate=safe_string(row[19]),                      # DECIMAL(mm.INTEREST_RATE, 15, 2)
-                purchaseDate=safe_string(row[20]),                      # VARCHAR_FORMAT(mm.DEAL_DATE, 'DDMMYYYYHHMM')
-                valueDate=safe_string(row[21]),                         # VARCHAR_FORMAT(mm.VALUE_DATE, 'DDMMYYYYHHMM')
-                maturityDate=safe_string(row[22]),                      # VARCHAR_FORMAT(mm.MATURITY_DATE, 'DDMMYYYYHHMM')
-                tradingIntent=safe_string(row[23]),                     # CASE mm.SEC_MATCHING_FLG...
-                securityEncumbranceStatus=safe_string(row[24]),         # CASE WHEN mm.STATUS = 'P'...
-                pastDueDays=safe_string(row[25]),                       # CASE WHEN mm.MATURITY_DATE < CURRENT DATE...
-                allowanceProbableLoss=safe_string(row[26]),             # DECIMAL(0, 15, 2)
-                botProvision=safe_string(row[27]),                      # DECIMAL(0, 15, 2)
-                assetClassificationCategory=safe_string(row[28])        # CASE WHEN mm.MATURITY_DATE < CURRENT DATE...
+                reportingDate=safe_string(row[0]),
+                securityNumber=safe_string(row[1]),
+                securityType=safe_string(row[2]),
+                securityIssuerName=safe_string(row[3]),
+                ratingStatus=safe_string(row[4]),
+                externalIssuerRating=safe_string(row[5]),
+                gradesUnratedBanks=safe_string(row[6]) if row[6] else None,
+                securityIssuerCountry=safe_string(row[7]),
+                sectorSnaClassification=safe_string(row[8]),
+                currency=safe_string(row[9]),
+                orgCostValueAmount=safe_string(row[10]),
+                usdCostValueAmount=safe_string(row[11]),
+                tzsCostValueAmount=safe_string(row[12]),
+                faceValueAmount=safe_string(row[13]),
+                usdFaceValueAmount=safe_string(row[14]),
+                tzsFaceValueAmount=safe_string(row[15]),
+                orgFairValueAmount=safe_string(row[16]),
+                usdFairValueAmount=safe_string(row[17]),
+                tzsFairValueAmount=safe_string(row[18]),
+                interestRate=safe_string(row[19]),
+                purchaseDate=safe_string(row[20]),
+                valueDate=safe_string(row[21]),
+                maturityDate=safe_string(row[22]),
+                tradingIntent=safe_string(row[23]),
+                securityEncumbranceStatus=safe_string(row[24]),
+                pastDueDays=safe_string(row[25]),
+                allowanceProbableLoss=safe_string(row[26]),
+                botProvision=safe_string(row[27]),
+                assetClassificationCategory=safe_string(row[28])
             )
             
             return record

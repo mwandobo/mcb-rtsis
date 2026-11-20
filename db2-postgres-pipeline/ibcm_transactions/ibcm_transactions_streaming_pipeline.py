@@ -33,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from db2_connection import DB2Connection
+from pipeline_state import PipelineStateManager
 
 # Configure logging at module level (should only be called once)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -52,11 +53,14 @@ class IBCMTransactionRecord:
 
 
 class IBCMTransactionsStreamingPipeline:
-    def __init__(self, batch_size=1000, consumer_batch_size=100):
+    def __init__(self, batch_size=1000):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
-        self.consumer_batch_size = consumer_batch_size
+        self.consumer_batch_size = 100  # Fixed value per pipeline standards
+
+        # State management for incremental processing (following overdraft pattern)
+        # State manager will be initialized when needed
 
         # Threading control
         self.producer_finished = threading.Event()
@@ -82,14 +86,42 @@ class IBCMTransactionsStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
 
-    def get_ibcm_transactions_query(self):
-        """Get the full IBCM transactions query from ibcm_transactions-v1.sql.
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('ibcm_transactions')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'ibcm_transactions',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
+
+    def get_ibcm_transactions_query(self, last_timestamp=None):
+        """Get the full IBCM transactions query from ibcm_transactions-v1.sql with optional timestamp filter.
 
         The query is executed ONCE and results are streamed via cursor.fetchmany().
         No pagination modifications are made to the SQL.
 
+        Args:
+            last_timestamp: Optional timestamp for incremental processing
+
         Returns:
-            str: The complete SQL query
+            str: The complete SQL query with optional timestamp filter
         """
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -100,6 +132,28 @@ class IBCMTransactionsStreamingPipeline:
             with open(sql_file_path, 'r', encoding='utf-8') as file:
                 query = file.read().strip()
                 self.logger.info(f"Loaded IBCM transactions query from: {sql_file_path}")
+                
+                # Add incremental filter if timestamp provided
+                if last_timestamp:
+                    # Find the WHERE clause and add timestamp filter
+                    query_lines = query.split('\n')
+                    
+                    # Find the WHERE clause line
+                    where_line_idx = -1
+                    for i, line in enumerate(query_lines):
+                        if line.strip().upper().startswith('WHERE '):
+                            where_line_idx = i
+                            break
+                    
+                    if where_line_idx >= 0:
+                        # Add timestamp filter to existing WHERE clause
+                        query_lines.insert(where_line_idx + 1, f"  AND gte.TMSTAMP > '{last_timestamp}'")
+                    else:
+                        # No WHERE clause found, add one at the end
+                        query_lines.append(f"WHERE gte.TMSTAMP > '{last_timestamp}'")
+                    
+                    query = '\n'.join(query_lines)
+                
                 return query
         except FileNotFoundError:
             self.logger.error(f"SQL file not found: {sql_file_path}")
@@ -136,17 +190,30 @@ class IBCMTransactionsStreamingPipeline:
             self.logger.error(f"Error validating record: {e}")
             return False
 
-    def get_total_count(self):
+    def get_total_count(self, last_timestamp=None):
         """Get approximate total count of IBCM transaction records from DB2.
         Uses the base table count for a fast estimate.
+        
+        Args:
+            last_timestamp: Optional timestamp for incremental counting
         """
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM GLI_TRX_EXTRACT WHERE FK_GLG_ACCOUNTACCO = '1.0.2.00.0001'")
+                count_query = "SELECT COUNT(*) FROM GLI_TRX_EXTRACT WHERE FK_GLG_ACCOUNTACCO = '1.0.2.00.0001'"
+                
+                # Add incremental filter if timestamp provided
+                if last_timestamp:
+                    count_query += f" AND TMSTAMP > '{last_timestamp}'"
+                
+                cursor.execute(count_query)
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from GLI_TRX_EXTRACT: {count:,}")
+                
+                if last_timestamp:
+                    self.logger.info(f"Incremental record count (since {last_timestamp}): {count:,}")
+                else:
+                    self.logger.info(f"Full record count: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -256,55 +323,66 @@ class IBCMTransactionsStreamingPipeline:
                     
                     self.logger.info("Creating IBCM transactions table...")
                     
-                    # Read and execute table creation script
-                    sql_file_path = os.path.join(os.path.dirname(__file__), 'create_ibcm_transactions_table.sql')
-                    with open(sql_file_path, 'r') as f:
-                        sql_script = f.read()
+                    # Create table directly with SQL DDL (following overdraft pattern)
+                    create_table_query = """
+                    CREATE TABLE "ibcmTransactions" (
+                        id SERIAL PRIMARY KEY,
+                        "reportingDate" VARCHAR(12) NOT NULL,
+                        "transactionDate" VARCHAR(12) NOT NULL,
+                        "lenderName" VARCHAR(255) NOT NULL,
+                        "borrowerName" VARCHAR(255) NOT NULL,
+                        "transactionType" VARCHAR(50),
+                        "tzsAmount" DECIMAL(18,2),
+                        tenure INTEGER,
+                        "interestRate" DECIMAL(8,4),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
                     
-                    cursor.execute(sql_script)
+                    cursor.execute(create_table_query)
+                    
+                    # Create indexes for better performance
+                    cursor.execute("CREATE INDEX idx_ibcm_transactions_reporting_date ON \"ibcmTransactions\"(\"reportingDate\")")
+                    cursor.execute("CREATE INDEX idx_ibcm_transactions_transaction_date ON \"ibcmTransactions\"(\"transactionDate\")")
+                    cursor.execute("CREATE INDEX idx_ibcm_transactions_lender ON \"ibcmTransactions\"(\"lenderName\")")
+                    cursor.execute("CREATE INDEX idx_ibcm_transactions_borrower ON \"ibcmTransactions\"(\"borrowerName\")")
+                    cursor.execute("CREATE INDEX idx_ibcm_transactions_type ON \"ibcmTransactions\"(\"transactionType\")")
+                    cursor.execute("CREATE INDEX idx_ibcm_transactions_created_at ON \"ibcmTransactions\"(created_at)")
+                    
                     conn.commit()
-                    self.logger.info("IBCM transactions table created successfully")
+                    self.logger.info("IBCM transactions table created successfully with indexes")
                         
         except Exception as e:
             self.logger.error(f"Error ensuring table exists: {e}")
             raise
 
-    def ensure_unique_index(self):
-        """Ensure unique index exists on composite key (transactionDate, lenderName, borrowerName)"""
-        try:
-            with self.get_postgres_connection() as conn:
-                with conn.cursor() as cursor:
-                    # Check if index exists
-                    cursor.execute("""
-                        SELECT indexname FROM pg_indexes 
-                        WHERE tablename = 'ibcmTransactions' 
-                        AND indexname = 'uk_ibcm_transactions'
-                    """)
-                    
-                    if not cursor.fetchone():
-                        self.logger.info("Creating unique constraint on (\"transactionDate\", \"lenderName\", \"borrowerName\")...")
-                        cursor.execute("""
-                            ALTER TABLE "ibcmTransactions" 
-                            ADD CONSTRAINT uk_ibcm_transactions 
-                            UNIQUE ("transactionDate", "lenderName", "borrowerName")
-                        """)
-                        conn.commit()
-                        self.logger.info("Unique constraint created successfully")
-                    else:
-                        self.logger.info("Unique constraint already exists")
-        except Exception as e:
-            self.logger.warning(f"Could not create unique constraint: {e}")
-
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - reads from DB2 and publishes to RabbitMQ"""
         try:
             self.logger.info("Producer: Starting...")
             
+            # Get last successful run timestamp for incremental processing
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: Processing records since {last_timestamp}")
+                else:
+                    self.logger.info("Incremental mode: No previous run found, processing all records")
+            else:
+                self.logger.info("Full load mode: Processing all records")
+            
+            # Get dynamic record count
+            self.total_available = self.get_total_count(last_timestamp)
+            
             with self.setup_rabbitmq_connection() as (connection, channel):
                 # Execute the v1 query ONCE and stream results
-                query = self.get_ibcm_transactions_query()
+                query = self.get_ibcm_transactions_query(last_timestamp)
                 
                 self.logger.info("Executing IBCM transactions query (single execution, streaming results)...")
+                
+                latest_timestamp = None
                 
                 with self.db2_conn.get_connection() as db2_conn:
                     cursor = db2_conn.cursor()
@@ -327,6 +405,18 @@ class IBCMTransactionsStreamingPipeline:
                                 # Convert row to dictionary using column names
                                 columns = [desc[0].lower() for desc in cursor.description]
                                 record_dict = dict(zip(columns, row))
+                                
+                                # Extract TMSTAMP for state tracking (should be in the row)
+                                tmstamp = None
+                                if 'tmstamp' in record_dict:
+                                    tmstamp = record_dict['tmstamp']
+                                elif len(row) > len(columns):
+                                    # TMSTAMP might be an additional field
+                                    tmstamp = row[-1]
+                                
+                                # Track latest timestamp for state update
+                                if tmstamp and (not latest_timestamp or tmstamp > latest_timestamp):
+                                    latest_timestamp = tmstamp
                                 
                                 # Convert dates and handle None values
                                 for key, value in record_dict.items():
@@ -362,6 +452,11 @@ class IBCMTransactionsStreamingPipeline:
                                 self.total_produced += len(batch_records)
                             
                             self.logger.info(f"Producer: Batch {batch_count} - {len(batch_records)} records published (Total: {total_records})")
+                    
+                    # Update state with latest timestamp if incremental and we processed records
+                    if incremental and latest_timestamp and total_records > 0:
+                        # For now, just log the timestamp - state update will be done at pipeline completion
+                        self.logger.info(f"Latest processed timestamp: {latest_timestamp}")
                     
                     self.logger.info(f"Producer: Completed - {total_records} total records published")
                     
@@ -410,23 +505,17 @@ class IBCMTransactionsStreamingPipeline:
                                 if not unique_records:
                                     return
                                 
-                                # Prepare insert query with ON CONFLICT
+                                # Prepare insert query without ON CONFLICT (allow duplicates)
                                 insert_query = """
                                     INSERT INTO "ibcmTransactions" (
                                         "reportingDate", "transactionDate", "lenderName", "borrowerName", 
                                         "transactionType", "tzsAmount", tenure, "interestRate"
                                     ) VALUES %s
-                                    ON CONFLICT ("transactionDate", "lenderName", "borrowerName") DO UPDATE SET
-                                        "reportingDate" = EXCLUDED."reportingDate",
-                                        "transactionType" = EXCLUDED."transactionType",
-                                        "tzsAmount" = EXCLUDED."tzsAmount",
-                                        tenure = EXCLUDED.tenure,
-                                        "interestRate" = EXCLUDED."interestRate"
                                 """
                                 
-                                # Prepare values tuple from deduplicated records
+                                # Prepare values tuple from all records (no deduplication needed)
                                 values = []
-                                for record in unique_records.values():
+                                for record in buffer:
                                     values.append((
                                         record.get('reportingdate'),
                                         record.get('transactiondate'),
@@ -443,9 +532,9 @@ class IBCMTransactionsStreamingPipeline:
                                 pg_conn.commit()
                                 
                                 with self._stats_lock:
-                                    self.total_consumed += len(unique_records)
+                                    self.total_consumed += len(buffer)
                                 
-                                self.logger.info(f"Consumer: Flushed {len(unique_records)} unique records to PostgreSQL (deduplicated from {len(buffer)} total)")
+                                self.logger.info(f"Consumer: Flushed {len(buffer)} records to PostgreSQL")
                                 
                         except Exception as e:
                             self.logger.error(f"Error flushing buffer: {e}")
@@ -498,9 +587,6 @@ class IBCMTransactionsStreamingPipeline:
                     
                     # Final flush
                     flush_buffer(force=True)
-                    connection, channel = self.setup_rabbitmq_connection()
-                    channel.basic_qos(prefetch_count=self.consumer_batch_size)
-                    channel.basic_consume(queue='ibcm_transactions_queue', on_message_callback=process_message)
                     
         except Exception as e:
             self.logger.error(f"Consumer thread error: {e}")
@@ -509,20 +595,23 @@ class IBCMTransactionsStreamingPipeline:
             self.consumer_finished.set()
             self.logger.info("Consumer: Finished")
 
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the complete streaming pipeline"""
         try:
+            mode_desc = "incremental" if incremental else "full load"
             self.logger.info("=" * 60)
-            self.logger.info("STARTING IBCM TRANSACTIONS STREAMING PIPELINE")
+            self.logger.info(f"STARTING IBCM TRANSACTIONS STREAMING PIPELINE ({mode_desc})")
             self.logger.info("=" * 60)
+            
+            # Update state to running
+            self._update_state('running')
             
             # Setup infrastructure
             self.setup_rabbitmq_queues()
             self.ensure_table_exists()
-            self.ensure_unique_index()
             
             # Start producer and consumer threads
-            producer_thread = threading.Thread(target=self.producer_thread, name="IBCMTransactionsProducer")
+            producer_thread = threading.Thread(target=lambda: self.producer_thread(incremental), name="IBCMTransactionsProducer")
             consumer_thread = threading.Thread(target=self.consumer_thread, name="IBCMTransactionsConsumer")
             
             producer_thread.start()
@@ -537,18 +626,53 @@ class IBCMTransactionsStreamingPipeline:
             with self._stats_lock:
                 self.logger.info("=" * 60)
                 self.logger.info("IBCM TRANSACTIONS PIPELINE COMPLETED")
+                self.logger.info(f"Mode: {mode_desc}")
                 self.logger.info(f"Total produced: {self.total_produced}")
                 self.logger.info(f"Total consumed: {self.total_consumed}")
                 self.logger.info(f"Elapsed time: {elapsed_time:.2f} seconds")
                 if elapsed_time > 0:
                     self.logger.info(f"Average rate: {self.total_consumed/elapsed_time:.2f} records/second")
                 self.logger.info("=" * 60)
+            
+            # Update pipeline state
+            self._update_state('completed')
                 
         except Exception as e:
             self.logger.error(f"Pipeline failed: {e}")
+            self._update_state('failed', str(e))
             raise
 
 
+def main():
+    """Main function"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='IBCM Transactions Streaming Pipeline')
+    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for processing')
+    parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
+                       help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
+    
+    args = parser.parse_args()
+    
+    # Create pipeline
+    pipeline = IBCMTransactionsStreamingPipeline(batch_size=args.batch_size)
+    
+    try:
+        if args.mode == 'producer':
+            pipeline.producer_thread(incremental=not args.full_load)
+        elif args.mode == 'consumer':
+            pipeline.consumer_thread()
+        else:  # streaming
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
+            
+    except KeyboardInterrupt:
+        pipeline.logger.info("Pipeline stopped by user")
+    except Exception as e:
+        pipeline.logger.error(f"Pipeline failed: {e}")
+        import sys
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    pipeline = IBCMTransactionsStreamingPipeline(batch_size=1000, consumer_batch_size=100)
-    pipeline.run_streaming_pipeline()
+    main()

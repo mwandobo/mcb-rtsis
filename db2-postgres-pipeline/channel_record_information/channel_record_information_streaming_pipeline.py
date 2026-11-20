@@ -73,15 +73,41 @@ class ChannelRecordInformationStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_channel_record_information_query(self):
-        """Get the channel record information query from channel-record-information.sql"""
+    def get_channel_record_information_query(self, last_timestamp=None):
+        """Get the channel record information query from channel-record-information.sql with optional TMSTAMP filter"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             'sqls', 'channel-record-information.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            sql = f.read().strip()
+        
+        # For incremental mode, add TMSTAMP filter on CUSTOMER table
+        if last_timestamp:
+            if last_timestamp == 'epoch':
+                timestamp_value = '1900-01-01-00.00.00.000000'
+            else:
+                timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+            
+            # Check if SQL already has WHERE clause
+            sql_upper = sql.upper()
+            if 'WHERE' in sql_upper:
+                sql = sql + f"\n AND c.TMSTAMP > '{timestamp_value}'"
+            else:
+                sql = sql + f"\n WHERE c.TMSTAMP > '{timestamp_value}'"
+        
+        return sql
+    
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('channel_record_information')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
     
     def get_total_count(self):
         """Get accurate total count of channel record information records from DB2 using the same query structure"""
@@ -265,10 +291,21 @@ class ChannelRecordInformationStreamingPipeline:
             self.logger.error(f"Error validating channel record information record: {e}")
             return False
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
+            
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: fetching records with TMSTAMP > {last_timestamp}")
+                else:
+                    last_timestamp = 'epoch'
+                    self.logger.info("Incremental mode: first run, fetching all records (epoch)")
+            else:
+                self.logger.info("Full load mode: fetching all records")
             
             # Get dynamic record count
             self.total_available = self.get_total_count()
@@ -281,7 +318,7 @@ class ChannelRecordInformationStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_channel_record_information_query()
+            query = self.get_channel_record_information_query(last_timestamp)
             self.logger.info("Executing channel record information query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
@@ -619,11 +656,14 @@ class ChannelRecordInformationStreamingPipeline:
             self.logger.error(f"Failed to create unique index on customerIdentificationNumber: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Channel Record Information STREAMING pipeline...")
+        self.logger.info(f"Starting Channel Record Information STREAMING pipeline... (incremental={incremental})")
         
         try:
+            # Update state to running
+            self._update_state('running')
+            
             # Ensure unique index for duplicate prevention
             self.ensure_unique_index()
             
@@ -638,7 +678,7 @@ class ChannelRecordInformationStreamingPipeline:
             time.sleep(1)
             
             # Start producer thread
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, name="Producer", args=(incremental,))
             producer_thread.start()
             
             # Wait for producer to finish
@@ -665,6 +705,7 @@ class ChannelRecordInformationStreamingPipeline:
             ==========================================
             Channel Record Information Pipeline Summary:
             ==========================================
+            Mode: {'Incremental' if incremental else 'Full Load'}
             Estimated records: {self.total_available:,}
             Actual records processed: {actual_total:,}
             Records produced: {self.total_produced:,}
@@ -675,9 +716,28 @@ class ChannelRecordInformationStreamingPipeline:
             ==========================================
             """)
             
+            # Update pipeline state
+            self._update_state('completed')
+            
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'channel_record_information',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 def main():
@@ -689,6 +749,7 @@ def main():
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     
     args = parser.parse_args()
     
@@ -697,11 +758,11 @@ def main():
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:  # streaming
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")

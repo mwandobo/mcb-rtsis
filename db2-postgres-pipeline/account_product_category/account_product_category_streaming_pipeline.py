@@ -78,7 +78,7 @@ class AccountProductCategoryStreamingPipeline:
         """Get the account product category query from account-product-category.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'account-product-category.sql'
+            'sqls', 'account-product-category-v1.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
@@ -582,9 +582,20 @@ class AccountProductCategoryStreamingPipeline:
             raise
     
     def run_streaming_pipeline(self):
-        """Run the streaming pipeline with simultaneous producer and consumer"""
+        """Run the streaming pipeline with simultaneous producer and consumer.
+
+        W_DIM_PRODUCT (the driver table) has no TMSTAMP or any other
+        last-modified column, so there's no safe incremental filter here -
+        PRODUCT.TMSTAMP exists but is only reachable through a LEFT JOIN,
+        and filtering on it would silently drop any row where that join
+        doesn't match (NULL > x is never true), which includes brand new
+        product categories as well as ones that never had a PRODUCT match.
+        The table is small (130 rows), so this deliberately always does a
+        full scan; ON CONFLICT DO NOTHING is what keeps re-runs idempotent.
+        """
         self.logger.info("Starting Account Product Category STREAMING pipeline...")
-        
+        self._update_state('running')
+
         try:
             # Ensure unique index for duplicate prevention
             self.ensure_unique_index()
@@ -627,16 +638,28 @@ class AccountProductCategoryStreamingPipeline:
             self.logger.info(f"Average rate: {avg_rate:.1f} records/second")
             self.logger.info("=" * 60)
             
+            self._update_state('completed')
+
             return {
                 'total_produced': self.total_produced,
                 'total_consumed': self.total_consumed,
                 'total_time': total_time,
                 'avg_rate': avg_rate
             }
-            
+
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            PipelineStateManager().update_run('account_product_category', status, self.total_consumed, error_message)
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 if __name__ == "__main__":

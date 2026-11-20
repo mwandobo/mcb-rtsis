@@ -47,6 +47,7 @@ def create_interbank_loans_payable_table():
             "reportingDate" VARCHAR(12),
             "lenderName" VARCHAR(255),
             "accountNumber" VARCHAR(50),
+            "dealNumber" VARCHAR(50),
             "lenderCountry" VARCHAR(100),
             "borrowingType" VARCHAR(50),
             "transactionDate" VARCHAR(12),
@@ -77,7 +78,8 @@ def create_interbank_loans_payable_table():
         
         indexes = [
             'CREATE INDEX idx_interbankLoansPayable_reporting_date ON "interbankLoansPayable"("reportingDate")',
-            'CREATE UNIQUE INDEX idx_interbankLoansPayable_account_number ON "interbankLoansPayable"("accountNumber")',
+            'CREATE INDEX idx_interbankLoansPayable_account_number ON "interbankLoansPayable"("accountNumber")',
+            'CREATE UNIQUE INDEX idx_interbankLoansPayable_deal_number ON "interbankLoansPayable"("dealNumber")',
             'CREATE INDEX idx_interbankLoansPayable_lender_name ON "interbankLoansPayable"("lenderName")',
             'CREATE INDEX idx_interbankLoansPayable_lender_country ON "interbankLoansPayable"("lenderCountry")',
             'CREATE INDEX idx_interbankLoansPayable_borrowing_type ON "interbankLoansPayable"("borrowingType")',

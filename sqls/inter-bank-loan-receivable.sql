@@ -46,7 +46,8 @@ select CURRENT_TIMESTAMP                                                        
        wela.OVERDUE_DAYS                                                        AS pastDueDays,
        wela.PROVISION_AMOUNT                                                    AS allowanceProbableLoss,
        wela.PROVISION_AMN                                                       AS botProvision,
-       'Current'                                                                AS assetClassificationCategory
+       'Current'                                                                AS assetClassificationCategory,
+       gte.TMSTAMP                                                              AS tmstamp
 
 from W_EOM_LOAN_ACCOUNT as wela
          LEFT JOIN CUSTOMER as c ON wela.CUST_ID = c.CUST_ID
@@ -72,4 +73,7 @@ from W_EOM_LOAN_ACCOUNT as wela
                    ON N.ROW_ID = 1
                        AND wela.FK_UNITCODE = N.ACC_UNIT
                        AND wela.ACC_TYPE = N.ACC_TYPE
-                       AND wela.ACC_SN = N.ACC_SN;
+                       AND wela.ACC_SN = N.ACC_SN
+         -- Add GLI_TRX_EXTRACT join for TMSTAMP tracking
+         LEFT JOIN GLI_TRX_EXTRACT gte ON gte.PRF_ACCOUNT_NUMBER = wela.ACCOUNT_NUMBER
+ORDER BY gte.TMSTAMP;

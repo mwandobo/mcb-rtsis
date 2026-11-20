@@ -55,14 +55,15 @@ class CardTransactionRecord:
     orgTransactionAmount: str
     usdTransactionAmount: str
     tzsTransactionAmount: str
+    tmstamp: str
 
 
 class CardTransactionsStreamingPipeline:
-    def __init__(self, batch_size=1000, consumer_batch_size=100):
+    def __init__(self, batch_size=1000):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
-        self.consumer_batch_size = consumer_batch_size
+        self.consumer_batch_size = 100  # Fixed value
         
         # Threading control
         self.producer_finished = threading.Event()
@@ -88,31 +89,75 @@ class CardTransactionsStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_card_transactions_query(self):
-        """Get the full card transactions query from card-transaction-v1.sql.
+    def get_card_transactions_query(self, last_timestamp=None):
+        """Get the card transactions query using card-transaction-v1.sql with optional TMSTAMP filter"""
         
-        The query is executed ONCE and results are streamed via cursor.fetchmany().
-        No pagination modifications are made to the original SQL.
-        
-        Returns:
-            str: The complete SQL query
-        """
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             'sqls', 'card-transaction-v1.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            sql = f.read()
+        
+        # For incremental mode, add TMSTAMP filter on CMS_CARD_EXTRAIT table
+        if last_timestamp:
+            if last_timestamp == 'epoch':
+                timestamp_value = '1900-01-01-00.00.00.000000'
+            else:
+                timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+            
+            # Add the timestamp filter to the CTE
+            # Look for the FROM CMS_CARD_EXTRAIT ce line and add WHERE condition
+            sql_lines = sql.split('\n')
+            modified_lines = []
+            
+            for i, line in enumerate(sql_lines):
+                modified_lines.append(line)
+                # Add the timestamp filter after the FROM CMS_CARD_EXTRAIT ce line
+                if "FROM CMS_CARD_EXTRAIT ce" in line:
+                    # Find the next line that starts with a JOIN or WHERE and insert our filter before it
+                    j = i + 1
+                    while j < len(sql_lines) and not (sql_lines[j].strip().startswith('LEFT JOIN') or 
+                                                     sql_lines[j].strip().startswith('JOIN') or
+                                                     sql_lines[j].strip().startswith('WHERE')):
+                        j += 1
+                    # Insert the WHERE clause before the first JOIN
+                    modified_lines.append(f"                   WHERE ce.TMSTAMP > '{timestamp_value}'")
+                    break
+        
+            sql = '\n'.join(modified_lines)
+        
+        return sql
     
-    def get_total_count(self):
-        """Get approximate total count of card transaction records from DB2.
-        Uses the base table count for a fast estimate. Actual joined count may differ.
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('card_transactions')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
+    
+    def get_total_count(self, last_timestamp=None):
+        """Get fast approximate count from base table.
+        Complex JOIN count queries are too slow - use simple base table count.
         """
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM CMS_CARD_EXTRAIT")
+                
+                # Simple fast count from base table
+                if last_timestamp:
+                    if last_timestamp == 'epoch':
+                        timestamp_value = '1900-01-01-00.00.00.000000'
+                    else:
+                        timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+                    cursor.execute(f"SELECT COUNT(*) FROM CMS_CARD_EXTRAIT WHERE TMSTAMP > '{timestamp_value}'")
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM CMS_CARD_EXTRAIT")
+                
                 result = cursor.fetchone()
                 count = result[0] if result else 0
                 self.logger.info(f"Estimated record count from CMS_CARD_EXTRAIT: {count:,}")
@@ -245,7 +290,8 @@ class CardTransactionsStreamingPipeline:
                 currency=safe_string(row[19]),                          # curr.SHORT_DESCR
                 orgTransactionAmount=safe_string(row[20]),              # ce.TRANSACTION_AMNT
                 usdTransactionAmount=safe_string(row[21]),              # USD conversion
-                tzsTransactionAmount=safe_string(row[22])               # TZS conversion
+                tzsTransactionAmount=safe_string(row[22]),              # TZS conversion
+                tmstamp=safe_string(row[23])                            # ce.TMSTAMP
             )
             
             return record
@@ -274,7 +320,7 @@ class CardTransactionsStreamingPipeline:
             self.logger.error(f"Error validating card transaction record: {e}")
             return False
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes v1 query ONCE and streams results via fetchmany().
         
         Instead of re-executing the expensive CTE query for every batch,
@@ -284,8 +330,19 @@ class CardTransactionsStreamingPipeline:
         try:
             self.logger.info("Producer thread started")
             
-            # Get dynamic record count
-            self.total_available = self.get_total_count()
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: fetching records with TMSTAMP > {last_timestamp}")
+                else:
+                    last_timestamp = 'epoch'
+                    self.logger.info("Incremental mode: first run, fetching all records (epoch)")
+            else:
+                self.logger.info("Full load mode: fetching all records")
+            
+            # Get dynamic record count with same filters as main query
+            self.total_available = self.get_total_count(last_timestamp)
             
             self.logger.info(f"Total card transaction records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
@@ -295,7 +352,7 @@ class CardTransactionsStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the v1 query ONCE and stream results
-            query = self.get_card_transactions_query()
+            query = self.get_card_transactions_query(last_timestamp)
             self.logger.info("Executing card transactions query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
@@ -356,7 +413,18 @@ class CardTransactionsStreamingPipeline:
                     batch_time = time.time() - batch_start_time
                     with self._stats_lock:
                         produced = self.total_produced
-                    progress_percent = produced / self.total_available * 100 if self.total_available > 0 else 0
+                    
+                    # Calculate progress percentage with dynamic adjustment
+                    if self.total_available > 0:
+                        if produced <= self.total_available:
+                            progress_percent = produced / self.total_available * 100
+                        else:
+                            # We've exceeded initial estimate - recalculate based on actual progress
+                            progress_percent = 100.0  # Cap at 100% for display
+                            # Update total available to reflect actual data size
+                            self.total_available = max(self.total_available, produced)
+                    else:
+                        progress_percent = 0
                     
                     self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} rows fetched, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
                     
@@ -365,11 +433,22 @@ class CardTransactionsStreamingPipeline:
                     if current_time - last_progress_report >= 300:
                         elapsed_time = current_time - self.start_time
                         rate = produced / elapsed_time if elapsed_time > 0 else 0
-                        remaining_records = self.total_available - produced
-                        eta_seconds = remaining_records / rate if rate > 0 else 0
+                        
+                        # Calculate progress with dynamic total
+                        if produced <= self.total_available:
+                            progress_percent = produced / self.total_available * 100 if self.total_available > 0 else 0
+                            remaining_records = self.total_available - produced
+                        else:
+                            progress_percent = 100.0
+                            remaining_records = 0  # Unknown remaining
+                            
+                        eta_seconds = remaining_records / rate if rate > 0 and remaining_records > 0 else 0
                         eta_hours = eta_seconds / 3600
                         
-                        self.logger.info(f"PROGRESS REPORT: {produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
+                        if remaining_records > 0:
+                            self.logger.info(f"PROGRESS REPORT: {produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
+                        else:
+                            self.logger.info(f"PROGRESS REPORT: {produced:,} records processed (exceeded initial estimate) - Rate: {rate:.1f} rec/sec")
                         last_progress_report = current_time
                     
                     batch_number += 1
@@ -620,11 +699,14 @@ class CardTransactionsStreamingPipeline:
             self.logger.error(f"Failed to create unique index on transactionId: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Card Transactions STREAMING pipeline...")
+        self.logger.info(f"Starting Card Transactions STREAMING pipeline... (incremental={incremental})")
         
         try:
+            # Update state to running
+            self._update_state('running')
+            
             # Ensure unique index for duplicate prevention
             self.ensure_unique_index()
             
@@ -639,7 +721,7 @@ class CardTransactionsStreamingPipeline:
             time.sleep(1)
             
             # Start producer thread
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, name="Producer", args=(incremental,))
             producer_thread.start()
             
             # Wait for producer to finish
@@ -663,6 +745,7 @@ class CardTransactionsStreamingPipeline:
             ==========================================
             Card Transactions Pipeline Summary:
             ==========================================
+            Mode: {'Incremental' if incremental else 'Full Load'}
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
             Records consumed: {self.total_consumed:,}
@@ -672,9 +755,28 @@ class CardTransactionsStreamingPipeline:
             ==========================================
             """)
             
+            # Update pipeline state
+            self._update_state('completed')
+            
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'card_transactions',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 def main():
@@ -682,23 +784,23 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Card Transactions Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
-    parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
+    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for processing')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = CardTransactionsStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = CardTransactionsStreamingPipeline(batch_size=args.batch_size)
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:  # streaming
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")

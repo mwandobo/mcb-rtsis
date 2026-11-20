@@ -1,5 +1,4 @@
 import { IconType } from 'react-icons';
-import { FiServer, FiActivity, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi';
 
 interface StatCardProps {
   title: string;

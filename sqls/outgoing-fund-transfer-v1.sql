@@ -116,7 +116,8 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')              AS reporti
            WHEN UPPER(TRIM(out.ISSUER_COUNTRY)) IN ('TZ', 'TANZANIA')
                THEN 'TANZANIA, UNITED REPUBLIC OF'
            ELSE out.ISSUER_COUNTRY
-           END                                                        AS transactionPlace
+           END                                                        AS transactionPlace,
+       out.TMSTAMP                                                    AS tmstamp
 from OUTGOING_ORDERS out
          LEFT JOIN (SELECT fr.fk_currencyid_curr,
                            fr.rate
@@ -131,4 +132,4 @@ from OUTGOING_ORDERS out
                                                                                                      WHERE b.activation_date <= CURRENT_DATE)
                                                                                               GROUP BY fk_currencyid_curr, activation_date)) fx
                    ON fx.fk_currencyid_curr = out.FK_CURRENCYID_CURR
-;
+ORDER BY out.TMSTAMP;

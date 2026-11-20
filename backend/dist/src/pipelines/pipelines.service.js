@@ -22,6 +22,7 @@ const path_1 = require("path");
 const amqp = require("amqplib");
 const pipeline_state_entity_1 = require("./entities/pipeline-state.entity");
 const config_service_1 = require("../config/config.service");
+const PINNED_ORDER = ['branch', 'agents', 'pos', 'atm', 'personal_data_information', 'personal_data_corporates', 'employee', 'directors_records', 'account_product_category', 'account_information'];
 let PipelinesService = PipelinesService_1 = class PipelinesService {
     constructor(pipelineStateRepository, configService) {
         this.pipelineStateRepository = pipelineStateRepository;
@@ -30,9 +31,21 @@ let PipelinesService = PipelinesService_1 = class PipelinesService {
         this.runningProcesses = new Map();
     }
     async findAll() {
-        return this.pipelineStateRepository.find({
+        const pipelines = await this.pipelineStateRepository.find({
             order: { pipelineName: 'ASC' },
         });
+        pipelines.sort((a, b) => {
+            const indexA = PINNED_ORDER.indexOf(a.pipelineName);
+            const indexB = PINNED_ORDER.indexOf(b.pipelineName);
+            if (indexA !== -1 && indexB !== -1)
+                return indexA - indexB;
+            if (indexA !== -1)
+                return -1;
+            if (indexB !== -1)
+                return 1;
+            return 0;
+        });
+        return pipelines;
     }
     async findOne(name) {
         const pipeline = await this.pipelineStateRepository.findOne({
@@ -68,25 +81,25 @@ let PipelinesService = PipelinesService_1 = class PipelinesService {
             }
         }
         const pipelinesDir = this.configService.get('PIPELINES_DIR');
-        const scriptPath = (0, path_1.join)(pipelinesDir, name, `${name}_streaming_pipeline.py`);
+        const scriptPath = (0, path_1.join)(pipelinesDir, 'run_continuous.py');
         const fs = require('fs');
         if (!fs.existsSync(scriptPath)) {
-            this.logger.error(`Pipeline script not found: ${scriptPath}`);
+            this.logger.error(`Continuous runner not found: ${scriptPath}`);
             return {
                 success: false,
                 pipelineName: name,
-                message: `Pipeline script not found: ${scriptPath}`,
+                message: `Continuous runner not found: ${scriptPath}`,
             };
         }
-        const args = ['--full-load'];
+        const args = [name];
         if (options.fullLoad) {
             args.push('--full-load');
         }
-        this.logger.log(`Starting pipeline: ${name}`);
+        this.logger.log(`Starting pipeline (continuous): ${name}`);
         this.logger.log(`Script path: ${scriptPath}`);
         this.logger.log(`Args: ${args.join(' ')}`);
         const childProcess = (0, child_process_1.spawn)('python', [scriptPath, ...args], {
-            cwd: (0, path_1.join)(pipelinesDir, name),
+            cwd: pipelinesDir,
             stdio: ['pipe', 'pipe', 'pipe'],
             env: { ...process.env, PYTHONUNBUFFERED: '1' },
         });
@@ -144,19 +157,22 @@ let PipelinesService = PipelinesService_1 = class PipelinesService {
             }
         });
         try {
-            const dbRunning = await this.pipelineStateRepository
+            const stuck = await this.pipelineStateRepository
                 .createQueryBuilder('ps')
                 .select('ps.pipelineName', 'pipelineName')
                 .where('ps.lastRunStatus = :status', { status: 'running' })
                 .getRawMany();
-            for (const row of dbRunning) {
+            for (const row of stuck) {
                 if (!running.includes(row.pipelineName)) {
-                    running.push(row.pipelineName);
+                    await this.pipelineStateRepository.update({ pipelineName: row.pipelineName }, {
+                        lastRunStatus: 'failed',
+                        errorMessage: 'Process lost (backend lost track of it, likely a crash) - start it again',
+                    });
                 }
             }
         }
         catch (err) {
-            this.logger.error('Error checking database for running pipelines:', err);
+            this.logger.error('Error reconciling stale running state:', err);
         }
         return running;
     }

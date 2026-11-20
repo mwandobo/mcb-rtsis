@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Loans Streaming Pipeline - Producer and Consumer run simultaneously
-Based on loan-information-v6.sql query
+Based on loan-information-v10.sql query
 """
 
 import pika
@@ -15,6 +15,7 @@ from dataclasses import dataclass, asdict
 from contextlib import contextmanager
 from typing import Optional, List
 from datetime import datetime
+from decimal import Decimal
 import sys
 import os
 
@@ -30,7 +31,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 @dataclass
 class LoanRecord:
-    """Data class for loan records based on loan-information-v7.sql"""
+    """Data class for loan records based on loan-information-v10.sql"""
     reportingDate: str
     customerIdentificationNumber: str
     accountNumber: Optional[str]
@@ -62,75 +63,76 @@ class LoanRecord:
     loanSupervisor: str
     groupVillageNumber: Optional[str]
     cycleNumber: Optional[int]
-    loanInstallment: Optional[int]
+    loanInstallment: int
     repaymentFrequency: str
     currency: str
     contractDate: str
-    orgSanctionedAmount: Optional[str]
-    usdSanctionedAmount: Optional[str]
-    tzsSanctionedAmount: Optional[str]
-    orgDisbursedAmount: Optional[str]
+    orgSanctionAmount: str
+    usdSanctionAmount: Optional[str]
+    tzsSanctionAmount: str
+    orgDisbursedAmount: str
     usdDisbursedAmount: Optional[str]
-    tzsDisbursedAmount: Optional[str]
-    disbursementDate: Optional[str]
-    maturityDate: Optional[str]
+    tzsDisbursedAmount: str
+    disbursementDate: str
+    maturityDate: str
     realEndDate: Optional[str]
-    orgOutstandingPrincipalAmount: Optional[str]
+    orgOutstandingPrincipalAmount: str
     usdOutstandingPrincipalAmount: Optional[str]
-    tzsOutstandingPrincipalAmount: Optional[str]
-    orgInstallmentAmount: Optional[str]
+    tzsOutstandingPrincipalAmount: str
+    orgInstallmentAmount: str
     usdInstallmentAmount: Optional[str]
-    tzsInstallmentAmount: Optional[str]
-    loanInstallmentPaid: Optional[int]
+    tzsInstallmentAmount: str
+    loanInstallmentPaid: int
     gracePeriodPaymentPrincipal: Optional[str]
-    primeLendingRate: Optional[str]
-    interestPricingMethod: Optional[str]
-    annualInterestRate: Optional[str]
+    primeLendingRate: str
+    interestPricingMethod: str
+    annualInterestRate: str
     effectiveAnnualInterestRate: Optional[str]
-    firstInstallmentPaymentDate: Optional[str]
-    lastPaymentDate: Optional[str]
+    firstInstallmentPaymentDate: str
+    lastPaymentDate: str
     collateralPledged: Optional[str]
     loanFlagType: Optional[str]
     restructuringDate: Optional[str]
-    pastDueDays: Optional[int]
-    pastDueAmount: Optional[str]
-    internalRiskGroup: Optional[str]
-    orgAccruedInterestAmount: Optional[str]
+    pastDueDays: int
+    pastDueAmount: str
+    internalRiskGroup: str
+    orgAccruedInterestAmount: str
     usdAccruedInterestAmount: Optional[str]
-    tzsAccruedInterestAmount: Optional[str]
-    orgPenaltyChargedAmount: Optional[str]
+    tzsAccruedInterestAmount: str
+    orgPenaltyChargedAmount: str
     usdPenaltyChargedAmount: Optional[str]
-    tzsPenaltyChargedAmount: Optional[str]
+    tzsPenaltyChargedAmount: str
     orgPenaltyPaidAmount: Optional[str]
     usdPenaltyPaidAmount: Optional[str]
     tzsPenaltyPaidAmount: Optional[str]
-    orgLoanFeesChargedAmount: Optional[str]
+    orgLoanFeesChargedAmount: str
     usdLoanFeesChargedAmount: Optional[str]
-    tzsLoanFeesChargedAmount: Optional[str]
-    orgLoanFeesPaidAmount: Optional[str]
+    tzsLoanFeesChargedAmount: str
+    orgLoanFeesPaidAmount: str
     usdLoanFeesPaidAmount: Optional[str]
-    tzsLoanFeesPaidAmount: Optional[str]
-    orgTotMonthlyPaymentAmount: Optional[str]
+    tzsLoanFeesPaidAmount: str
+    orgTotMonthlyPaymentAmount: str
     usdTotMonthlyPaymentAmount: Optional[str]
-    tzsTotMonthlyPaymentAmount: Optional[str]
-    sectorSnaClassification: Optional[str]
-    assetClassificationCategory: Optional[str]
-    negStatusContract: Optional[str]
-    customerRole: Optional[str]
-    allowanceProbableLoss: Optional[str]
-    botProvision: Optional[str]
+    tzsTotMonthlyPaymentAmount: str
+    sectorSnaClassification: str
+    assetClassificationCategory: str
+    negStatusContract: str
+    customerRole: str
+    allowanceProbableLoss: str
+    botProvision: str
     tradingIntent: str
-    orgSuspendedInterest: Optional[str]
+    orgSuspendedInterest: str
     usdSuspendedInterest: Optional[str]
-    tzsSuspendedInterest: Optional[str]
+    tzsSuspendedInterest: str
+    tmstamp: str
 
 
 class LoansStreamingPipeline:
-    def __init__(self, batch_size=1000, consumer_batch_size=100):
+    def __init__(self, batch_size=1000):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
-        self.consumer_batch_size = consumer_batch_size
+        self.consumer_batch_size = 100  # Fixed value
         
         # Threading control
         self.producer_finished = threading.Event()
@@ -156,22 +158,53 @@ class LoansStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_loans_query(self):
-        """Get the loans query from loan-information-v7.sql"""
+    def get_loans_query(self, last_timestamp=None):
+        """Get the loans query from loan-information-v10.sql with optional TMSTAMP filter"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'loan-information-v7.sql'
+            'sqls', 'loan-information-v10.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            sql = f.read().strip()
+        
+        if last_timestamp:
+            if last_timestamp == 'epoch':
+                timestamp_value = '1900-01-01-00.00.00.000000'
+            else:
+                timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+            sql = sql.replace('{timestamp_filter}', f"WHERE la.TMSTAMP > '{timestamp_value}'")
+        else:
+            sql = sql.replace('{timestamp_filter}', '')
+        
+        return sql
     
-    def get_total_count(self):
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('loans')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
+    
+    def get_total_count(self, last_timestamp=None):
         """Get approximate total count of loan records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM LOAN_ACCOUNT")
+                
+                # Simple fast count from base table
+                if last_timestamp:
+                    if last_timestamp == 'epoch':
+                        timestamp_value = '1900-01-01-00.00.00.000000'
+                    else:
+                        timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+                    cursor.execute(f"SELECT COUNT(*) FROM LOAN_ACCOUNT WHERE TMSTAMP > '{timestamp_value}'")
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM LOAN_ACCOUNT")
+                
                 result = cursor.fetchone()
                 count = result[0] if result else 0
                 self.logger.info(f"Estimated record count from LOAN_ACCOUNT: {count:,}")
@@ -277,6 +310,8 @@ class LoansStreamingPipeline:
                 """Safely convert to string"""
                 if value is None:
                     return None
+                if isinstance(value, Decimal):
+                    return format(value, '.2f')
                 return str(value).strip()
             
             def safe_int(value):
@@ -288,7 +323,7 @@ class LoansStreamingPipeline:
                 except (ValueError, TypeError):
                     return None
             
-            # Map all 92 fields from the SQL query to the dataclass
+            # Map all 93 fields from the SQL query to the dataclass
             record = LoanRecord(
                 reportingDate=safe_string(row[0]),
                 customerIdentificationNumber=safe_string(row[1]),
@@ -325,63 +360,64 @@ class LoansStreamingPipeline:
                 repaymentFrequency=safe_string(row[32]),
                 currency=safe_string(row[33]),
                 contractDate=safe_string(row[34]),
-                orgSanctionedAmount=safe_string(row[35]) if row[35] else None,
-                usdSanctionedAmount=safe_string(row[36]) if row[36] else None,
-                tzsSanctionedAmount=safe_string(row[37]) if row[37] else None,
-                orgDisbursedAmount=safe_string(row[38]) if row[38] else None,
+                orgSanctionAmount=safe_string(row[35]),
+                usdSanctionAmount=safe_string(row[36]) if row[36] else None,
+                tzsSanctionAmount=safe_string(row[37]),
+                orgDisbursedAmount=safe_string(row[38]),
                 usdDisbursedAmount=safe_string(row[39]) if row[39] else None,
-                tzsDisbursedAmount=safe_string(row[40]) if row[40] else None,
-                disbursementDate=safe_string(row[41]) if row[41] else None,
-                maturityDate=safe_string(row[42]) if row[42] else None,
+                tzsDisbursedAmount=safe_string(row[40]),
+                disbursementDate=safe_string(row[41]),
+                maturityDate=safe_string(row[42]),
                 realEndDate=safe_string(row[43]) if row[43] else None,
-                orgOutstandingPrincipalAmount=safe_string(row[44]) if row[44] else None,
+                orgOutstandingPrincipalAmount=safe_string(row[44]),
                 usdOutstandingPrincipalAmount=safe_string(row[45]) if row[45] else None,
-                tzsOutstandingPrincipalAmount=safe_string(row[46]) if row[46] else None,
-                orgInstallmentAmount=safe_string(row[47]) if row[47] else None,
+                tzsOutstandingPrincipalAmount=safe_string(row[46]),
+                orgInstallmentAmount=safe_string(row[47]),
                 usdInstallmentAmount=safe_string(row[48]) if row[48] else None,
-                tzsInstallmentAmount=safe_string(row[49]) if row[49] else None,
+                tzsInstallmentAmount=safe_string(row[49]),
                 loanInstallmentPaid=safe_int(row[50]),
                 gracePeriodPaymentPrincipal=safe_string(row[51]) if row[51] else None,
-                primeLendingRate=safe_string(row[52]) if row[52] else None,
-                interestPricingMethod=safe_string(row[53]) if row[53] else None,
-                annualInterestRate=safe_string(row[54]) if row[54] else None,
+                primeLendingRate=safe_string(row[52]),
+                interestPricingMethod=safe_string(row[53]),
+                annualInterestRate=safe_string(row[54]),
                 effectiveAnnualInterestRate=safe_string(row[55]) if row[55] else None,
-                firstInstallmentPaymentDate=safe_string(row[56]) if row[56] else None,
-                lastPaymentDate=safe_string(row[57]) if row[57] else None,
+                firstInstallmentPaymentDate=safe_string(row[56]),
+                lastPaymentDate=safe_string(row[57]),
                 collateralPledged=safe_string(row[58]) if row[58] else None,
                 loanFlagType=safe_string(row[59]) if row[59] else None,
                 restructuringDate=safe_string(row[60]) if row[60] else None,
                 pastDueDays=safe_int(row[61]),
-                pastDueAmount=safe_string(row[62]) if row[62] else None,
-                internalRiskGroup=safe_string(row[63]) if row[63] else None,
-                orgAccruedInterestAmount=safe_string(row[64]) if row[64] else None,
+                pastDueAmount=safe_string(row[62]),
+                internalRiskGroup=safe_string(row[63]),
+                orgAccruedInterestAmount=safe_string(row[64]),
                 usdAccruedInterestAmount=safe_string(row[65]) if row[65] else None,
-                tzsAccruedInterestAmount=safe_string(row[66]) if row[66] else None,
-                orgPenaltyChargedAmount=safe_string(row[67]) if row[67] else None,
+                tzsAccruedInterestAmount=safe_string(row[66]),
+                orgPenaltyChargedAmount=safe_string(row[67]),
                 usdPenaltyChargedAmount=safe_string(row[68]) if row[68] else None,
-                tzsPenaltyChargedAmount=safe_string(row[69]) if row[69] else None,
-                orgPenaltyPaidAmount=safe_string(row[70]) if row[70] else None,
+                tzsPenaltyChargedAmount=safe_string(row[69]),
+                orgPenaltyPaidAmount=safe_string(row[70]),
                 usdPenaltyPaidAmount=safe_string(row[71]) if row[71] else None,
-                tzsPenaltyPaidAmount=safe_string(row[72]) if row[72] else None,
-                orgLoanFeesChargedAmount=safe_string(row[73]) if row[73] else None,
+                tzsPenaltyPaidAmount=safe_string(row[72]),
+                orgLoanFeesChargedAmount=safe_string(row[73]),
                 usdLoanFeesChargedAmount=safe_string(row[74]) if row[74] else None,
-                tzsLoanFeesChargedAmount=safe_string(row[75]) if row[75] else None,
-                orgLoanFeesPaidAmount=safe_string(row[76]) if row[76] else None,
+                tzsLoanFeesChargedAmount=safe_string(row[75]),
+                orgLoanFeesPaidAmount=safe_string(row[76]),
                 usdLoanFeesPaidAmount=safe_string(row[77]) if row[77] else None,
-                tzsLoanFeesPaidAmount=safe_string(row[78]) if row[78] else None,
-                orgTotMonthlyPaymentAmount=safe_string(row[79]) if row[79] else None,
+                tzsLoanFeesPaidAmount=safe_string(row[78]),
+                orgTotMonthlyPaymentAmount=safe_string(row[79]),
                 usdTotMonthlyPaymentAmount=safe_string(row[80]) if row[80] else None,
-                tzsTotMonthlyPaymentAmount=safe_string(row[81]) if row[81] else None,
-                sectorSnaClassification=safe_string(row[82]) if row[82] else None,
-                assetClassificationCategory=safe_string(row[83]) if row[83] else None,
-                negStatusContract=safe_string(row[84]) if row[84] else None,
-                customerRole=safe_string(row[85]) if row[85] else None,
-                allowanceProbableLoss=safe_string(row[86]) if row[86] else None,
-                botProvision=safe_string(row[87]) if row[87] else None,
+                tzsTotMonthlyPaymentAmount=safe_string(row[81]),
+                sectorSnaClassification=safe_string(row[82]),
+                assetClassificationCategory=safe_string(row[83]),
+                negStatusContract=safe_string(row[84]),
+                customerRole=safe_string(row[85]),
+                allowanceProbableLoss=safe_string(row[86]),
+                botProvision=safe_string(row[87]),
                 tradingIntent=safe_string(row[88]),
-                orgSuspendedInterest=safe_string(row[89]) if row[89] else None,
+                orgSuspendedInterest=safe_string(row[89]),
                 usdSuspendedInterest=safe_string(row[90]) if row[90] else None,
-                tzsSuspendedInterest=safe_string(row[91]) if row[91] else None
+                tzsSuspendedInterest=safe_string(row[91]),
+                tmstamp=safe_string(row[92])
             )
             
             return record
@@ -395,29 +431,67 @@ class LoansStreamingPipeline:
     def validate_record(self, record):
         """Validate loan record"""
         try:
-            # Basic validation
-            if not record.loanNumber:
-                self.logger.warning("Missing loan number")
-                return False
-            
-            if not record.customerIdentificationNumber:
-                self.logger.warning("Missing customer identification number")
-                return False
-            
-            return True
-            
+            mandatory_fields = [
+                'reportingDate', 'customerIdentificationNumber', 'accountNumber',
+                'clientName', 'borrowerCountry', 'ratingStatus', 'gradesUnratedBanks',
+                'borrowerCategory', 'gender', 'disability', 'clientType',
+                'relatedParty', 'relationshipCategory', 'loanNumber', 'loanType',
+                'loanEconomicActivity', 'loanPhase', 'transferStatus',
+                'sourceFundMortgage', 'amortizationType', 'branchCode', 'loanOfficer',
+                'loanSupervisor', 'repaymentFrequency', 'currency', 'contractDate',
+                'orgSanctionAmount', 'tzsSanctionAmount', 'orgDisbursedAmount',
+                'tzsDisbursedAmount', 'disbursementDate', 'maturityDate',
+                'orgOutstandingPrincipalAmount', 'tzsOutstandingPrincipalAmount',
+                'orgInstallmentAmount', 'tzsInstallmentAmount', 'loanInstallmentPaid',
+                'primeLendingRate', 'interestPricingMethod', 'annualInterestRate',
+                'firstInstallmentPaymentDate', 'lastPaymentDate', 'loanFlagType',
+                'pastDueDays', 'pastDueAmount', 'internalRiskGroup',
+                'orgAccruedInterestAmount', 'tzsAccruedInterestAmount',
+                'orgPenaltyChargedAmount', 'tzsPenaltyChargedAmount',
+                'orgPenaltyPaidAmount', 'tzsPenaltyPaidAmount',
+                'orgLoanFeesChargedAmount', 'tzsLoanFeesChargedAmount',
+                'orgLoanFeesPaidAmount', 'tzsLoanFeesPaidAmount',
+                'orgTotMonthlyPaymentAmount', 'sectorSnaClassification',
+                'assetClassificationCategory', 'negStatusContract', 'customerRole',
+                'allowanceProbableLoss', 'botProvision', 'tradingIntent',
+                'orgSuspendedInterest', 'tzsSuspendedInterest',
+            ]
+
+            hard_failures = {'loanNumber', 'customerIdentificationNumber'}
+            is_valid = True
+
+            for field_name in mandatory_fields:
+                value = getattr(record, field_name, None)
+                if value is None or (isinstance(value, str) and not value.strip()):
+                    self.logger.warning(f"Missing mandatory field: {field_name}")
+                    if field_name in hard_failures:
+                        is_valid = False
+
+            return is_valid
+
         except Exception as e:
             self.logger.error(f"Error validating loan record: {e}")
             return False
 
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
             
-            # Get dynamic record count
-            self.total_available = self.get_total_count()
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: fetching records with TMSTAMP > {last_timestamp}")
+                else:
+                    last_timestamp = 'epoch'
+                    self.logger.info("Incremental mode: first run, fetching all records (epoch)")
+            else:
+                self.logger.info("Full load mode: fetching all records")
+            
+            # Get dynamic record count with same filters as main query
+            self.total_available = self.get_total_count(last_timestamp)
             
             self.logger.info(f"Total loan records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
@@ -427,7 +501,7 @@ class LoansStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_loans_query()
+            query = self.get_loans_query(last_timestamp)
             self.logger.info("Executing loans query (single execution, streaming results)...")
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
@@ -712,7 +786,7 @@ class LoansStreamingPipeline:
                 "purposeMortgage", "purposeOtherLoans", "sourceFundMortgage", "amortizationType",
                 "branchCode", "loanOfficer", "loanSupervisor", "groupVillageNumber",
                 "cycleNumber", "loanInstallment", "repaymentFrequency", "currency",
-                "contractDate", "orgSanctionedAmount", "usdSanctionedAmount", "tzsSanctionedAmount",
+                "contractDate", "orgSanctionAmount", "usdSanctionAmount", "tzsSanctionAmount",
                 "orgDisbursedAmount", "usdDisbursedAmount", "tzsDisbursedAmount",
                 "disbursementDate", "maturityDate", "realEndDate",
                 "orgOutstandingPrincipalAmount", "usdOutstandingPrincipalAmount", "tzsOutstandingPrincipalAmount",
@@ -744,7 +818,7 @@ class LoansStreamingPipeline:
                     r.purposeMortgage, r.purposeOtherLoans, r.sourceFundMortgage, r.amortizationType,
                     r.branchCode, r.loanOfficer, r.loanSupervisor, r.groupVillageNumber,
                     r.cycleNumber, r.loanInstallment, r.repaymentFrequency, r.currency,
-                    r.contractDate, r.orgSanctionedAmount, r.usdSanctionedAmount, r.tzsSanctionedAmount,
+                    r.contractDate, r.orgSanctionAmount, r.usdSanctionAmount, r.tzsSanctionAmount,
                     r.orgDisbursedAmount, r.usdDisbursedAmount, r.tzsDisbursedAmount,
                     r.disbursementDate, r.maturityDate, r.realEndDate,
                     r.orgOutstandingPrincipalAmount, r.usdOutstandingPrincipalAmount, r.tzsOutstandingPrincipalAmount,
@@ -788,9 +862,9 @@ class LoansStreamingPipeline:
             self.logger.error(f"Failed to create unique index on loanNumber: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Loans STREAMING pipeline...")
+        self.logger.info(f"Starting Loans STREAMING pipeline... (incremental={incremental})")
         
         try:
             # Update state to running
@@ -810,7 +884,7 @@ class LoansStreamingPipeline:
             time.sleep(1)
             
             # Start producer thread
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, name="Producer", args=(incremental,))
             producer_thread.start()
             
             # Wait for producer to finish
@@ -834,6 +908,7 @@ class LoansStreamingPipeline:
             ==========================================
             Loans Pipeline Summary:
             ==========================================
+            Mode: {'Incremental' if incremental else 'Full Load'}
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
             Records consumed: {self.total_consumed:,}
@@ -872,23 +947,23 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Loans Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
-    parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
+    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for processing')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = LoansStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = LoansStreamingPipeline(batch_size=args.batch_size)
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:  # streaming
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")

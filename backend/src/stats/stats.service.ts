@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { PipelineState } from '../pipelines/entities/pipeline-state.entity';
+import { PipelinesService } from '../pipelines/pipelines.service';
 
 export interface DashboardStats {
   totalPipelines: number;
@@ -23,20 +24,31 @@ export class StatsService {
   constructor(
     @InjectRepository(PipelineState)
     private readonly pipelineStateRepository: Repository<PipelineState>,
+    private readonly pipelinesService: PipelinesService,
   ) {}
 
   async getDashboardStats(): Promise<DashboardStats> {
     const pipelines = await this.pipelineStateRepository.find();
 
+    // A continuous pipeline's DB status (last_run_status) only reads
+    // 'running' for the few seconds it's mid-cycle, then flips to
+    // 'completed' between cycles even though the process is still alive -
+    // so "is it running" has to come from the actually-tracked process
+    // list, not the DB column, or this undercounts almost every pipeline
+    // that's been started and is just sleeping between cycles.
+    const runningNames = new Set(await this.pipelinesService.getRunningPipelines());
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const runningPipelines = pipelines.filter((p) => p.lastRunStatus === 'running').length;
+    const runningPipelines = pipelines.filter((p) => runningNames.has(p.pipelineName)).length;
     const failedToday = pipelines.filter(
-      (p) => p.lastRunStatus === 'failed' && p.lastRun && p.lastRun >= today,
+      (p) => !runningNames.has(p.pipelineName) && p.lastRunStatus === 'failed' && p.lastRun && p.lastRun >= today,
     ).length;
 
-    const completedPipelines = pipelines.filter((p) => p.lastRunStatus === 'completed');
+    const completedPipelines = pipelines.filter(
+      (p) => !runningNames.has(p.pipelineName) && p.lastRunStatus === 'completed',
+    );
     const successRate =
       completedPipelines.length > 0
         ? (completedPipelines.length / pipelines.length) * 100
@@ -51,7 +63,7 @@ export class StatsService {
 
     const pipelinesByStatus: Record<string, number> = {};
     pipelines.forEach((p) => {
-      const status = p.lastRunStatus || 'unknown';
+      const status = runningNames.has(p.pipelineName) ? 'running' : p.lastRunStatus || 'unknown';
       pipelinesByStatus[status] = (pipelinesByStatus[status] || 0) + 1;
     });
 
@@ -142,12 +154,9 @@ export class StatsService {
       hasErrors = true;
     }
 
-    // Check running pipelines
-    const runningCount = (
-      await this.pipelineStateRepository.find({
-        where: { lastRunStatus: 'running' },
-      })
-    ).length;
+    // Check running pipelines (actual tracked processes, not the DB status
+    // column - see getDashboardStats for why that's stale between cycles)
+    const runningCount = (await this.pipelinesService.getRunningPipelines()).length;
     checks.runningPipelines = {
       status: 'healthy',
       count: runningCount,

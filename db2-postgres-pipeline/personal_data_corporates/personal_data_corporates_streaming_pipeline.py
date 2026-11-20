@@ -59,6 +59,12 @@ class PersonalDataCorporateRecord:
     postalCode: Optional[str]
     poBox: Optional[str]
     zipCode: Optional[str]
+    primaryPostalCode: Optional[str]
+    primaryRegion: str
+    primaryDistrict: Optional[str]
+    primaryWard: Optional[str]
+    primaryStreet: Optional[str]
+    primaryHouseNumber: Optional[str]
     secondaryStreet: Optional[str]
     secondartHouseNumber: Optional[str]
     secondaryPostalCode: Optional[str]
@@ -286,7 +292,7 @@ class PersonalDataCorporatesStreamingPipeline:
                 except (ValueError, TypeError):
                     return None
             
-            # Map the 52 fields from the SQL query
+            # Map the fields from the SQL query (now includes primary address fields)
             record = PersonalDataCorporateRecord(
                 reportingDate=safe_string(row[0]),
                 companyName=safe_string(row[1]),
@@ -306,6 +312,7 @@ class PersonalDataCorporatesStreamingPipeline:
                 groupId=safe_string(row[15]) if row[15] else None,
                 sectorSnaClassification=safe_string(row[16]),
                 related_customers=safe_string(row[17]) if row[17] else None,
+                # Business address fields
                 street=safe_string(row[18]) if row[18] else None,
                 country=safe_string(row[19]) if row[19] else None,
                 region=safe_string(row[20]),
@@ -315,31 +322,41 @@ class PersonalDataCorporatesStreamingPipeline:
                 postalCode=safe_string(row[24]) if row[24] else None,
                 poBox=safe_string(row[25]) if row[25] else None,
                 zipCode=safe_string(row[26]) if row[26] else None,
-                secondaryStreet=safe_string(row[27]) if row[27] else None,
-                secondartHouseNumber=safe_string(row[28]) if row[28] else None,
-                secondaryPostalCode=safe_string(row[29]) if row[29] else None,
-                secondaryRegion=safe_string(row[30]) if row[30] else None,
-                secondaryDistrict=safe_string(row[31]) if row[31] else None,
-                secondaryCountry=safe_string(row[32]) if row[32] else None,
-                secondaryTextAddress=safe_string(row[33]) if row[33] else None,
-                mobileNumber=safe_string(row[34]) if row[34] else None,
-                alternativeMobileNumber=safe_string(row[35]) if row[35] else None,
-                fixedLineNumber=safe_string(row[36]) if row[36] else None,
-                faxNumber=safe_string(row[37]) if row[37] else None,
-                emailAddress=safe_string(row[38]) if row[38] else None,
-                socialMedia=safe_string(row[39]) if row[39] else None,
-                entityName=safe_string(row[40]),
-                entityType=safe_string(row[41]),
-                certificateIncorporation=safe_string(row[42]) if row[42] else None,
-                entiryRegion=safe_string(row[43]),
-                entityDistrict=safe_string(row[44]) if row[44] else None,
-                entityWard=safe_string(row[45]),
-                entityStreet=safe_string(row[46]),
-                entityHouseNumber=safe_string(row[47]),
-                entityPostalCode=safe_string(row[48]),
-                groupParentCode=safe_string(row[49]),
-                shareOwnedPercentage=safe_string(row[50]) if row[50] else None,
-                shareOwnedAmount=safe_string(row[51]) if row[51] else None
+                # Primary address fields (new)
+                primaryPostalCode=safe_string(row[27]) if row[27] else None,
+                primaryRegion=safe_string(row[28]),
+                primaryDistrict=safe_string(row[29]) if row[29] else None,
+                primaryWard=safe_string(row[30]) if row[30] else None,
+                primaryStreet=safe_string(row[31]) if row[31] else None,
+                primaryHouseNumber=safe_string(row[32]) if row[32] else None,
+                # Secondary address fields
+                secondaryStreet=safe_string(row[33]) if row[33] else None,
+                secondartHouseNumber=safe_string(row[34]) if row[34] else None,
+                secondaryPostalCode=safe_string(row[35]) if row[35] else None,
+                secondaryRegion=safe_string(row[36]) if row[36] else None,
+                secondaryDistrict=safe_string(row[37]) if row[37] else None,
+                secondaryCountry=safe_string(row[38]) if row[38] else None,
+                secondaryTextAddress=safe_string(row[39]) if row[39] else None,
+                # Contact fields
+                mobileNumber=safe_string(row[40]) if row[40] else None,
+                alternativeMobileNumber=safe_string(row[41]) if row[41] else None,
+                fixedLineNumber=safe_string(row[42]) if row[42] else None,
+                faxNumber=safe_string(row[43]) if row[43] else None,
+                emailAddress=safe_string(row[44]) if row[44] else None,
+                socialMedia=safe_string(row[45]) if row[45] else None,
+                # Entity fields
+                entityName=safe_string(row[46]),
+                entityType=safe_string(row[47]),
+                certificateIncorporation=safe_string(row[48]) if row[48] else None,
+                entiryRegion=safe_string(row[49]),
+                entityDistrict=safe_string(row[50]) if row[50] else None,
+                entityWard=safe_string(row[51]),
+                entityStreet=safe_string(row[52]),
+                entityHouseNumber=safe_string(row[53]),
+                entityPostalCode=safe_string(row[54]),
+                groupParentCode=safe_string(row[55]),
+                shareOwnedPercentage=safe_string(row[56]) if row[56] else None,
+                shareOwnedAmount=safe_string(row[57]) if row[57] else None
             )
             
             return record
@@ -582,7 +599,8 @@ class PersonalDataCorporatesStreamingPipeline:
                 "totalEmployeesFemale", "registrationCountry", "registrationNumber", "taxIdentificationNumber",
                 "tradeName", "parentName", "parentIncorporationNumber", "groupId", "sectorSnaClassification",
                 "related_customers", "street", "country", "region", "district", "ward", "houseNumber",
-                "postalCode", "poBox", "zipCode", "secondaryStreet", "secondartHouseNumber",
+                "postalCode", "poBox", "zipCode", "primaryPostalCode", "primaryRegion", "primaryDistrict",
+                "primaryWard", "primaryStreet", "primaryHouseNumber", "secondaryStreet", "secondartHouseNumber",
                 "secondaryPostalCode", "secondaryRegion", "secondaryDistrict", "secondaryCountry",
                 "secondaryTextAddress", "mobileNumber", "alternativeMobileNumber", "fixedLineNumber",
                 "faxNumber", "emailAddress", "socialMedia", "entityName", "entityType",
@@ -599,7 +617,8 @@ class PersonalDataCorporatesStreamingPipeline:
                 r.totalEmployeesFemale, r.registrationCountry, r.registrationNumber, r.taxIdentificationNumber,
                 r.tradeName, r.parentName, r.parentIncorporationNumber, r.groupId, r.sectorSnaClassification,
                 r.related_customers, r.street, r.country, r.region, r.district, r.ward, r.houseNumber,
-                r.postalCode, r.poBox, r.zipCode, r.secondaryStreet, r.secondartHouseNumber,
+                r.postalCode, r.poBox, r.zipCode, r.primaryPostalCode, r.primaryRegion, r.primaryDistrict,
+                r.primaryWard, r.primaryStreet, r.primaryHouseNumber, r.secondaryStreet, r.secondartHouseNumber,
                 r.secondaryPostalCode, r.secondaryRegion, r.secondaryDistrict, r.secondaryCountry,
                 r.secondaryTextAddress, r.mobileNumber, r.alternativeMobileNumber, r.fixedLineNumber,
                 r.faxNumber, r.emailAddress, r.socialMedia, r.entityName, r.entityType,

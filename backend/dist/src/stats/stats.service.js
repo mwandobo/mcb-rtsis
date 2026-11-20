@@ -17,17 +17,20 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const pipeline_state_entity_1 = require("../pipelines/entities/pipeline-state.entity");
+const pipelines_service_1 = require("../pipelines/pipelines.service");
 let StatsService = class StatsService {
-    constructor(pipelineStateRepository) {
+    constructor(pipelineStateRepository, pipelinesService) {
         this.pipelineStateRepository = pipelineStateRepository;
+        this.pipelinesService = pipelinesService;
     }
     async getDashboardStats() {
         const pipelines = await this.pipelineStateRepository.find();
+        const runningNames = new Set(await this.pipelinesService.getRunningPipelines());
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const runningPipelines = pipelines.filter((p) => p.lastRunStatus === 'running').length;
-        const failedToday = pipelines.filter((p) => p.lastRunStatus === 'failed' && p.lastRun && p.lastRun >= today).length;
-        const completedPipelines = pipelines.filter((p) => p.lastRunStatus === 'completed');
+        const runningPipelines = pipelines.filter((p) => runningNames.has(p.pipelineName)).length;
+        const failedToday = pipelines.filter((p) => !runningNames.has(p.pipelineName) && p.lastRunStatus === 'failed' && p.lastRun && p.lastRun >= today).length;
+        const completedPipelines = pipelines.filter((p) => !runningNames.has(p.pipelineName) && p.lastRunStatus === 'completed');
         const successRate = completedPipelines.length > 0
             ? (completedPipelines.length / pipelines.length) * 100
             : 0;
@@ -39,7 +42,7 @@ let StatsService = class StatsService {
         }, 0);
         const pipelinesByStatus = {};
         pipelines.forEach((p) => {
-            const status = p.lastRunStatus || 'unknown';
+            const status = runningNames.has(p.pipelineName) ? 'running' : p.lastRunStatus || 'unknown';
             pipelinesByStatus[status] = (pipelinesByStatus[status] || 0) + 1;
         });
         return {
@@ -109,9 +112,7 @@ let StatsService = class StatsService {
             checks.database = { status: 'critical', message: error.message };
             hasErrors = true;
         }
-        const runningCount = (await this.pipelineStateRepository.find({
-            where: { lastRunStatus: 'running' },
-        })).length;
+        const runningCount = (await this.pipelinesService.getRunningPipelines()).length;
         checks.runningPipelines = {
             status: 'healthy',
             count: runningCount,
@@ -124,6 +125,7 @@ exports.StatsService = StatsService;
 exports.StatsService = StatsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(pipeline_state_entity_1.PipelineState)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        pipelines_service_1.PipelinesService])
 ], StatsService);
 //# sourceMappingURL=stats.service.js.map

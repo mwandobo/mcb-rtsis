@@ -13,26 +13,27 @@ import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def run_command(script_name, description):
+def run_command(script_name, description, extra_args=None):
     """Run a Python script and handle errors"""
     print(f"\n{'='*60}")
     print(f"{description}")
     print(f"{'='*60}\n")
-    
+
+    cmd = [sys.executable, script_name] + (extra_args or [])
     try:
         result = subprocess.run(
-            [sys.executable, script_name],
+            cmd,
             cwd=os.path.dirname(os.path.abspath(__file__)),
             check=True,
             capture_output=False
         )
-        print(f"\n✓ {description} completed successfully")
+        print(f"\n{description} completed successfully")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"\n✗ {description} failed with error code {e.returncode}")
+        print(f"\n{description} failed with error code {e.returncode}")
         return False
     except Exception as e:
-        print(f"\n✗ {description} failed: {e}")
+        print(f"\n{description} failed: {e}")
         return False
 
 
@@ -46,8 +47,10 @@ def main():
     start_time = time.time()
     
     # Run streaming pipeline
-    if not run_command("loans_streaming_pipeline.py", "Running loans streaming pipeline"):
-        print("\n⚠ Pipeline execution failed")
+    full_load = "--full-load" in sys.argv
+    extra = ["--full-load"] if full_load else []
+    if not run_command("loans_streaming_pipeline.py", "Running loans streaming pipeline", extra_args=extra):
+        print("\nPipeline execution failed")
         sys.exit(1)
     
     # Summary
@@ -63,8 +66,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\n⚠ Pipeline interrupted by user")
+        print("\n\nPipeline interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n\n✗ Pipeline failed: {e}")
+        print(f"\n\nPipeline failed: {e}")
         sys.exit(1)

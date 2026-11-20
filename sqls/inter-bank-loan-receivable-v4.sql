@@ -29,7 +29,7 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')                       A
                THEN DECIMAL(la.ACC_LIMIT_AMN * fx.rate, 18, 2)
            ELSE DECIMAL(la.ACC_LIMIT_AMN, 18, 2)
            END                                                                 AS tzsLoanAmount,
-       la.INTER_RATE_SPRD                                                      AS interestRate,
+       ABS(la.INTER_RATE_SPRD)                                                 AS interestRate,
        la.NRM_ACR_INT_BAL + la.OV_ACR_NRM_INT_BAL + la.OV_ACR_PNL_INT_BAL      AS orgAccruedInterestAmount,
        CASE
            WHEN gte.CURRENCY_SHORT_DES = 'USD'

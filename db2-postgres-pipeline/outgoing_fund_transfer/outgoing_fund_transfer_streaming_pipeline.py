@@ -23,6 +23,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from db2_connection import DB2Connection
+from pipeline_state import PipelineStateManager
 
 # Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -55,14 +56,16 @@ class OutgoingFundTransferRecord:
     purposes: str
     senderInstruction: str
     transactionPlace: str
+    isSyntheticData: Optional[str]
+    tmstamp: Optional[str]  # Added for incremental processing
 
 
 class OutgoingFundTransferStreamingPipeline:
-    def __init__(self, batch_size=1000, consumer_batch_size=100):
+    def __init__(self, batch_size=1000):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
-        self.consumer_batch_size = consumer_batch_size
+        self.consumer_batch_size = 100  # Fixed value
         
         # Threading control
         self.producer_finished = threading.Event()
@@ -88,25 +91,85 @@ class OutgoingFundTransferStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_outgoing_fund_transfer_query(self):
-        """Get the outgoing fund transfer query from outgoing-fund-transfer-v1.sql"""
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('outgoing_fund_transfer')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'outgoing_fund_transfer',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
+    
+    def get_outgoing_fund_transfer_query(self, last_timestamp=None):
+        """Get the outgoing fund transfer query with optional timestamp filter"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'outgoing-fund-transfer-v1.sql'
+            'sqls', 'outgoing-fund-transfer-v2.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            base_query = f.read()
+        
+        # Add incremental filter if timestamp provided
+        if last_timestamp:
+            # Find the FROM clause and add timestamp condition
+            query_upper = base_query.upper()
+            from_pos = query_upper.find('FROM OUTGOING_ORDERS')
+            
+            if from_pos != -1:
+                # Insert timestamp condition after FROM clause
+                before_from = base_query[:from_pos]
+                after_from = base_query[from_pos:]
+                
+                # Add WHERE condition for incremental processing
+                timestamp_condition = f"""
+FROM OUTGOING_ORDERS out
+WHERE out.TMSTAMP > '{last_timestamp}'
+     LEFT JOIN"""
+                
+                # Replace the FROM clause with our condition
+                modified_query = before_from + timestamp_condition + after_from[after_from.find('LEFT JOIN'):]
+                
+                self.logger.info(f"Added incremental filter: TMSTAMP > '{last_timestamp}'")
+                return modified_query
+        
+        return base_query
     
-    def get_total_count(self):
+    def get_total_count(self, last_timestamp=None):
         """Get approximate total count of outgoing fund transfer records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM OUTGOING_ORDERS")
+                
+                if last_timestamp:
+                    cursor.execute("SELECT COUNT(*) FROM OUTGOING_ORDERS WHERE TMSTAMP > ?", (last_timestamp,))
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM OUTGOING_ORDERS")
+                
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from OUTGOING_ORDERS: {count:,}")
+                
+                if last_timestamp:
+                    self.logger.info(f"Estimated incremental record count (TMSTAMP > '{last_timestamp}'): {count:,}")
+                else:
+                    self.logger.info(f"Estimated record count from OUTGOING_ORDERS: {count:,}")
+                
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -236,7 +299,9 @@ class OutgoingFundTransferStreamingPipeline:
                 tzsAmount=safe_string(row[20]),                         # TZS conversion with fx rates
                 purposes=safe_string(row[21]),                          # 'Salaries and wages'
                 senderInstruction=safe_string(row[22]),                 # SPECIAL_TERMS
-                transactionPlace=safe_string(row[23])                   # CASE UPPER(TRIM(ISSUER_COUNTRY))...
+                transactionPlace=safe_string(row[23]),                  # CASE UPPER(TRIM(ISSUER_COUNTRY))...
+                isSyntheticData=safe_string(row[24]) if len(row) > 24 else None,     # isSyntheticData (v2)
+                tmstamp=safe_string(row[25]) if len(row) > 25 and row[25] else None  # TMSTAMP field
             )
             
             return record
@@ -265,13 +330,24 @@ class OutgoingFundTransferStreamingPipeline:
             self.logger.error(f"Error validating outgoing fund transfer record: {e}")
             return False
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
             
+            # Get last timestamp for incremental processing
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: Processing records after {last_timestamp}")
+                else:
+                    self.logger.info("Incremental mode: No previous run found, processing all records")
+            else:
+                self.logger.info("Full load mode: Processing all records")
+            
             # Get dynamic record count
-            self.total_available = self.get_total_count()
+            self.total_available = self.get_total_count(last_timestamp)
             
             self.logger.info(f"Total outgoing fund transfer records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
@@ -281,8 +357,10 @@ class OutgoingFundTransferStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_outgoing_fund_transfer_query()
+            query = self.get_outgoing_fund_transfer_query(last_timestamp)
             self.logger.info("Executing outgoing fund transfer query (single execution, streaming results)...")
+            
+            max_timestamp = None
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -339,6 +417,15 @@ class OutgoingFundTransferStreamingPipeline:
                                 with self._stats_lock:
                                     self.total_produced += 1
                     
+                    # Track maximum timestamp for state update
+                    if incremental and rows:
+                        # Get the latest timestamp from this batch
+                        for row in rows:
+                            if len(row) > 25 and row[25]:  # TMSTAMP is at index 25 (v2)
+                                timestamp_str = str(row[24]).strip()
+                                if not max_timestamp or timestamp_str > max_timestamp:
+                                        max_timestamp = timestamp_str
+                    
                     batch_time = time.time() - batch_start_time
                     with self._stats_lock:
                         produced = self.total_produced
@@ -359,6 +446,11 @@ class OutgoingFundTransferStreamingPipeline:
                         last_progress_report = current_time
                     
                     batch_number += 1
+            
+            # Update state if incremental and we processed records
+            if incremental and max_timestamp and self.total_produced > 0:
+                self._update_state(max_timestamp)
+                self.logger.info(f"Updated pipeline state with timestamp: {max_timestamp}")
             
             rmq_connection.close()
             with self._stats_lock:
@@ -564,7 +656,7 @@ class OutgoingFundTransferStreamingPipeline:
                 "recipientMobileNumber", "recipientCountry", "recipientBankOrFspCode",
                 "recipientAccountOrWalletNumber", "serviceChannel", "serviceCategory",
                 "serviceSubCategory", "currency", "orgAmount", "usdAmount", "tzsAmount",
-                "purposes", "senderInstruction", "transactionPlace"
+                "purposes", "senderInstruction", "transactionPlace", "isSyntheticData"
             ) VALUES %s
             ON CONFLICT ("transactionId") DO NOTHING
             """
@@ -577,7 +669,7 @@ class OutgoingFundTransferStreamingPipeline:
                     r.recipientMobileNumber, r.recipientCountry, r.recipientBankOrFspCode,
                     r.recipientAccountOrWalletNumber, r.serviceChannel, r.serviceCategory,
                     r.serviceSubCategory, r.currency, r.orgAmount, r.usdAmount, r.tzsAmount,
-                    r.purposes, r.senderInstruction, r.transactionPlace
+                    r.purposes, r.senderInstruction, r.transactionPlace, r.isSyntheticData
                 )
                 for r in records
             ]
@@ -604,14 +696,12 @@ class OutgoingFundTransferStreamingPipeline:
             self.logger.error(f"Failed to create unique index on transactionId: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Outgoing Fund Transfer STREAMING pipeline...")
+        mode_str = "INCREMENTAL" if incremental else "FULL LOAD"
+        self.logger.info(f"Starting Outgoing Fund Transfer STREAMING pipeline ({mode_str})...")
         
         try:
-            # Update state to running
-            self._update_state('running')
-
             # Ensure unique index for duplicate prevention
             self.ensure_unique_index()
             
@@ -626,7 +716,7 @@ class OutgoingFundTransferStreamingPipeline:
             time.sleep(1)
             
             # Start producer thread
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, args=(incremental,), name="Producer")
             producer_thread.start()
             
             # Wait for producer to finish
@@ -648,7 +738,7 @@ class OutgoingFundTransferStreamingPipeline:
             
             self.logger.info(f"""
             ==========================================
-            Outgoing Fund Transfer Pipeline Summary:
+            Outgoing Fund Transfer Pipeline Summary ({mode_str}):
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -659,52 +749,32 @@ class OutgoingFundTransferStreamingPipeline:
             ==========================================
             """)
             
-            # Update pipeline state
-            self._update_state('completed')
-            
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
-            self._update_state('failed', str(e))
             raise
     
-    def _update_state(self, status, error_message=None):
-        """Update pipeline state in the state table"""
-        try:
-            from pipeline_state import PipelineStateManager
-            state_manager = PipelineStateManager()
-            state_manager.update_run(
-                'outgoing_fund_transfer',
-                status,
-                self.total_consumed,
-                error_message
-            )
-            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
-        except Exception as e:
-            self.logger.warning(f"Could not update state: {e}")
-
-
 def main():
     """Main function"""
     import argparse
     
     parser = argparse.ArgumentParser(description='Outgoing Fund Transfer Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
-    parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
+    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for processing')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = OutgoingFundTransferStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = OutgoingFundTransferStreamingPipeline(batch_size=args.batch_size)
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:  # streaming
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")

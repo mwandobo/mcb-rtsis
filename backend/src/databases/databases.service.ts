@@ -3,6 +3,26 @@ import { ConfigService } from '../config/config.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Postgres tables that are actually written to by a db2-postgres-pipeline
+// streaming/loader script (derived from their INSERT INTO statements). The
+// rtsis database also holds ~190 other tables unrelated to any pipeline.
+const PIPELINE_TABLE_NAMES = new Set([
+  'accountInformation', 'accountProductCategory', 'accruedTax', 'agentTransactions', 'agents',
+  'assetOwned', 'atmInformation', 'atmTransactions', 'balanceWithBot', 'balanceWithMnos',
+  'balanceWithOtherBanks', 'branch', 'cardProduct', 'cardTransactions', 'cardInformation',
+  'cashInformation', 'cashStatistics', 'channelRecordInformation', 'chequeClearing',
+  'complaintStatistics', 'complaintFraudStatistics', 'deposits', 'digitalCredit', 'directorsRecords',
+  'employeesInformation', 'fraudIncidence', 'ibcmTransactions', 'ifemTransaction', 'incomeStatement',
+  'incomingFundTransfer', 'institutionalBorrowing', 'insuranceCommission', 'insuranceClaim',
+  'insuranceUnderwriting', 'interBankLoanReceivable', 'interbankLoansPayable', 'internetBanking',
+  'investmentDebtSecurities', 'liabilityInterbankLoanPayable', 'loan_information', 'loanTransactions',
+  'loanInformation', 'mobileBanking', 'otherAsset', 'otherCapitalAccount', 'outgoingFundTransfer',
+  'overdraft', 'personalDataInformation', 'personalDataCorporates', 'posInformation', 'posTransactions',
+  'premisesFurnitureEquipment', 'shareCapital', 'tbondTransaction', 'unearnedIncome', 'writtenOffLoans',
+  'coreCapitalDeductions', 'dividendsPayable', 'incomingRemittances', 'outgoingRemittances',
+  'undrawnBalances', 'otherLiabilities',
+]);
+
 @Injectable()
 export class DatabasesService {
   private readonly logger = new Logger(DatabasesService.name);
@@ -159,10 +179,10 @@ export class DatabasesService {
 
       // Get tables with row counts - use case-insensitive comparison
       const result = await client.query(`
-        SELECT 
+        SELECT
           t.table_name,
           t.table_schema,
-          obj_description((t.table_schema || '.' || t.table_name)::regclass, 'pg_class') as remarks,
+          obj_description(format('%I.%I', t.table_schema, t.table_name)::regclass, 'pg_class') as remarks,
           COALESCE(
             (SELECT COUNT(*) FROM information_schema.columns c WHERE LOWER(c.table_schema) = LOWER(t.table_schema) AND LOWER(c.table_name) = LOWER(t.table_name)),
             0
@@ -200,8 +220,9 @@ export class DatabasesService {
       );
 
       await client.end();
-      this.logger.log(`📊 PostgreSQL: Found ${tables.length} tables with ${tables.reduce((s, t) => s + t.recordCount, 0).toLocaleString()} total records`);
-      return tables;
+      const pipelineTables = tables.filter((t) => PIPELINE_TABLE_NAMES.has(t.name));
+      this.logger.log(`📊 PostgreSQL: Found ${pipelineTables.length} pipeline tables (of ${tables.length} total) with ${pipelineTables.reduce((s, t) => s + t.recordCount, 0).toLocaleString()} total records`);
+      return pipelineTables;
     } catch (error: any) {
       this.logger.error(`❌ PostgreSQL Connection Failed: ${error.message}`);
       this.logger.error(`   Host: ${this.configService.get<string>('PG_HOST')}:${this.configService.get<string>('PG_PORT')}`);
@@ -227,17 +248,20 @@ export class DatabasesService {
 
       await client.connect();
 
-      // Parse table name - handle both "table" and "schema.table" formats
-      const tableParts = tableName.includes('.') ? tableName.split('.') : ['public', tableName];
+      // Parse table name - handle both "table" and "schema.table" formats.
+      // When no schema is given, search all non-system schemas instead of
+      // assuming "public" - this database's tables live in "dv_mcb".
+      const tableParts = tableName.includes('.') ? tableName.split('.') : [null, tableName];
       const schemaName = tableParts[0];
       const tableNameOnly = tableParts[1];
 
       // Check if table exists (case-insensitive)
       const checkResult = await client.query(`
         SELECT table_schema, table_name
-        FROM information_schema.tables 
-        WHERE LOWER(table_schema) = LOWER($1) 
-          AND LOWER(table_name) = LOWER($2)
+        FROM information_schema.tables
+        WHERE LOWER(table_name) = LOWER($2)
+          AND LOWER(table_schema) NOT IN ('pg_catalog', 'information_schema')
+          AND ($1::text IS NULL OR LOWER(table_schema) = LOWER($1))
         LIMIT 1
       `, [schemaName, tableNameOnly]);
 

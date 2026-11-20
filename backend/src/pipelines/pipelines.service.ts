@@ -9,7 +9,7 @@ import { ConfigService } from '../config/config.service';
 
 // Pipelines pinned to the front of the list, in display order, as they're
 // migrated to incremental mode (matches run_all_pipelines.py's order).
-const PINNED_ORDER = ['branch', 'agents', 'pos', 'atm', 'personal_data_information', 'personal_data_corporates'];
+const PINNED_ORDER = ['branch', 'agents', 'pos', 'atm', 'personal_data_information', 'personal_data_corporates', 'employee', 'directors_records', 'account_product_category', 'account_information'];
 
 export interface RunPipelineDto {
   fullLoad?: boolean;
@@ -185,31 +185,43 @@ export class PipelinesService {
 
   async getRunningPipelines(): Promise<string[]> {
     const running: string[] = [];
-    
-    // Check in-memory processes
+
+    // In-memory tracked processes are the only source of truth for "running" -
+    // this backend never resumes a process after restart, so a DB row stuck on
+    // 'running' always means the process died mid-cycle without reaching its
+    // own completed/failed update, never a genuinely live pipeline we lost
+    // track of. Trusting that DB flag used to make such a pipeline show as
+    // running forever on the dashboard while stopPipeline() (which only
+    // checks runningProcesses) correctly refused to stop a process that no
+    // longer exists. Self-heal those stuck rows instead of trusting them.
     this.runningProcesses.forEach((process, name) => {
       if (!process.killed) {
         running.push(name);
       }
     });
-    
-    // Also check database for pipelines marked as running (in case backend was restarted)
+
     try {
-      const dbRunning = await this.pipelineStateRepository
+      const stuck = await this.pipelineStateRepository
         .createQueryBuilder('ps')
         .select('ps.pipelineName', 'pipelineName')
         .where('ps.lastRunStatus = :status', { status: 'running' })
         .getRawMany();
-      
-      for (const row of dbRunning) {
+
+      for (const row of stuck) {
         if (!running.includes(row.pipelineName)) {
-          running.push(row.pipelineName);
+          await this.pipelineStateRepository.update(
+            { pipelineName: row.pipelineName },
+            {
+              lastRunStatus: 'failed',
+              errorMessage: 'Process lost (backend lost track of it, likely a crash) - start it again',
+            },
+          );
         }
       }
     } catch (err) {
-      this.logger.error('Error checking database for running pipelines:', err);
+      this.logger.error('Error reconciling stale running state:', err);
     }
-    
+
     return running;
   }
 

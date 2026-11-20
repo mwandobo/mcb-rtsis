@@ -23,6 +23,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from db2_connection import DB2Connection
+from pipeline_state import PipelineStateManager
 
 # Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -52,14 +53,18 @@ class InterbankLoansPayableRecord:
     tenureDays: Optional[str]
     annualInterestRate: str
     interestRateType: str
+    dealNumber: str
 
 
 class InterbankLoansPayableStreamingPipeline:
-    def __init__(self, batch_size=1000, consumer_batch_size=100):
+    def __init__(self, batch_size=1000):
         self.config = Config()
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
-        self.consumer_batch_size = consumer_batch_size
+        self.consumer_batch_size = 100  # Fixed value per pipeline standards
+        
+        # State management for incremental processing
+        self.state_manager = PipelineStateManager()
         
         # Threading control
         self.producer_finished = threading.Event()
@@ -85,23 +90,69 @@ class InterbankLoansPayableStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_interbank_loans_payable_query(self):
-        """Get the interbank loans payable query from interbank_loans_payable.sql"""
+    def get_last_successful_run(self):
+        """Get the timestamp of the last successful pipeline run"""
+        return self.state_manager.get_last_successful_run('interbank_loans_payable')
+    
+    def _update_state(self, timestamp):
+        """Record the completed incremental run in the shared pipeline state table."""
+        self.state_manager.update_run(
+            'interbank_loans_payable',
+            'completed',
+            self.total_consumed,
+        )
+    
+    def get_interbank_loans_payable_query(self, last_timestamp=None):
+        """Get the interbank loans payable query from interbank_loans_payable.sql with optional timestamp filter"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             'sqls', 'interbank_loans_payable.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            query = f.read()
+        
+        # Add incremental filter if timestamp provided
+        if last_timestamp:
+            # Find the WHERE clause and add timestamp filter
+            query_lines = query.strip().split('\n')
+            
+            # Find the WHERE clause line
+            where_line_idx = -1
+            for i, line in enumerate(query_lines):
+                if line.strip().upper().startswith('WHERE '):
+                    where_line_idx = i
+                    break
+            
+            if where_line_idx >= 0:
+                # Add timestamp filter to existing WHERE clause
+                query_lines.insert(where_line_idx + 1, f"  AND mm.TMSTAMP > '{last_timestamp}'")
+            else:
+                # No WHERE clause found, add one before ORDER BY
+                order_by_idx = -1
+                for i, line in enumerate(query_lines):
+                    if line.strip().upper().startswith('ORDER BY'):
+                        order_by_idx = i
+                        break
+                
+                if order_by_idx >= 0:
+                    query_lines.insert(order_by_idx, f"WHERE mm.TMSTAMP > '{last_timestamp}'")
+                    query_lines.insert(order_by_idx + 1, "")  # Add blank line
+                else:
+                    # No ORDER BY found, add WHERE at the end
+                    query_lines.append(f"WHERE mm.TMSTAMP > '{last_timestamp}'")
+            
+            query = '\n'.join(query_lines)
+        
+        return query
     
-    def get_total_count(self):
+    def get_total_count(self, last_timestamp=None):
         """Get accurate total count of interbank loans payable records from DB2 using the same query structure"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
                 
-                # Use the same query structure as the main query but just count the results
+                # Build count query with same filters as main query
                 count_query = """
                 SELECT COUNT(*) FROM (
                     SELECT mm.DEAL_NO
@@ -116,7 +167,7 @@ class InterbankLoansPayableStreamingPipeline:
                     
                     LEFT JOIN COUNTRIES_LOOKUP cl
                         ON cb.CNTRY_ISO_CODE = cl.COUNTRY_CODE
-                    
+
                     LEFT JOIN (
                         SELECT
                             gli.DEAL_NO,
@@ -150,13 +201,24 @@ class InterbankLoansPayableStreamingPipeline:
                     -- Same filters as main query
                     WHERE mm.DEAL_OPERATION = 'B'
                       AND mm.STATUS != 'C'
+                """
+                
+                # Add incremental filter if timestamp provided
+                if last_timestamp:
+                    count_query += f"      AND mm.TMSTAMP > '{last_timestamp}'"
+                
+                count_query += """
                 ) AS count_subquery
                 """
                 
                 cursor.execute(count_query)
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Accurate record count from full query structure: {count:,}")
+                
+                if last_timestamp:
+                    self.logger.info(f"Incremental record count (since {last_timestamp}): {count:,}")
+                else:
+                    self.logger.info(f"Full record count: {count:,}")
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch accurate record count, using fallback estimate: {e}")
@@ -164,7 +226,10 @@ class InterbankLoansPayableStreamingPipeline:
             try:
                 with self.db2_conn.get_connection(log_connection=False) as conn:
                     cursor = conn.cursor()
-                    cursor.execute("SELECT COUNT(*) FROM TREASURY_MM_DEAL WHERE DEAL_OPERATION = 'B' AND STATUS != 'C'")
+                    fallback_query = "SELECT COUNT(*) FROM TREASURY_MM_DEAL WHERE DEAL_OPERATION = 'B' AND STATUS != 'C'"
+                    if last_timestamp:
+                        fallback_query += f" AND TMSTAMP > '{last_timestamp}'"
+                    cursor.execute(fallback_query)
                     result = cursor.fetchone()
                     count = result[0] if result else 0
                     self.logger.info(f"Fallback estimated record count: {count:,}")
@@ -276,7 +341,7 @@ class InterbankLoansPayableStreamingPipeline:
             record = InterbankLoansPayableRecord(
                 reportingDate=safe_string(row[0]),                      # VARCHAR_FORMAT(mm.TMSTAMP,'DDMMYYYYHHMM')
                 lenderName=safe_string(row[1]),                         # cb.BANK_NAME
-                accountNumber=safe_string(row[2]),                      # mm.DEAL_NO
+                accountNumber=safe_string(row[2]),                      # linked PROFITS_ACCOUNT.ACCOUNT_NUMBER
                 lenderCountry=safe_string(row[3]),                      # COALESCE(cl.COUNTRY_NAME, cb.CNTRY_ISO_CODE)
                 borrowingType=safe_string(row[4]),                      # CASE mm.DEAL_OPERATION
                 transactionDate=safe_string(row[5]),                    # VARCHAR_FORMAT(mm.DEAL_DATE,'DDMMYYYYHHMM')
@@ -294,10 +359,14 @@ class InterbankLoansPayableStreamingPipeline:
                 tzsAmountClosing=safe_string(row[17]),                  # TZS closing conversion
                 tenureDays=safe_string(row[18]) if row[18] else None,   # COALESCE(mm.DURATION0, DAYS(...))
                 annualInterestRate=safe_string(row[19]),                # DECIMAL(mm.INTEREST_RATE,15,2)
-                interestRateType=safe_string(row[20])                   # CASE mm.PREDETERMINE_FLAG
+                interestRateType=safe_string(row[20]),                  # CASE mm.PREDETERMINE_FLAG
+                dealNumber=safe_string(row[21])                          # mm.DEAL_NO
             )
             
-            return record
+            # Extract TMSTAMP for state tracking (row[22] is mm.TMSTAMP)
+            tmstamp = row[22] if len(row) > 22 else None
+            
+            return record, tmstamp
             
         except Exception as e:
             self.logger.error(f"Error processing interbank loans payable record: {e}")
@@ -327,15 +396,26 @@ class InterbankLoansPayableStreamingPipeline:
             self.logger.error(f"Error validating interbank loans payable record: {e}")
             return False
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
             
-            # Get dynamic record count
-            self.total_available = self.get_total_count()
+            # Get last successful run timestamp for incremental processing
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: Processing records since {last_timestamp}")
+                else:
+                    self.logger.info("Incremental mode: No previous run found, processing all records")
+            else:
+                self.logger.info("Full load mode: Processing all records")
             
-            self.logger.info(f"Total interbank loans payable records available: {self.total_available:,} (estimated)")
+            # Get dynamic record count
+            self.total_available = self.get_total_count(last_timestamp)
+            
+            self.logger.info(f"Total interbank loans payable records available: {self.total_available:,}")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
             self.logger.info(f"Estimated batches to process: {estimated_batches:,}")
             
@@ -343,8 +423,10 @@ class InterbankLoansPayableStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_interbank_loans_payable_query()
+            query = self.get_interbank_loans_payable_query(last_timestamp)
             self.logger.info("Executing interbank loans payable query (single execution, streaming results)...")
+            
+            latest_timestamp = None
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -372,7 +454,11 @@ class InterbankLoansPayableStreamingPipeline:
                     batch_published = 0
                     for row in rows:
                         try:
-                            record = self.process_record(row)
+                            record, tmstamp = self.process_record(row)
+                            
+                            # Track latest timestamp for state update
+                            if tmstamp and (not latest_timestamp or tmstamp > latest_timestamp):
+                                latest_timestamp = tmstamp
                             
                             if self.validate_record(record):
                                 message = json.dumps(asdict(record), default=str)
@@ -438,6 +524,11 @@ class InterbankLoansPayableStreamingPipeline:
                         last_progress_report = current_time
                     
                     batch_number += 1
+            
+            # Update state with latest timestamp if incremental and we processed records
+            if incremental and latest_timestamp and self.total_produced > 0:
+                self._update_state(latest_timestamp)
+                self.logger.info(f"Updated pipeline state with latest timestamp: {latest_timestamp}")
             
             rmq_connection.close()
             with self._stats_lock:
@@ -605,7 +696,20 @@ class InterbankLoansPayableStreamingPipeline:
                         
                         # Producer is done, check if queue is empty
                         queue_state = channel.queue_declare(queue='interbank_loans_payable_queue', durable=True, passive=True)
-                        if queue_state.method.message_count == 0:
+                        # `message_count` only covers ready messages. Do not close the
+                        # connection while this consumer still has delivered messages
+                        # awaiting a batch acknowledgement.
+                        with self._stats_lock:
+                            produced = self.total_produced
+                            consumed = self.total_consumed
+                        # Pika can still have delivery events buffered locally after
+                        # RabbitMQ reports no ready messages. Keep pumping events until
+                        # every published message has reached a completed batch.
+                        if (
+                            queue_state.method.message_count == 0
+                            and not pending_tags
+                            and consumed >= produced
+                        ):
                             self.logger.info("Consumer: Queue empty, producer finished")
                             break
                         
@@ -637,32 +741,67 @@ class InterbankLoansPayableStreamingPipeline:
                     pass
     
     def insert_batch_to_postgres(self, records: List[InterbankLoansPayableRecord], pg_conn):
-        """Batch insert interbank loans payable records to PostgreSQL with duplicate prevention"""
+        """Batch insert interbank loans payable records keyed by the treasury deal number."""
         try:
             cursor = pg_conn.cursor()
+
+            # Multiple deals may share one settlement account. Deduplicate only by
+            # the unique treasury deal number, keeping the last source row if needed.
+            records_by_deal = {}
+            for record in records:
+                records_by_deal[record.dealNumber] = record
+            unique_records = list(records_by_deal.values())
+
+            duplicate_count = len(records) - len(unique_records)
+            if duplicate_count:
+                self.logger.info(
+                    f"Deduplicated {duplicate_count:,} repeated dealNumber value(s) "
+                    f"from a {len(records):,}-record insert batch"
+                )
             
             insert_query = """
             INSERT INTO "interbankLoansPayable" (
-                "reportingDate", "lenderName", "accountNumber", "lenderCountry",
+                "reportingDate", "lenderName", "accountNumber", "dealNumber", "lenderCountry",
                 "borrowingType", "transactionDate", "disbursementDate", "maturityDate",
                 "currency", "orgAmountOpening", "usdAmountOpening", "tzsAmountOpening",
                 "orgAmountRepayment", "usdAmountRepayment", "tzsAmountRepayment",
                 "orgAmountClosing", "usdAmountClosing", "tzsAmountClosing",
                 "tenureDays", "annualInterestRate", "interestRateType"
             ) VALUES %s
-            ON CONFLICT ("accountNumber") DO NOTHING
+            ON CONFLICT ("dealNumber") DO UPDATE SET
+                "reportingDate" = EXCLUDED."reportingDate",
+                "lenderName" = EXCLUDED."lenderName",
+                "accountNumber" = EXCLUDED."accountNumber",
+                "lenderCountry" = EXCLUDED."lenderCountry",
+                "borrowingType" = EXCLUDED."borrowingType",
+                "transactionDate" = EXCLUDED."transactionDate",
+                "disbursementDate" = EXCLUDED."disbursementDate",
+                "maturityDate" = EXCLUDED."maturityDate",
+                "currency" = EXCLUDED."currency",
+                "orgAmountOpening" = EXCLUDED."orgAmountOpening",
+                "usdAmountOpening" = EXCLUDED."usdAmountOpening",
+                "tzsAmountOpening" = EXCLUDED."tzsAmountOpening",
+                "orgAmountRepayment" = EXCLUDED."orgAmountRepayment",
+                "usdAmountRepayment" = EXCLUDED."usdAmountRepayment",
+                "tzsAmountRepayment" = EXCLUDED."tzsAmountRepayment",
+                "orgAmountClosing" = EXCLUDED."orgAmountClosing",
+                "usdAmountClosing" = EXCLUDED."usdAmountClosing",
+                "tzsAmountClosing" = EXCLUDED."tzsAmountClosing",
+                "tenureDays" = EXCLUDED."tenureDays",
+                "annualInterestRate" = EXCLUDED."annualInterestRate",
+                "interestRateType" = EXCLUDED."interestRateType"
             """
             
             values = [
                 (
-                    r.reportingDate, r.lenderName, r.accountNumber, r.lenderCountry,
+                    r.reportingDate, r.lenderName, r.accountNumber, r.dealNumber, r.lenderCountry,
                     r.borrowingType, r.transactionDate, r.disbursementDate, r.maturityDate,
                     r.currency, r.orgAmountOpening, r.usdAmountOpening, r.tzsAmountOpening,
                     r.orgAmountRepayment, r.usdAmountRepayment, r.tzsAmountRepayment,
                     r.orgAmountClosing, r.usdAmountClosing, r.tzsAmountClosing,
                     r.tenureDays, r.annualInterestRate, r.interestRateType
                 )
-                for r in records
+                for r in unique_records
             ]
             
             psycopg2.extras.execute_values(cursor, insert_query, values, page_size=len(values))
@@ -673,23 +812,24 @@ class InterbankLoansPayableStreamingPipeline:
             raise
     
     def ensure_unique_index(self):
-        """Ensure unique index on accountNumber exists for ON CONFLICT duplicate prevention"""
+        """Ensure the treasury deal identifier is unique for upsert processing."""
         try:
             with self.get_postgres_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_interbankloans_account_number_unique
-                    ON "interbankLoansPayable" ("accountNumber")
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_interbankloans_deal_number_unique
+                    ON "interbankLoansPayable" ("dealNumber")
                 """)
                 conn.commit()
-                self.logger.info("Unique index on accountNumber verified/created")
+                self.logger.info("Unique index on dealNumber verified/created")
         except Exception as e:
-            self.logger.error(f"Failed to create unique index on accountNumber: {e}")
+            self.logger.error(f"Failed to create unique index on dealNumber: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Interbank Loans Payable STREAMING pipeline...")
+        mode_desc = "incremental" if incremental else "full load"
+        self.logger.info(f"Starting Interbank Loans Payable STREAMING pipeline ({mode_desc})...")
         
         try:
             # Ensure unique index for duplicate prevention
@@ -705,8 +845,8 @@ class InterbankLoansPayableStreamingPipeline:
             # Small delay to let consumer start
             time.sleep(1)
             
-            # Start producer thread
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            # Start producer thread with incremental flag
+            producer_thread = threading.Thread(target=lambda: self.producer_thread(incremental), name="Producer")
             producer_thread.start()
             
             # Wait for producer to finish
@@ -733,6 +873,7 @@ class InterbankLoansPayableStreamingPipeline:
             ==========================================
             Interbank Loans Payable Pipeline Summary:
             ==========================================
+            Mode: {mode_desc}
             Estimated records: {self.total_available:,}
             Actual records processed: {actual_total:,}
             Records produced: {self.total_produced:,}
@@ -753,23 +894,23 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Interbank Loans Payable Streaming Pipeline')
-    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
-    parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
+    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for processing')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     
     args = parser.parse_args()
     
     # Create pipeline
-    pipeline = InterbankLoansPayableStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
+    pipeline = InterbankLoansPayableStreamingPipeline(batch_size=args.batch_size)
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:  # streaming
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")

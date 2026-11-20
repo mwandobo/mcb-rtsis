@@ -19,8 +19,6 @@ import { pipelinesApi } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import type { PipelineState } from '../types';
 
-const BRAND_BLUE = '#1B3E74';
-const BRAND_ORANGE = '#DA7F3D';
 const PAGE_SIZE = 10;
 
 type StatusFilter = 'all' | 'running' | 'completed' | 'idle' | 'failed';
@@ -135,229 +133,198 @@ export function Pipelines() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: BRAND_BLUE }}></div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="spinner" />
       </div>
     );
   }
 
+  const statusFilters: [StatusFilter, string][] = [
+    ['all', 'All'],
+    ['running', 'Running'],
+    ['completed', 'Completed'],
+    ['idle', 'Idle'],
+    ['failed', 'Failed'],
+  ];
+
   return (
     <div>
-      {/* Page Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="page-header">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Pipelines</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Manage and monitor all data pipelines</p>
+          <div className="page-title">Pipelines</div>
+          <div className="page-sub">Manage and monitor all data pipelines</div>
         </div>
-        <button
-          onClick={fetchData}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-md hover:opacity-90 transition-opacity"
-          style={{ backgroundColor: BRAND_BLUE }}
-        >
-          <FiRefreshCw className="w-3.5 h-3.5" />
+        <button className="btn-primary" onClick={fetchData}>
+          <FiRefreshCw width={14} height={14} />
           Refresh
         </button>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-gray-400">Total Pipelines</p>
-            <p className="text-xl font-bold text-gray-900 mt-0.5">{counts.total}</p>
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-top">
+            <div className="stat-icon blue"><FiServer width={16} height={16} /></div>
           </div>
-          <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-            <FiServer className="w-4 h-4" />
-          </div>
+          <div className="stat-value">{counts.total}</div>
+          <div className="stat-label">Total Pipelines</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-gray-400">Running</p>
-            <p className="text-xl font-bold text-green-600 mt-0.5">{counts.running}</p>
+        <div className="stat-card">
+          <div className="stat-top">
+            <div className="stat-icon green"><FiActivity width={16} height={16} /></div>
           </div>
-          <div className="p-2 rounded-lg bg-green-50 text-green-600">
-            <FiActivity className="w-4 h-4" />
-          </div>
+          <div className="stat-value" style={{ color: 'var(--green)' }}>{counts.running}</div>
+          <div className="stat-label">Running</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-gray-400">Idle</p>
-            <p className="text-xl font-bold text-gray-900 mt-0.5">{counts.idle}</p>
+        <div className="stat-card">
+          <div className="stat-top">
+            <div className="stat-icon amber"><FiPauseCircle width={16} height={16} /></div>
           </div>
-          <div className="p-2 rounded-lg bg-gray-100 text-gray-500">
-            <FiPauseCircle className="w-4 h-4" />
-          </div>
+          <div className="stat-value">{counts.idle}</div>
+          <div className="stat-label">Idle</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-gray-400">Failed</p>
-            <p className="text-xl font-bold text-red-600 mt-0.5">{counts.failed}</p>
+        <div className="stat-card">
+          <div className="stat-top">
+            <div className="stat-icon red"><FiAlertTriangle width={16} height={16} /></div>
           </div>
-          <div className="p-2 rounded-lg bg-red-50 text-red-600">
-            <FiAlertTriangle className="w-4 h-4" />
-          </div>
+          <div className="stat-value" style={{ color: 'var(--red)' }}>{counts.failed}</div>
+          <div className="stat-label">Failed</div>
         </div>
       </div>
 
-      {/* Pipelines Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-        {/* Toolbar: search + filter */}
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
-          <div className="relative w-64">
-            <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search pipelines..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300 placeholder:text-gray-400"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="text-xs border border-gray-200 rounded-md py-1.5 px-2 text-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-300"
+      <div className="toolbar">
+        <div className="filters">
+          {statusFilters.map(([key, label]) => (
+            <button
+              key={key}
+              className={`filter-pill ${statusFilter === key ? 'active' : ''}`}
+              onClick={() => setStatusFilter(key)}
             >
-              <option value="all">All statuses</option>
-              <option value="running">Running</option>
-              <option value="completed">Completed</option>
-              <option value="idle">Idle</option>
-              <option value="failed">Failed</option>
-            </select>
-            <span className="text-xs text-gray-400">{filteredPipelines.length} results</span>
-          </div>
+              {label} <span className="pill-count">{key === 'all' ? counts.total : counts[key as keyof typeof counts] ?? 0}</span>
+            </button>
+          ))}
         </div>
+        <div className="search-box">
+          <FiSearch width={13} height={13} />
+          <input
+            type="text"
+            placeholder="Search pipelines…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50/80 border-b border-gray-100">
-              <tr>
-                <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-                  Pipeline
-                </th>
-                <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-                  Status
-                </th>
-                <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-                  Last Run
-                </th>
-                <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-                  Records
-                </th>
-                <th className="px-4 py-2 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-                  Mode
-                </th>
-                <th className="px-4 py-2 text-right text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {paginatedPipelines.map((pipeline) => {
-                const isRunning = runningPipelines.includes(pipeline.pipelineName);
-                return (
-                  <tr key={pipeline.pipelineName} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="px-4 py-2.5">
-                      <Link
-                        to={`/pipeline/${pipeline.pipelineName}`}
-                        className="text-sm font-medium hover:opacity-80 flex items-center gap-1.5"
-                        style={{ color: BRAND_BLUE }}
-                      >
-                        {pipeline.pipelineName}
-                        <FiExternalLink className="w-3 h-3 text-gray-400" />
-                      </Link>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <StatusBadge status={isRunning ? 'running' : pipeline.lastRunStatus} size="sm" />
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-gray-500">
-                      {pipeline.lastRun ? format(new Date(pipeline.lastRun), 'MMM d, HH:mm') : 'Never'}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-gray-500">
-                      {pipeline.recordsProcessed?.toLocaleString() || '0'}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={fullLoadMode[pipeline.pipelineName] || false}
-                          onChange={() => toggleFullLoad(pipeline.pipelineName)}
-                          className="w-3 h-3 rounded border-gray-300"
-                          style={{ accentColor: BRAND_ORANGE }}
-                        />
-                        <span className="text-xs text-gray-500">Full load</span>
-                      </label>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center justify-end gap-1">
-                        {isRunning ? (
-                          <button
-                            onClick={() => handleStop(pipeline.pipelineName)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                            title="Stop"
-                          >
-                            <FiSquare className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              handleRun(pipeline.pipelineName, fullLoadMode[pipeline.pipelineName] || false)
-                            }
-                            className="p-1.5 rounded-md transition-colors"
-                            style={{ color: BRAND_ORANGE, backgroundColor: `${BRAND_ORANGE}15` }}
-                            title="Run"
-                          >
-                            <FiPlay className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+      <div className="card">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Pipeline</th>
+              <th>Status</th>
+              <th>Last Run</th>
+              <th>Records</th>
+              <th>Mode</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedPipelines.map((pipeline) => {
+              const isRunning = runningPipelines.includes(pipeline.pipelineName);
+              return (
+                <tr key={pipeline.pipelineName}>
+                  <td>
+                    <Link
+                      to={`/pipeline/${pipeline.pipelineName}`}
+                      style={{ color: 'var(--accent)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+                    >
+                      {pipeline.pipelineName}
+                      <FiExternalLink width={12} height={12} style={{ color: 'var(--text-muted)' }} />
+                    </Link>
+                  </td>
+                  <td>
+                    <StatusBadge status={isRunning ? 'running' : pipeline.lastRunStatus} size="sm" />
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)' }}>
+                    {pipeline.lastRun ? format(new Date(pipeline.lastRun), 'MMM d, HH:mm') : 'Never'}
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)' }}>
+                    {pipeline.recordsProcessed?.toLocaleString() || '0'}
+                  </td>
+                  <td>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                      <input
+                        type="checkbox"
+                        checked={fullLoadMode[pipeline.pipelineName] || false}
+                        onChange={() => toggleFullLoad(pipeline.pipelineName)}
+                        style={{ width: 13, height: 13, accentColor: 'var(--accent-2)' }}
+                      />
+                      Full load
+                    </label>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                      {isRunning ? (
                         <button
-                          onClick={() => handleClearQueue(pipeline.pipelineName)}
-                          className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
-                          title="Clear Queue"
+                          onClick={() => handleStop(pipeline.pipelineName)}
+                          className="icon-btn danger"
+                          title="Stop"
                         >
-                          <FiTrash2 className="w-3.5 h-3.5" />
+                          <FiSquare width={14} height={14} />
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {paginatedPipelines.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-xs text-gray-400">
-                    No pipelines match your search.
+                      ) : (
+                        <button
+                          onClick={() => handleRun(pipeline.pipelineName, fullLoadMode[pipeline.pipelineName] || false)}
+                          className="icon-btn accent2"
+                          title="Run"
+                        >
+                          <FiPlay width={14} height={14} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleClearQueue(pipeline.pipelineName)}
+                        className="icon-btn"
+                        title="Clear Queue"
+                      >
+                        <FiTrash2 width={14} height={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              );
+            })}
+            {paginatedPipelines.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px 18px' }}>
+                  No pipelines match your search.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
-        <div className="px-4 py-2.5 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-xs text-gray-400">
+        <div className="pagination-bar">
+          <span className="pagination-info">
             Showing {filteredPipelines.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}-
             {Math.min(currentPage * PAGE_SIZE, filteredPipelines.length)} of {filteredPipelines.length}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="pagination-controls">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+              className="icon-btn"
               title="Previous page"
             >
-              <FiChevronLeft className="w-3.5 h-3.5" />
+              <FiChevronLeft width={14} height={14} />
             </button>
-            <span className="text-xs text-gray-500 px-1">
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '0 4px' }}>
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+              className="icon-btn"
               title="Next page"
             >
-              <FiChevronRight className="w-3.5 h-3.5" />
+              <FiChevronRight width={14} height={14} />
             </button>
           </div>
         </div>

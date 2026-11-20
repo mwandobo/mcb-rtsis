@@ -84,7 +84,7 @@ class BalanceWithOtherBanksStreamingPipeline:
         """Get the balance with other banks query from balance-with-other-bank-v1.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'balance-with-other-bank-v1.sql'
+            'sqls', 'balance-with-other-bank-v2.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:

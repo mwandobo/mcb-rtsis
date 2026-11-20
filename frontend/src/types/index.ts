@@ -54,3 +54,15 @@ export interface HealthStatus {
   status: 'healthy' | 'warning' | 'critical';
   checks: Record<string, { status: string; message?: string; count?: number }>;
 }
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  user: AuthUser;
+}

@@ -17,9 +17,12 @@ const config_service_1 = require("./config/config.service");
 const pipelines_module_1 = require("./pipelines/pipelines.module");
 const stats_module_1 = require("./stats/stats.module");
 const databases_module_1 = require("./databases/databases.module");
+const auth_module_1 = require("./auth/auth.module");
 const pipeline_state_entity_1 = require("./pipelines/entities/pipeline-state.entity");
+const user_entity_1 = require("./users/entities/user.entity");
 const typeorm_2 = require("typeorm");
 const pipelines_seeder_1 = require("./pipelines/pipelines.seeder");
+const users_seeder_1 = require("./users/users.seeder");
 let AppModule = class AppModule {
     constructor(dataSource) {
         this.dataSource = dataSource;
@@ -28,6 +31,9 @@ let AppModule = class AppModule {
         console.log('Seeding pipelines...');
         await (0, pipelines_seeder_1.seedPipelines)(this.dataSource);
         console.log('Pipeline seeding complete');
+        console.log('Seeding users...');
+        await (0, users_seeder_1.seedUsers)(this.dataSource);
+        console.log('User seeding complete');
     }
 };
 exports.AppModule = AppModule;
@@ -46,7 +52,7 @@ exports.AppModule = AppModule = __decorate([
                         username: pgConfig.username,
                         password: pgConfig.password,
                         database: pgConfig.database,
-                        entities: [pipeline_state_entity_1.PipelineState],
+                        entities: [pipeline_state_entity_1.PipelineState, user_entity_1.User],
                         synchronize: false,
                         logging: configService.get('NODE_ENV') === 'development',
                     };
@@ -56,6 +62,7 @@ exports.AppModule = AppModule = __decorate([
             pipelines_module_1.PipelinesModule,
             stats_module_1.StatsModule,
             databases_module_1.DatabasesModule,
+            auth_module_1.AuthModule,
         ],
     }),
     __metadata("design:paramtypes", [typeorm_2.DataSource])

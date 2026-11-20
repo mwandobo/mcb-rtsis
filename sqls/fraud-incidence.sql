@@ -1,0 +1,25 @@
+SELECT
+    VARCHAR_FORMAT(CURRENT TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
+    PRODUCT_PROCESS_INVOLVED                          AS productProcessInvolved,
+    VARCHAR_FORMAT(OCCURRENCE_DATE, 'DDMMYYYYHHMM')   AS occurrenceDate,
+    VARCHAR_FORMAT(DETECTION_DATE, 'DDMMYYYYHHMM')    AS detectionDate,
+    VARCHAR_FORMAT(CONCLUDED_INVESTIGATION_DATE, 'DDMMYYYYHHMM') AS concludedInvestigationDate,
+    DISCOVERY_MODEL                                   AS discoveryModel,
+    VARCHAR_FORMAT(FSP_FRAUD_IDENTIFIED_DATE, 'DDMMYYYYHHMM') AS fspFraudIdentifiedDate,
+    IDENTIFIED_FRAUD_CAUSES          AS identifiedFraudCauses,
+    FRAUD_AMOUNT                     AS fraudAmount,
+    CLASSIFICATION                   AS classification,
+    FRAUD_TYPE                       AS fraudType,
+    FRAUD_NATURE                     AS fraudNature,
+    FRAUD_DESCRIPTION                AS fraudDescription,
+    VICTIM_NAME                      AS victimName,
+    ACCOUNT_NUMBER                   AS accountNumber,
+    BRANCH_CODE                      AS branchCode,
+    ACTION_TAKEN                     AS actionTaken,
+    MITIGATION_MEASURES              AS mitigationMeasures,
+    FRAUD_STATUS                               AS fraudStatus,
+    CAST(EMP_NIN AS VARCHAR(10240))            AS empNin,
+    CAST(FRAUDSTER_NAME AS VARCHAR(10240))     AS fraudsterName,
+    CAST(FRAUDSTER_COUNTRY AS VARCHAR(5120))   AS fraudsterCountry
+FROM FRAUD_INCIDENCE
+ORDER BY OCCURRENCE_DATE DESC

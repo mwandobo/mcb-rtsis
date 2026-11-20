@@ -2,10 +2,10 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        pa.ACCOUNT_NUMBER                                  as accountNumber,
        c.SURNAME                                          as accountName,
        CASE
-           WHEN UPPER(c.FIRST_NAME) = 'ECOBANK' THEN '040'
-           WHEN UPPER(c.FIRST_NAME) = 'BOA' THEN '009'
-           WHEN UPPER(c.FIRST_NAME) = 'TPB' THEN '048'
-           WHEN UPPER(c.FIRST_NAME) = 'TANZANIA POSTAL BANK' THEN '048'
+           WHEN UPPER(c.FIRST_NAME) = 'ECOBANK' THEN 'ECOCTZTZ'
+           WHEN UPPER(c.FIRST_NAME) = 'BOA' THEN 'EUAFTZTZ'
+           WHEN UPPER(c.FIRST_NAME) = 'TPB' THEN 'TAPBTZTZ'
+           WHEN UPPER(c.FIRST_NAME) = 'TANZANIA POSTAL BANK' THEN 'TAPBTZTZ'
            END                                            AS bankCode,
        'TANZANIA, UNITED REPUBLIC OF'                     as Country,
        'Domestic bank related'                            as relationshipType,
@@ -37,7 +37,7 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        0                                                  as botProvision,
        'Current'                                          as assetsClassificationCategory,
        gte.TRN_DATE                                       as contractDate,
-       gte.AVAILABILITY_DATE                              as maturityDate,
+       CURRENT_TIMESTAMP                                 as maturityDate,
        'Unrated'                                          as externalRatingCorrespondentBank,
        'Grade B'                                          as gradesUnratedBanks
 

@@ -12,12 +12,13 @@ const typeorm_1 = require("@nestjs/typeorm");
 const stats_controller_1 = require("./stats.controller");
 const stats_service_1 = require("./stats.service");
 const pipeline_state_entity_1 = require("../pipelines/entities/pipeline-state.entity");
+const pipelines_module_1 = require("../pipelines/pipelines.module");
 let StatsModule = class StatsModule {
 };
 exports.StatsModule = StatsModule;
 exports.StatsModule = StatsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([pipeline_state_entity_1.PipelineState])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([pipeline_state_entity_1.PipelineState]), pipelines_module_1.PipelinesModule],
         controllers: [stats_controller_1.StatsController],
         providers: [stats_service_1.StatsService],
         exports: [stats_service_1.StatsService],

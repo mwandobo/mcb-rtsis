@@ -68,6 +68,7 @@ def create_outgoing_fund_transfer_table():
             "purposes" TEXT,
             "senderInstruction" VARCHAR(255),
             "transactionPlace" VARCHAR(100),
+            "isSyntheticData" VARCHAR(1),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )

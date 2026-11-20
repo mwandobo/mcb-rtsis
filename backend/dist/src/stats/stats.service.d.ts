@@ -1,5 +1,6 @@
 import { Repository } from 'typeorm';
 import { PipelineState } from '../pipelines/entities/pipeline-state.entity';
+import { PipelinesService } from '../pipelines/pipelines.service';
 export interface DashboardStats {
     totalPipelines: number;
     runningPipelines: number;
@@ -15,7 +16,8 @@ export interface TimeSeriesData {
 }
 export declare class StatsService {
     private readonly pipelineStateRepository;
-    constructor(pipelineStateRepository: Repository<PipelineState>);
+    private readonly pipelinesService;
+    constructor(pipelineStateRepository: Repository<PipelineState>, pipelinesService: PipelinesService);
     getDashboardStats(): Promise<DashboardStats>;
     getRecordsOverTime(days?: number): Promise<TimeSeriesData[]>;
     getTopPipelines(limit?: number): Promise<any[]>;

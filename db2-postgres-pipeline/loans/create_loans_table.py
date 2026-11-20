@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Create loanInformation table in PostgreSQL
-Based on loan-information-v7.sql structure (92 fields)
+Based on loan-information-v9.sql structure (92 fields)
 """
 
 import psycopg2
@@ -79,9 +79,9 @@ def create_loans_table():
             "repaymentFrequency" VARCHAR(50),
             "currency" VARCHAR(10),
             "contractDate" VARCHAR(12),
-            "orgSanctionedAmount" VARCHAR(50),
-            "usdSanctionedAmount" VARCHAR(50),
-            "tzsSanctionedAmount" VARCHAR(50),
+            "orgSanctionAmount" VARCHAR(50),
+            "usdSanctionAmount" VARCHAR(50),
+            "tzsSanctionAmount" VARCHAR(50),
             "orgDisbursedAmount" VARCHAR(50),
             "usdDisbursedAmount" VARCHAR(50),
             "tzsDisbursedAmount" VARCHAR(50),

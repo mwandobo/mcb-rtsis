@@ -15,6 +15,22 @@ const common_1 = require("@nestjs/common");
 const config_service_1 = require("../config/config.service");
 const fs = require("fs");
 const path = require("path");
+const PIPELINE_TABLE_NAMES = new Set([
+    'accountInformation', 'accountProductCategory', 'accruedTax', 'agentTransactions', 'agents',
+    'assetOwned', 'atmInformation', 'atmTransactions', 'balanceWithBot', 'balanceWithMnos',
+    'balanceWithOtherBanks', 'branch', 'cardProduct', 'cardTransactions', 'cardInformation',
+    'cashInformation', 'cashStatistics', 'channelRecordInformation', 'chequeClearing',
+    'complaintStatistics', 'complaintFraudStatistics', 'deposits', 'digitalCredit', 'directorsRecords',
+    'employeesInformation', 'fraudIncidence', 'ibcmTransactions', 'ifemTransaction', 'incomeStatement',
+    'incomingFundTransfer', 'institutionalBorrowing', 'insuranceCommission', 'insuranceClaim',
+    'insuranceUnderwriting', 'interBankLoanReceivable', 'interbankLoansPayable', 'internetBanking',
+    'investmentDebtSecurities', 'liabilityInterbankLoanPayable', 'loan_information', 'loanTransactions',
+    'loanInformation', 'mobileBanking', 'otherAsset', 'otherCapitalAccount', 'outgoingFundTransfer',
+    'overdraft', 'personalDataInformation', 'personalDataCorporates', 'posInformation', 'posTransactions',
+    'premisesFurnitureEquipment', 'shareCapital', 'tbondTransaction', 'unearnedIncome', 'writtenOffLoans',
+    'coreCapitalDeductions', 'dividendsPayable', 'incomingRemittances', 'outgoingRemittances',
+    'undrawnBalances', 'otherLiabilities',
+]);
 let DatabasesService = DatabasesService_1 = class DatabasesService {
     constructor(configService) {
         this.configService = configService;
@@ -57,7 +73,7 @@ let DatabasesService = DatabasesService_1 = class DatabasesService {
                 'outgoing_fund_transfer': 'Outgoing Fund Transfer',
                 'cash': 'Cash Information',
                 'cards': 'Cards',
-                'personal_data': 'Personal Data',
+                'personal_data_information': 'Personal Data',
                 'card_product': 'Card Product',
                 'account_product_category': 'Account Product Category',
                 'account_information': 'Account Information',
@@ -139,10 +155,10 @@ let DatabasesService = DatabasesService_1 = class DatabasesService {
             await client.connect();
             this.logger.log(`✅ PostgreSQL: Connected successfully`);
             const result = await client.query(`
-        SELECT 
+        SELECT
           t.table_name,
           t.table_schema,
-          obj_description((t.table_schema || '.' || t.table_name)::regclass, 'pg_class') as remarks,
+          obj_description(format('%I.%I', t.table_schema, t.table_name)::regclass, 'pg_class') as remarks,
           COALESCE(
             (SELECT COUNT(*) FROM information_schema.columns c WHERE LOWER(c.table_schema) = LOWER(t.table_schema) AND LOWER(c.table_name) = LOWER(t.table_name)),
             0
@@ -175,8 +191,9 @@ let DatabasesService = DatabasesService_1 = class DatabasesService {
                 }
             }));
             await client.end();
-            this.logger.log(`📊 PostgreSQL: Found ${tables.length} tables with ${tables.reduce((s, t) => s + t.recordCount, 0).toLocaleString()} total records`);
-            return tables;
+            const pipelineTables = tables.filter((t) => PIPELINE_TABLE_NAMES.has(t.name));
+            this.logger.log(`📊 PostgreSQL: Found ${pipelineTables.length} pipeline tables (of ${tables.length} total) with ${pipelineTables.reduce((s, t) => s + t.recordCount, 0).toLocaleString()} total records`);
+            return pipelineTables;
         }
         catch (error) {
             this.logger.error(`❌ PostgreSQL Connection Failed: ${error.message}`);
@@ -199,14 +216,15 @@ let DatabasesService = DatabasesService_1 = class DatabasesService {
                 password: dbConfig.password,
             });
             await client.connect();
-            const tableParts = tableName.includes('.') ? tableName.split('.') : ['public', tableName];
+            const tableParts = tableName.includes('.') ? tableName.split('.') : [null, tableName];
             const schemaName = tableParts[0];
             const tableNameOnly = tableParts[1];
             const checkResult = await client.query(`
         SELECT table_schema, table_name
-        FROM information_schema.tables 
-        WHERE LOWER(table_schema) = LOWER($1) 
-          AND LOWER(table_name) = LOWER($2)
+        FROM information_schema.tables
+        WHERE LOWER(table_name) = LOWER($2)
+          AND LOWER(table_schema) NOT IN ('pg_catalog', 'information_schema')
+          AND ($1::text IS NULL OR LOWER(table_schema) = LOWER($1))
         LIMIT 1
       `, [schemaName, tableNameOnly]);
             if (checkResult.rows.length === 0) {
@@ -257,7 +275,7 @@ let DatabasesService = DatabasesService_1 = class DatabasesService {
                 'outgoing_fund_transfer': 'outgoing-fund-transfer-v1.sql',
                 'cash': 'cash-information.sql',
                 'cards': 'card_information.sql',
-                'personal_data': 'personal_data_information-v4.sql',
+                'personal_data_information': 'personal_data_information-v4.sql',
                 'card_product': 'card-product.sql',
                 'account_product_category': 'account-product-category.sql',
                 'account_information': 'account-information.sql',

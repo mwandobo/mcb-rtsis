@@ -139,37 +139,50 @@ class OverdraftStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_overdraft_query(self, last_customer_id=None, last_account_number=None):
-        """Get the overdraft query using overdraft-v3.sql with cursor-based pagination"""
+    def get_overdraft_query(self, last_timestamp=None):
+        """Get the overdraft query using overdraft-v3.sql with optional TMSTAMP filter"""
         
         # Read the overdraft-v3.sql file
         sql_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'sqls', 'overdraft-v3.sql')
         
         with open(sql_file_path, 'r') as f:
-            base_query = f.read()
+            sql = f.read().strip()
         
-        # Build cursor-based pagination condition
-        cursor_condition = ""
-        if last_customer_id and last_account_number:
-            cursor_condition = f"""
-            AND (customerIdentificationNumber > '{last_customer_id}' 
-                 OR (customerIdentificationNumber = '{last_customer_id}' AND accountNumber > '{last_account_number}'))
-            """
+        # For incremental mode, add TMSTAMP filter on GLI_TRX_EXTRACT table
+        if last_timestamp:
+            if last_timestamp == 'epoch':
+                timestamp_value = '1900-01-01-00.00.00.000000'
+            else:
+                timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
+            
+            # The SQL has a WHERE clause at the end, we need to add the timestamp filter
+            # Look for the existing WHERE clause and add our condition
+            sql_lines = sql.split('\n')
+            modified_lines = []
+            
+            for line in sql_lines:
+                modified_lines.append(line)
+                # Add the timestamp filter after the main WHERE clause but before the final conditions
+                if 'WHERE gte.FK_GLG_ACCOUNTACCO IN' in line:
+                    # Find the line with the closing parenthesis and add our filter before the outer WHERE
+                    continue
+                elif "('1.1.0.05.0001', '1.1.0.05.0002', '1.1.0.05.0005')" in line:
+                    # Add our timestamp filter right after this line
+                    modified_lines.append(f"      AND gte.TMSTAMP > '{timestamp_value}'")
         
-        # Insert cursor condition into the final WHERE clause
-        if cursor_condition:
-            base_query = base_query.replace(
-                "WHERE LENGTH(TRIM(TRANSLATE(t.loanOfficer, '', '0123456789'))) = LENGTH(TRIM(t.loanOfficer))",
-                f"WHERE LENGTH(TRIM(TRANSLATE(t.loanOfficer, '', '0123456789'))) = LENGTH(TRIM(t.loanOfficer)) {cursor_condition}"
-            )
+            sql = '\n'.join(modified_lines)
         
-        # Add ORDER BY and FETCH FIRST for pagination
-        query = base_query.rstrip(';') + f"""
-        ORDER BY customerIdentificationNumber ASC, accountNumber ASC
-        FETCH FIRST {self.batch_size} ROWS ONLY
-        """
-        
-        return query
+        return sql
+    
+    def get_last_successful_run(self):
+        """Get last successful run timestamp from state manager"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            return state_manager.get_last_successful_run('overdraft')
+        except Exception as e:
+            self.logger.warning(f"Could not get last successful run: {e}")
+            return None
     
     def get_total_count_query(self):
         """Get total count of available overdraft records"""
@@ -482,6 +495,18 @@ class OverdraftStreamingPipeline:
             if not record.customerIdentificationNumber:
                 self.logger.warning("Missing customer identification number")
                 return False
+
+            if not record.contractDate:
+                self.logger.warning("Missing or invalid contract date")
+                return False
+
+            if not record.loanOfficer:
+                self.logger.warning("Missing loan officer")
+                return False
+
+            if not record.loanSupervisor:
+                self.logger.warning("Missing loan supervisor")
+                return False
             
             return True
             
@@ -489,10 +514,21 @@ class OverdraftStreamingPipeline:
             self.logger.error(f"Error validating overdraft record: {e}")
             return False
     
-    def producer_thread(self):
-        """Producer thread - reads from DB2 and sends to RabbitMQ with cursor-based pagination"""
+    def producer_thread(self, incremental=True):
+        """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
+            
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: fetching records with TMSTAMP > {last_timestamp}")
+                else:
+                    last_timestamp = 'epoch'
+                    self.logger.info("Incremental mode: first run, fetching all records (epoch)")
+            else:
+                self.logger.info("Full load mode: fetching all records")
             
             # Get total count first
             with self.db2_conn.get_connection(log_connection=True) as conn:
@@ -507,100 +543,82 @@ class OverdraftStreamingPipeline:
             # Setup RabbitMQ connection with retry
             connection, channel = self.setup_rabbitmq_connection()
             
-            # Process batches using cursor-based pagination
-            batch_number = 1
-            last_customer_id = None
-            last_account_number = None
-            last_progress_report = time.time()
+            # Execute the query ONCE and stream results
+            query = self.get_overdraft_query(last_timestamp)
+            self.logger.info("Executing overdraft query (single execution, streaming results)...")
             
-            while True:
-                batch_start_time = time.time()
+            with self.db2_conn.get_connection(log_connection=True) as db2_conn:
+                db2_cursor = db2_conn.cursor()
+                db2_cursor.execute(query)
+                self.logger.info("Query executed successfully, streaming results via fetchmany()...")
                 
-                # Fetch batch with retry logic using cursor pagination
-                rows = None
-                for attempt in range(self.max_retries):
-                    try:
-                        with self.db2_conn.get_connection(log_connection=False) as conn:
-                            cursor = conn.cursor()
-                            batch_query = self.get_overdraft_query(last_customer_id, last_account_number)
-                            cursor.execute(batch_query)
-                            rows = cursor.fetchall()
+                batch_number = 1
+                last_progress_report = time.time()
+                
+                while True:
+                    batch_start_time = time.time()
+                    
+                    # Fetch next chunk from the already-running query
+                    rows = db2_cursor.fetchmany(self.batch_size)
+                    
+                    if not rows:
+                        self.logger.info("No more records to fetch")
                         break
-                    except Exception as e:
-                        self.logger.warning(f"DB2 query attempt {attempt + 1} failed: {e}")
-                        if attempt < self.max_retries - 1:
-                            time.sleep(self.retry_delay)
-                        else:
-                            raise
-                
-                if not rows:
-                    self.logger.info("No more records to process")
-                    break
-                
-                # Process and publish with retry logic
-                batch_published = 0
-                for row in rows:
-                    # Extract cursor values from the actual data fields
-                    last_customer_id = row[2]  # customerIdentificationNumber
-                    last_account_number = row[1]  # accountNumber
                     
-                    # Process the full row
-                    record = self.process_record(row)
-                    
-                    if self.validate_record(record):
-                        message = json.dumps(asdict(record), default=str)
+                    # Process and publish
+                    batch_published = 0
+                    for row in rows:
+                        record = self.process_record(row)
                         
-                        # Publish with retry
-                        published = False
-                        for attempt in range(self.max_retries):
-                            try:
-                                channel.basic_publish(
-                                    exchange='',
-                                    routing_key='overdraft_queue',
-                                    body=message,
-                                    properties=pika.BasicProperties(delivery_mode=2)
-                                )
-                                published = True
-                                break
-                            except Exception as e:
-                                self.logger.warning(f"RabbitMQ publish attempt {attempt + 1} failed: {e}")
-                                if attempt < self.max_retries - 1:
-                                    # Reconnect and retry
-                                    try:
-                                        connection.close()
-                                    except:
-                                        pass
-                                    connection, channel = self.setup_rabbitmq_connection()
-                                    time.sleep(self.retry_delay)
-                                else:
-                                    self.logger.error(f"Failed to publish message after {self.max_retries} attempts")
-                        
-                        if published:
-                            batch_published += 1
-                            self.total_produced += 1
-                
-                batch_time = time.time() - batch_start_time
-                progress_percent = self.total_produced / self.total_available * 100 if self.total_available > 0 else 0
-                
-                self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} records, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
-                
-                # Progress report every 5 minutes
-                current_time = time.time()
-                if current_time - last_progress_report >= 300:  # 5 minutes
-                    elapsed_time = current_time - self.start_time
-                    rate = self.total_produced / elapsed_time if elapsed_time > 0 else 0
-                    remaining_records = self.total_available - self.total_produced
-                    eta_seconds = remaining_records / rate if rate > 0 else 0
-                    eta_hours = eta_seconds / 3600
+                        if self.validate_record(record):
+                            message = json.dumps(asdict(record), default=str)
+                            
+                            # Publish with retry
+                            published = False
+                            for attempt in range(self.max_retries):
+                                try:
+                                    channel.basic_publish(
+                                        exchange='',
+                                        routing_key='overdraft_queue',
+                                        body=message,
+                                        properties=pika.BasicProperties(delivery_mode=2)
+                                    )
+                                    published = True
+                                    break
+                                except Exception as e:
+                                    self.logger.warning(f"RabbitMQ publish attempt {attempt + 1} failed: {e}")
+                                    if attempt < self.max_retries - 1:
+                                        try:
+                                            connection.close()
+                                        except Exception:
+                                            pass
+                                        connection, channel = self.setup_rabbitmq_connection()
+                                        time.sleep(self.retry_delay)
+                                    else:
+                                        self.logger.error(f"Failed to publish message after {self.max_retries} attempts")
+                            
+                            if published:
+                                batch_published += 1
+                                self.total_produced += 1
                     
-                    self.logger.info(f"PROGRESS REPORT: {self.total_produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
-                    last_progress_report = current_time
-                
-                # Move to next batch
-                batch_number += 1
-                
-                # Small delay to prevent overwhelming
-                time.sleep(0.1)
+                    batch_time = time.time() - batch_start_time
+                    progress_percent = self.total_produced / self.total_available * 100 if self.total_available > 0 else 0
+                    
+                    self.logger.info(f"Producer: Batch {batch_number:,} - {len(rows)} records, {batch_published} published ({progress_percent:.2f}% complete, {batch_time:.1f}s)")
+                    
+                    # Progress report every 5 minutes
+                    current_time = time.time()
+                    if current_time - last_progress_report >= 300:  # 5 minutes
+                        elapsed_time = current_time - self.start_time
+                        rate = self.total_produced / elapsed_time if elapsed_time > 0 else 0
+                        remaining_records = self.total_available - self.total_produced
+                        eta_seconds = remaining_records / rate if rate > 0 else 0
+                        eta_hours = eta_seconds / 3600
+                        
+                        self.logger.info(f"PROGRESS REPORT: {self.total_produced:,}/{self.total_available:,} records ({progress_percent:.1f}%) - Rate: {rate:.1f} rec/sec - ETA: {eta_hours:.1f} hours")
+                        last_progress_report = current_time
+                    
+                    batch_number += 1
             
             connection.close()
             self.logger.info(f"Producer finished: {self.total_produced:,} records published out of {self.total_available:,} available")
@@ -809,7 +827,7 @@ class OverdraftStreamingPipeline:
     
     
     def insert_batch_to_postgres(self, records: List[OverdraftRecord], pg_conn):
-        """Batch insert overdraft records to PostgreSQL"""
+        """Batch insert overdraft records to PostgreSQL with duplicate prevention"""
         try:
             cursor = pg_conn.cursor()
             
@@ -877,6 +895,7 @@ class OverdraftStreamingPipeline:
                 "assetClassificationCategory", "sectorSnaClassification", "negStatusContract",
                 "customerRole", "allowanceProbableLoss", "botProvision"
             ) VALUES %s
+            ON CONFLICT ("accountNumber") DO NOTHING
             """
             
             psycopg2.extras.execute_values(cursor, insert_query, values_list, page_size=len(values_list))
@@ -884,6 +903,21 @@ class OverdraftStreamingPipeline:
             
         except Exception as e:
             self.logger.error(f"Error batch inserting {len(records)} overdraft records: {e}")
+            raise
+    
+    def ensure_unique_index(self):
+        """Ensure unique index on accountNumber exists for ON CONFLICT duplicate prevention"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_overdraft_account_number_unique
+                    ON overdraft ("accountNumber")
+                """)
+                conn.commit()
+                self.logger.info("Unique index on accountNumber verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create unique index on accountNumber: {e}")
             raise
     
     def insert_to_postgres(self, record, cursor):
@@ -969,11 +1003,17 @@ class OverdraftStreamingPipeline:
             self.logger.error(f"Error inserting overdraft record to PostgreSQL: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Overdraft STREAMING pipeline...")
+        self.logger.info(f"Starting Overdraft STREAMING pipeline... (incremental={incremental})")
         
         try:
+            # Update state to running
+            self._update_state('running')
+            
+            # Ensure unique index for duplicate prevention
+            self.ensure_unique_index()
+            
             # Setup queue
             self.setup_rabbitmq_queue()
             
@@ -985,7 +1025,7 @@ class OverdraftStreamingPipeline:
             time.sleep(1)
             
             # Start producer thread
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, name="Producer", args=(incremental,))
             producer_thread.start()
             
             # Wait for producer to finish
@@ -1009,6 +1049,7 @@ class OverdraftStreamingPipeline:
             ==========================================
             Overdraft Pipeline Summary:
             ==========================================
+            Mode: {'Incremental' if incremental else 'Full Load'}
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
             Records consumed: {self.total_consumed:,}
@@ -1018,9 +1059,28 @@ class OverdraftStreamingPipeline:
             ==========================================
             """)
             
+            # Update pipeline state
+            self._update_state('completed')
+            
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+    
+    def _update_state(self, status, error_message=None):
+        """Update pipeline state in the state table"""
+        try:
+            from pipeline_state import PipelineStateManager
+            state_manager = PipelineStateManager()
+            state_manager.update_run(
+                'overdraft',
+                status,
+                self.total_consumed,
+                error_message
+            )
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 def main():
@@ -1031,6 +1091,7 @@ def main():
     parser.add_argument('--batch-size', type=int, default=50, help='Batch size for processing')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', help='Perform full load instead of incremental')
     
     args = parser.parse_args()
     
@@ -1039,11 +1100,11 @@ def main():
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental=not args.full_load)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:  # streaming
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental=not args.full_load)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")

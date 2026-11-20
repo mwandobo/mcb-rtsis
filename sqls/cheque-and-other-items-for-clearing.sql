@@ -30,7 +30,8 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')     as reportingDate,
        CAST(cfc.CHEQUE_AMOUNT AS DECFLOAT)                   AS tzsAmountPayment,
        CAST(da.BOOK_BALANCE AS DECFLOAT)                     AS orgAmountBalance,
        0                                                     as usdAmountBalance,
-       CAST(da.BOOK_BALANCE AS DECFLOAT)                     AS tzsAmountBalance
+       CAST(da.BOOK_BALANCE AS DECFLOAT)                     AS tzsAmountBalance,
+       cfc.TMSTAMP                                           AS tmstamp
 FROM CHEQUES_FOR_COLLEC AS cfc
          JOIN DEPOSIT_ACCOUNT da
               ON VARCHAR(da.ACCOUNT_NUMBER) = LTRIM(CHAR(cfc.CHEQUE_NUMBER, 20), '0')
@@ -44,4 +45,5 @@ FROM CHEQUES_FOR_COLLEC AS cfc
                    ON UPPER(TRIM(cfc.DRAWN_BANK)) = UPPER(TRIM(bic.BANK_NAME))
          JOIN
      PROFITS_ACCOUNT ppa ON ppa.CUST_ID = pc.CUST_ID
-where bic.BIC is not null;
+where bic.BIC is not null
+ORDER BY cfc.TMSTAMP;

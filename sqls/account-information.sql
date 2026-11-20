@@ -104,7 +104,10 @@ SELECT
                 COALESCE(sab.BOOK_BALANCE, ABS(lnb.VALEUR_BALANCE), 0),
                 18, 2
             )
-    END                                                    AS tzsAccountBalance
+    END                                                    AS tzsAccountBalance,
+
+    -- TMSTAMP for incremental processing
+    pa.CREATE_TIMESTAMP                                    AS tmstamp
 
 FROM PROFITS_ACCOUNT pa
 
@@ -202,4 +205,4 @@ WHERE TRIM(pa.ACCOUNT_NUMBER) <> 'DUMMY TRS-LG'
   AND pa.PRFT_SYSTEM <> 19
   AND pa.PRODUCT_ID NOT IN (38220, 38801)
 
-ORDER BY pa.ACCOUNT_NUMBER;
+ORDER BY pa.CREATE_TIMESTAMP;

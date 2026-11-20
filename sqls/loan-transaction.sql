@@ -51,7 +51,10 @@ SELECT CURRENT_TIMESTAMP      AS reportingDate,
            WHEN gte.CURRENCY_SHORT_DES = 'USD'
                THEN gte.DC_AMOUNT * fx.RATE
            ELSE gte.DC_AMOUNT
-           END                AS tzsTransactionAmount
+           END                AS tzsTransactionAmount,
+
+       -- Include TMSTAMP for incremental processing
+       gte.TMSTAMP            AS tmstamp
 
 FROM GLI_TRX_EXTRACT AS gte
          LEFT JOIN LOAN_ACCOUNT AS la
@@ -90,4 +93,5 @@ WHERE gte.FK_GLG_ACCOUNTACCO IN (
                                  '1.3.0.00.0005'
     )
   AND gte.PRF_ACCOUNT_NUMBER IS NOT NULL
-  AND TRIM(gte.PRF_ACCOUNT_NUMBER) <> '';
+  AND TRIM(gte.PRF_ACCOUNT_NUMBER) <> ''
+ORDER BY gte.TMSTAMP;

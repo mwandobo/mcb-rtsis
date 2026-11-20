@@ -32,8 +32,7 @@ def main():
         
         # Create and run pipeline with default settings
         pipeline = OutgoingFundTransferStreamingPipeline(
-            batch_size=1000,
-            consumer_batch_size=100
+            batch_size=1000
         )
         
         pipeline.run_streaming_pipeline()

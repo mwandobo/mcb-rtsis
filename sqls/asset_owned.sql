@@ -1,6 +1,6 @@
 SELECT
-    CURRENT_TIMESTAMP AS reportingDate,
-    M.AQUISITION_DATE as acqiusitionDate,
+    VARCHAR_FORMAT(CURRENT_TIMESTAMP,'DDMMYYYYHHMM') AS reportingDate,
+    VARCHAR_FORMAT(M.AQUISITION_DATE,'DDMMYYYYHHMM') as acqiusitionDate,
     CU.SHORT_DESCR as currency,
     CASE
         WHEN gl.EXTERNAL_GLACCOUNT = '144000020' OR
@@ -30,23 +30,38 @@ SELECT
     -- orgAmount: always original DC_AMOUNT
     M.AMOUNT AS orgCostValue,
 
-    -- USD Amount: only if currency is USD, otherwise null
+    -- USD amount using the latest active fixing rate
     CASE
-        WHEN CU.SHORT_DESCR = 'USD'
-            THEN M.AMOUNT
-        ELSE NULL
+        WHEN CU.SHORT_DESCR = 'TZS' THEN 0
+        WHEN CU.SHORT_DESCR = 'USD' THEN DECIMAL(M.AMOUNT, 18, 2)
+        WHEN CU.SHORT_DESCR <> 'USD' THEN DECIMAL(M.AMOUNT / fx.rate, 18, 2)
     END AS usdCostValue,
 
-    -- TZS Amount: convert only if USD, otherwise use as is
+    -- TZS amount using the latest active fixing rate
     CASE
-        WHEN CU.SHORT_DESCR = 'USD'
-            THEN M.AMOUNT * 2500   -- <<< replace with your rate
-        ELSE
-            M.AMOUNT
+        WHEN CU.SHORT_DESCR = 'USD' THEN DECIMAL(M.AMOUNT * fx.rate, 18, 2)
+        ELSE DECIMAL(M.AMOUNT, 18, 2)
     END AS tzsCostValue,
     0 as allowanceProbableLoss,
     0 as botProvision
 FROM ASSET_MASTER AS M
 LEFT JOIN CURRENCY as CU ON CU.ID_CURRENCY = M.CURRENCY_ID
 LEFT JOIN GLG_ACCOUNT AS gl
-    ON gl.ACCOUNT_ID = M.GL_ACCOUNT;
+    ON gl.ACCOUNT_ID = M.GL_ACCOUNT
+LEFT JOIN (
+    SELECT fr.fk_currencyid_curr,
+           fr.rate
+    FROM fixing_rate fr
+    WHERE (fr.fk_currencyid_curr, fr.activation_date, fr.activation_time) IN (
+        SELECT fk_currencyid_curr,
+               activation_date,
+               MAX(activation_time)
+        FROM fixing_rate
+        WHERE activation_date = (
+            SELECT MAX(b.activation_date)
+            FROM fixing_rate b
+            WHERE b.activation_date <= CURRENT_DATE
+        )
+        GROUP BY fk_currencyid_curr, activation_date
+    )
+) fx ON fx.fk_currencyid_curr = CU.ID_CURRENCY;

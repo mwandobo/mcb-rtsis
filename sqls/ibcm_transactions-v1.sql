@@ -1,14 +1,8 @@
 SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
        VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')      AS transactionDate,
 
-       CASE
-           WHEN t.CR_BANK_BIC = 'TANZTZTXXXX' THEN 'Bank Of Tanzania'
-           ELSE 'Mwalimu Commercial Bank Plc'
-           END                                           AS lenderName,
-       CASE
-           WHEN t.DB_BANK_BIC = 'TANZTZTXXXX' THEN 'Bank Of Tanzania'
-           ELSE 'Mwalimu Commercial Bank Plc'
-           END                                           AS borrowerName,
+       COALESCE(NULLIF(TRIM(t.CR_BANK_BIC), ''), 'MWCOTZTZ') AS lenderName,
+       COALESCE(NULLIF(TRIM(t.DB_BANK_BIC), ''), 'MWCOTZTZ') AS borrowerName,
        CASE
 
            WHEN COALESCE(prod.DESCRIPTION, CAST(t.FK_TRX_PRODUCT AS VARCHAR(20))) = 'MONEY MARKET BACK OFFICE'
@@ -24,7 +18,12 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
                t.DURATION0
        )                                                 AS tenure,
 
-       t.INTEREST_RATE                                   AS interestRate
+       t.INTEREST_RATE                                   AS interestRate,
+
+       -- ===================== TMSTAMP FOR INCREMENTAL PROCESSING =====================
+       
+       -- TMSTAMP field for incremental processing
+       gte.TMSTAMP                                       AS tmstamp
 
 FROM GLI_TRX_EXTRACT gte
          JOIN TREASURY_MM_DEAL t ON t.DEAL_NO = gte.TRX_SN
@@ -33,4 +32,6 @@ FROM GLI_TRX_EXTRACT gte
          LEFT JOIN PRODUCT prod ON prod.ID_PRODUCT = t.FK_TRX_PRODUCT
 
 WHERE gte.FK_GLG_ACCOUNTACCO = '1.0.2.00.0001'
-  AND NOT (t.CR_BANK_BIC IS NULL AND t.DB_BANK_BIC IS NULL);
+  AND NOT (t.CR_BANK_BIC IS NULL AND t.DB_BANK_BIC IS NULL)
+
+ORDER BY gte.TMSTAMP;

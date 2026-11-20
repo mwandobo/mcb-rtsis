@@ -79,7 +79,7 @@ class AccountInformationStreamingPipeline:
         """Get the account information query from account-information.sql"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'sqls', 'account-information.sql'
+            'sqls', 'account-information-v1.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
@@ -617,7 +617,15 @@ class AccountInformationStreamingPipeline:
     def run_streaming_pipeline(self):
         """Run the streaming pipeline with simultaneous producer and consumer"""
         self.logger.info("Starting Account Information STREAMING pipeline...")
-        
+
+        # PROFITS_ACCOUNT has no last-modified column - CREATE_TIMESTAMP is
+        # when the account was opened, not when its balance last changed, and
+        # balances (sab.BOOK_BALANCE/lnb.VALEUR_BALANCE) update continuously
+        # without bumping it. Filtering on it would miss balance updates on
+        # already-existing accounts, so this deliberately always does a full
+        # scan; insert_batch_to_postgres's upsert (ON CONFLICT ... DO UPDATE)
+        # is what keeps re-runs correct, not an incremental filter.
+        self._update_state('running')
         try:
             # Ensure unique index for duplicate prevention
             self.ensure_unique_index()
@@ -659,17 +667,28 @@ class AccountInformationStreamingPipeline:
             self.logger.info(f"Total time: {total_time:.1f} seconds")
             self.logger.info(f"Average rate: {avg_rate:.1f} records/second")
             self.logger.info("=" * 60)
-            
+
+            self._update_state('completed')
+
             return {
                 'total_produced': self.total_produced,
                 'total_consumed': self.total_consumed,
                 'total_time': total_time,
                 'avg_rate': avg_rate
             }
-            
+
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+
+    def _update_state(self, status, error_message=None):
+        try:
+            from pipeline_state import PipelineStateManager
+            PipelineStateManager().update_run('account_information', status, self.total_consumed, error_message)
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 if __name__ == "__main__":

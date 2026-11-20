@@ -27,7 +27,7 @@ WITH corporate_customers AS
 
      corporate_agreements AS
          (SELECT DISTINCT a.AGR_SN,
-         a.TMSTAMP,
+                          a.TMSTAMP,
                           ca.FK_CUSTOMERCUST_ID AS corporate_cust_id
           FROM AGREEMENT a
                    JOIN CUST_ADDRESS ca
@@ -44,20 +44,20 @@ WITH corporate_customers AS
 --                        AND pa.PRODUCT_ID = 31704)
          )
 
-SELECT CURRENT_TIMESTAMP                               AS reportingDate,
-       corp.SURNAME                                    AS companyName,
-       ca.corporate_cust_id                            AS customerIdentificationNumber,
-       corp.CUST_OPEN_DATE                             AS establishedDate,
-       'LimitedLiabilityCompanyPrivate'                AS legalForm,
-       'NoNegativeStatus'                              AS negativeClientStatus,
-       corp.NO_OF_EMPLOYEES                            AS numberOfEmployees,
-       0                                               AS totalEmployeesMAle,
-       0                                               AS totalEmployeesFemale,
+SELECT CURRENT_TIMESTAMP                AS reportingDate,
+       corp.SURNAME                     AS companyName,
+       ca.corporate_cust_id             AS customerIdentificationNumber,
+       corp.CUST_OPEN_DATE              AS establishedDate,
+       'LimitedLiabilityCompanyPrivate' AS legalForm,
+       'NoNegativeStatus'               AS negativeClientStatus,
+       corp.NO_OF_EMPLOYEES             AS numberOfEmployees,
+       0                                AS totalEmployeesMAle,
+       0                                AS totalEmployeesFemale,
        CASE UPPER(TRIM(id_country.description))
            WHEN 'TANZANIA'
                THEN 'TANZANIA, UNITED REPUBLIC OF'
            ELSE 'TANZANIA, UNITED REPUBLIC OF'
-           END                                         AS registrationCountry,
+           END                          AS registrationCountry,
 
        CASE
            WHEN LENGTH(TRIM(cc.ID_NO)) = 7
@@ -65,7 +65,7 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                THEN cc.ID_NO
            ELSE
                CHAR(INT(RAND() * 9000000 + 1000000))
-           END                                         AS registrationNumber,
+           END                          AS registrationNumber,
 --        CASE
 --            WHEN LENGTH(TRIM(cc.ID_NO)) = 9
 --                AND cc.ID_NO NOT LIKE '%[^0-9]%' -- ensures only digits
@@ -77,12 +77,12 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                AND TRANSLATE(TRIM(cc.ID_NO), '', '0123456789') = '' -- only digits
                THEN cc.ID_NO
            ELSE CHAR(INT(RAND() * 900000000 + 100000000))
-           END                                         AS taxIdentificationNumber,
-       corp.SURNAME                                    AS tradeName,
-       NULL                                            AS parentName,
-       NULL                                            AS parentIncorporationNumber,
-       NULL                                            AS groupId,
-       'Other financial Corporations'                  AS sectorSnaClassification,
+           END                          AS taxIdentificationNumber,
+       corp.SURNAME                     AS tradeName,
+       NULL                             AS parentName,
+       NULL                             AS parentIncorporationNumber,
+       NULL                             AS groupId,
+       'Other financial Corporations'   AS sectorSnaClassification,
 
        '[' ||
        RTRIM(
@@ -122,74 +122,102 @@ SELECT CURRENT_TIMESTAMP                               AS reportingDate,
                        ) AS VARCHAR(32000)
                ), ','
        ) ||
-       ']'                                             AS related_customers,
+       ']'                              AS related_customers,
 
        -- BUSINESS ADDRESS
-       ward_selection.WARD                             AS street,
+       ward_selection.WARD              AS street,
        CASE UPPER(TRIM(id_country.description))
            WHEN 'TANZANIA'
-               THEN 'TANZANIA, UNITED REPUBLIC OF' END AS country,
+               THEN 'TANZANIA, UNITED REPUBLIC OF'
+           ELSE 'TANZANIA, UNITED REPUBLIC OF'
+           END                          AS country,
        COALESCE(
                loc_region_city.REGION,
                loc_region_dist.REGION,
                loc_region_from_district.REGION,
                loc_region_from_ward.REGION,
                'Dar es Salaam'
-       )                                               AS region,
+       )                                AS region,
        COALESCE(
                loc_district_region.DISTRICT,
                loc_district_from_ward.DISTRICT,
                loc_district_from_city.DISTRICT,
                loc_district_from_region.DISTRICT
-       )                                               AS district,
-       ward_selection.WARD                             AS ward,
-       NULL                                            AS houseNumber,
-       ward_selection.WARD                             AS postalCode,
-       c_address.ADDRESS_1                             AS poBox,
-       c_address.ZIP_CODE                              AS zipCode,
+       )                                AS district,
+       ward_selection.WARD              AS ward,
+       NULL                             AS houseNumber,
+       ward_selection.WARD              AS postalCode,
+       c_address.ADDRESS_1              AS poBox,
+       c_address.ZIP_CODE               AS zipCode,
+
+
+       -- PRIMARY ADDRESS
+
+
+       NULL                             AS primaryPostalCode,
+       COALESCE(
+               loc_region_city.REGION,
+               loc_region_dist.REGION,
+               loc_region_from_district.REGION,
+               loc_region_from_ward.REGION,
+               'Dar es Salaam'
+       )                                AS primaryRegion,
+       COALESCE(
+               loc_district_region.DISTRICT,
+               loc_district_from_ward.DISTRICT,
+               loc_district_from_city.DISTRICT,
+               loc_district_from_region.DISTRICT
+       )                                AS primaryDistrict,
+       ward_selection.WARD              AS primaryWard,
+       NULL                             AS primaryStreet,
+       NULL                             AS primaryHouseNumber,
 
 
        -- SECONDARY ADDRESSES
-       NULL                                            AS secondaryStreet,
-       NULL                                            AS secondartHouseNumber,
-       NULL                                            AS secondaryPostalCode,
-       NULL                                            AS secondaryRegion,
-       NULL                                            AS secondaryDistrict,
-       'TANZANIA, UNITED REPUBLIC OF'                  AS secondaryCountry,
-       NULL                                            AS secondaryTextAddress,
+       NULL                             AS secondaryStreet,
+       NULL                             AS secondartHouseNumber,
+       NULL                             AS secondaryPostalCode,
+       NULL                             AS secondaryRegion,
+       NULL                             AS secondaryDistrict,
+       'TANZANIA, UNITED REPUBLIC OF'   AS secondaryCountry,
+       NULL                             AS secondaryTextAddress,
 
        --CONTACT PERSON
-       NULL                                            AS mobileNumber,
-       NULL                                            AS alternativeMobileNumber,
-       NULL                                            AS fixedLineNumber,
-       NULL                                            AS faxNumber,
-       NULL                                            AS emailAddress,
-       NULL                                            AS socialMedia,
+       NULL                             AS mobileNumber,
+       NULL                             AS alternativeMobileNumber,
+       NULL                             AS fixedLineNumber,
+       NULL                             AS faxNumber,
+       NULL                             AS emailAddress,
+       NULL                             AS socialMedia,
 
        -- RELATIONS ENTITY
-       'N/A'                                           AS entityName,
-       'N/A'                                           AS entityType,
-       NULL                                            AS certificateIncorporation,
+       'N/A'                            AS entityName,
+       'Cooperative'
+                                        AS entityType,
+       CASE
+           WHEN (id.ISSUE_AUTHORITY LIKE 'BR%') THEN id.ID_NO
+           ELSE CHAR(INT(RAND() * 9000000 + 1000000))
+           END                          AS certificateIncorporation,
        COALESCE(
                loc_region_city.REGION,
                loc_region_dist.REGION,
                loc_region_from_district.REGION,
                loc_region_from_ward.REGION,
                'Dar es Salaam'
-       )                                               AS entiryRegion,
+       )                                AS entiryRegion,
        COALESCE(
                loc_district_region.DISTRICT,
                loc_district_from_ward.DISTRICT,
                loc_district_from_city.DISTRICT,
                loc_district_from_region.DISTRICT
-       )                                               AS entityDistrict,
-       'N/A'                                           AS entityWard,
-       'N/A'                                           AS entityStreet,
-       'N/A'                                           AS entityHouseNumber,
-       'N/A'                                           AS entityPostalCode,
-       'N/A'                                           AS groupParentCode,
-       NULL                                            AS shareOwnedPercentage,
-       NULL                                            AS shareOwnedAmount
+       )                                AS entityDistrict,
+       'N/A'                            AS entityWard,
+       'N/A'                            AS entityStreet,
+       'N/A'                            AS entityHouseNumber,
+       'N/A'                            AS entityPostalCode,
+       'N/A'                            AS groupParentCode,
+       NULL                             AS shareOwnedPercentage,
+       NULL                             AS shareOwnedAmount
 
 FROM corporate_agreements ca
 
@@ -560,7 +588,9 @@ GROUP BY corp.SURNAME,
          c_address.ZIP_CODE,
          c_address.ADDRESS_1,
          corp.NO_OF_EMPLOYEES,
+         id.ISSUE_AUTHORITY,
          id.ID_NO,
          cc.ID_NO
+
 
 ORDER BY corp.SURNAME;

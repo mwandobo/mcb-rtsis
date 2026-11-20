@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { FiDatabase, FiTable, FiSearch, FiRefreshCw, FiChevronRight } from 'react-icons/fi';
-import { format } from 'date-fns';
 import api from '../services/api';
 
 interface TableInfo {
@@ -15,9 +14,6 @@ interface TableData {
   total: number;
   columns: string[];
 }
-
-const BRAND_BLUE = '#1B3E74';
-const BRAND_ORANGE = '#DA7F3D';
 
 export function DB2Source() {
   const [tables, setTables] = useState<TableInfo[]>([]);
@@ -35,23 +31,20 @@ export function DB2Source() {
   const fetchTables = async (forceRefresh = false) => {
     try {
       setError(null);
-      
-      // Clear cache if force refresh
+
       if (forceRefresh) {
         await api.delete('/databases/db2/cache');
       }
-      
+
       const response = await api.get('/databases/db2/tables');
-      const data = response.data; // Extract data from axios response
+      const data = response.data;
       setTables(Array.isArray(data) ? data : []);
-      
-      // Fetch cache info
+
       const cacheResponse = await api.get('/databases/db2/cache-info');
       setCacheInfo(cacheResponse.data);
     } catch (err: any) {
       console.error('Failed to load DB2 tables:', err);
-      
-      // Better error message for timeout
+
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
         setError('DB2 query is taking longer than expected. The backend is still processing - please wait and try refreshing in a moment.');
       } else {
@@ -71,7 +64,7 @@ export function DB2Source() {
     setSelectedTable(tableName);
     setTableLoading(true);
     setOffset(0);
-    
+
     try {
       const response = await api.get(`/databases/db2/table/${tableName}`, { params: { limit, offset: 0 } });
       setTableData(response.data);
@@ -85,169 +78,131 @@ export function DB2Source() {
 
   const loadMore = async () => {
     if (!selectedTable || !tableData) return;
-    
+
     const newOffset = offset + limit;
     setOffset(newOffset);
-    
+
     try {
       const response = await api.get(`/databases/db2/table/${selectedTable}`, { params: { limit, offset: newOffset } });
-      setTableData({
-        ...response.data,
-        data: [...tableData.data, ...response.data.data],
-      });
+      setTableData({ ...response.data, data: [...tableData.data, ...response.data.data] });
     } catch (err) {
       console.error('Failed to load more data:', err);
     }
   };
 
-  const filteredTables = tables.filter(t => 
-    t.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+  const filteredTables = tables.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
   const totalRecords = tables.reduce((sum, t) => sum + t.recordCount, 0);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: BRAND_BLUE }}></div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="spinner" />
       </div>
     );
   }
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <FiDatabase className="w-8 h-8" style={{ color: BRAND_BLUE }} />
+          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <FiDatabase width={22} height={22} style={{ color: 'var(--accent)' }} />
             DB2 Source Database
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {tables.length} tables • {totalRecords.toLocaleString()} total records
-            {cacheInfo?.cached && (
-              <span className="ml-2 text-xs text-blue-600">
-                • Cached {Math.floor((cacheInfo.age || 0) / 1000)}s ago
-              </span>
-            )}
-          </p>
+          </div>
+          <div className="page-sub">
+            {tables.length} tables &middot; {totalRecords.toLocaleString()} total records
+            {cacheInfo?.cached && <span style={{ color: 'var(--accent)' }}> &middot; Cached {Math.floor((cacheInfo.age || 0) / 1000)}s ago</span>}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => fetchTables(false)}
-            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: BRAND_BLUE }}
-          >
-            <FiRefreshCw className="w-4 h-4" />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-primary" onClick={() => fetchTables(false)}>
+            <FiRefreshCw width={14} height={14} />
             Refresh
           </button>
           {cacheInfo?.cached && (
-            <button
-              onClick={() => fetchTables(true)}
-              className="flex items-center gap-2 px-4 py-2 border-2 rounded-lg hover:bg-gray-50 transition-colors"
-              style={{ borderColor: BRAND_BLUE, color: BRAND_BLUE }}
-              title="Force refresh from DB2 (clears cache)"
-            >
-              <FiRefreshCw className="w-4 h-4" />
+            <button className="btn-secondary" onClick={() => fetchTables(true)} title="Force refresh from DB2 (clears cache)">
+              <FiRefreshCw width={14} height={14} />
               Force Refresh
             </button>
           )}
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-6 relative">
-        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search tables..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DA7F3D] focus:border-transparent"
-        />
+      <div className="search-box" style={{ width: '100%', marginBottom: 20 }}>
+        <FiSearch width={14} height={14} />
+        <input type="text" placeholder="Search tables…" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>
 
-      {/* Error Display */}
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-red-800">
-            <FiDatabase className="w-5 h-5" />
-            <span className="font-medium">Connection Error</span>
+        <div style={{ background: 'var(--red-dim)', border: '1px solid var(--red)', borderRadius: 10, padding: 14, marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--red)', fontWeight: 600 }}>
+            <FiDatabase width={16} height={16} />
+            Connection Error
           </div>
-          <p className="mt-2 text-sm text-red-700">{error}</p>
-          <p className="mt-2 text-xs text-red-600">
-            Check your DB2 connection settings in the backend .env file.
-          </p>
+          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--red)' }}>{error}</div>
+          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--red)', opacity: 0.8 }}>Check your DB2 connection settings in the backend .env file.</div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Tables List */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900">Tables</h2>
-              <span className="text-sm text-gray-500">{filteredTables.length}</span>
-            </div>
-            <div className="max-h-[600px] overflow-y-auto">
-              {filteredTables.map((table) => (
-                <button
-                  key={table.name}
-                  onClick={() => fetchTableData(table.name)}
-                  className={`w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-50 ${
-                    selectedTable === table.name ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <FiTable className="w-5 h-5 text-gray-400" />
-                    <div className="text-left">
-                      <p className="font-medium text-gray-900">{table.name}</p>
-                      <p className="text-xs text-gray-500">{table.recordCount.toLocaleString()} records</p>
-                    </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16 }}>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Tables</div>
+            <span className="pagination-info">{filteredTables.length}</span>
+          </div>
+          <div style={{ maxHeight: 600, overflowY: 'auto' }}>
+            {filteredTables.map((table) => (
+              <button
+                key={table.name}
+                onClick={() => fetchTableData(table.name)}
+                style={{
+                  width: '100%', padding: '11px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: selectedTable === table.name ? 'var(--accent-dim)' : 'none', border: 'none', borderBottom: '1px solid var(--border-subtle)',
+                  cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <FiTable width={15} height={15} style={{ color: 'var(--text-muted)' }} />
+                  <div>
+                    <div style={{ fontWeight: 500, fontSize: 13 }}>{table.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{table.recordCount.toLocaleString()} records</div>
                   </div>
-                  <FiChevronRight className="w-4 h-4 text-gray-400" />
-                </button>
-              ))}
-            </div>
+                </div>
+                <FiChevronRight width={14} height={14} style={{ color: 'var(--text-muted)' }} />
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Table Data */}
-        <div className="lg:col-span-2">
+        <div>
           {selectedTable ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FiTable className="w-5 h-5 text-gray-400" />
-                  <h2 className="font-semibold text-gray-900">{selectedTable}</h2>
+            <div className="card">
+              <div className="card-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FiTable width={15} height={15} style={{ color: 'var(--text-muted)' }} />
+                  <div className="card-title">{selectedTable}</div>
                 </div>
-                <span className="text-sm text-gray-500">
+                <span className="pagination-info">
                   {tableData ? `${tableData.data.length} of ${tableData.total.toLocaleString()} records` : 'Loading...'}
                 </span>
               </div>
-              
+
               {tableLoading ? (
-                <div className="p-8 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: BRAND_BLUE }}></div>
+                <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}>
+                  <div className="spinner" style={{ width: 24, height: 24 }} />
                 </div>
               ) : tableData && tableData.data.length > 0 ? (
                 <>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b border-gray-100">
-                        <tr>
-                          {tableData.columns.map((col) => (
-                            <th key={col} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                              {col}
-                            </th>
-                          ))}
-                        </tr>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="data-table">
+                      <thead>
+                        <tr>{tableData.columns.map((col) => <th key={col}>{col}</th>)}</tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody>
                         {tableData.data.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50">
+                          <tr key={idx}>
                             {tableData.columns.map((col) => (
-                              <td key={col} className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
+                              <td key={col} style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
                                 {row[col] !== null && row[col] !== undefined ? String(row[col]) : '-'}
                               </td>
                             ))}
@@ -256,29 +211,21 @@ export function DB2Source() {
                       </tbody>
                     </table>
                   </div>
-                  
+
                   {tableData.data.length + offset < tableData.total && (
-                    <div className="px-4 py-3 border-t border-gray-100 flex justify-center">
-                      <button
-                        onClick={loadMore}
-                        className="px-4 py-2 text-sm text-white rounded-lg hover:opacity-90 transition-opacity"
-                        style={{ backgroundColor: BRAND_ORANGE }}
-                      >
-                        Load More
-                      </button>
+                    <div style={{ padding: 14, borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center' }}>
+                      <button className="btn-accent2" onClick={loadMore}>Load More</button>
                     </div>
                   )}
                 </>
               ) : (
-                <div className="p-8 text-center text-gray-500">
-                  No data available
-                </div>
+                <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No data available</div>
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-              <FiDatabase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">Select a table to view its data</p>
+            <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+              <FiDatabase width={36} height={36} style={{ color: 'var(--border)', margin: '0 auto 10px' }} />
+              <div style={{ color: 'var(--text-muted)' }}>Select a table to view its data</div>
             </div>
           )}
         </div>

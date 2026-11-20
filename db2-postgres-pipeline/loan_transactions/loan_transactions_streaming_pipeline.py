@@ -23,6 +23,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
 from db2_connection import DB2Connection
+from pipeline_state_manager import PipelineStateManager
 
 # Configure logging at module level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -40,6 +41,7 @@ class LoanTransactionRecord:
     orgTransactionAmount: str
     usdTransactionAmount: Optional[str]
     tzsTransactionAmount: str
+    tmstamp: Optional[str]  # Added for incremental processing
 
 
 class LoanTransactionsStreamingPipeline:
@@ -48,6 +50,9 @@ class LoanTransactionsStreamingPipeline:
         self.db2_conn = DB2Connection()
         self.batch_size = batch_size
         self.consumer_batch_size = consumer_batch_size
+        
+        # State management for incremental processing
+        self.state_manager = PipelineStateManager('loan_transactions')
         
         # Threading control
         self.producer_finished = threading.Event()
@@ -73,25 +78,73 @@ class LoanTransactionsStreamingPipeline:
         self.logger.info("Mode: Streaming (Producer + Consumer simultaneously)")
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
-    def get_loan_transactions_query(self):
-        """Get the loan transactions query from loan-transaction.sql"""
+    def get_last_successful_run(self):
+        """Get the timestamp of the last successful run for incremental processing"""
+        return self.state_manager.get_last_successful_run()
+    
+    def _update_state(self, timestamp):
+        """Update the state with the latest processed timestamp"""
+        self.state_manager.update_last_successful_run(timestamp)
+    
+    def get_loan_transactions_query(self, last_timestamp=None):
+        """Get the loan transactions query from loan-transaction.sql with optional timestamp filter"""
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             'sqls', 'loan-transaction.sql'
         )
         
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            base_query = f.read()
+        
+        # Add incremental filter if timestamp provided
+        if last_timestamp:
+            # Find the WHERE clause and add timestamp condition
+            query_upper = base_query.upper()
+            where_pos = query_upper.find('WHERE')
+            
+            if where_pos != -1:
+                # Insert timestamp condition after existing WHERE clause
+                before_where = base_query[:where_pos + 5]  # Include 'WHERE'
+                after_where = base_query[where_pos + 5:]
+                
+                # Add timestamp filter
+                timestamp_condition = f" gte.TMSTAMP > '{last_timestamp}' AND"
+                modified_query = before_where + timestamp_condition + after_where
+                
+                self.logger.info(f"Added incremental filter: TMSTAMP > '{last_timestamp}'")
+                return modified_query
+            else:
+                # No WHERE clause found, add one
+                timestamp_condition = f" WHERE gte.TMSTAMP > '{last_timestamp}'"
+                modified_query = base_query + timestamp_condition
+                
+                self.logger.info(f"Added WHERE clause with incremental filter: TMSTAMP > '{last_timestamp}'")
+                return modified_query
+        
+        return base_query
     
-    def get_total_count(self):
+    def get_total_count(self, last_timestamp=None):
         """Get approximate total count of loan transaction records from DB2"""
         try:
             with self.db2_conn.get_connection(log_connection=False) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM GLI_TRX_EXTRACT WHERE PRF_ACCOUNT_NUMBER IS NOT NULL")
+                
+                if last_timestamp:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM GLI_TRX_EXTRACT WHERE PRF_ACCOUNT_NUMBER IS NOT NULL AND TMSTAMP > ?",
+                        (last_timestamp,)
+                    )
+                else:
+                    cursor.execute("SELECT COUNT(*) FROM GLI_TRX_EXTRACT WHERE PRF_ACCOUNT_NUMBER IS NOT NULL")
+                
                 result = cursor.fetchone()
                 count = result[0] if result else 0
-                self.logger.info(f"Estimated record count from GLI_TRX_EXTRACT: {count:,}")
+                
+                if last_timestamp:
+                    self.logger.info(f"Estimated incremental record count from GLI_TRX_EXTRACT (TMSTAMP > '{last_timestamp}'): {count:,}")
+                else:
+                    self.logger.info(f"Estimated record count from GLI_TRX_EXTRACT: {count:,}")
+                
                 return count
         except Exception as e:
             self.logger.warning(f"Could not fetch record count, progress % unavailable: {e}")
@@ -206,7 +259,8 @@ class LoanTransactionsStreamingPipeline:
                 currency=safe_string(row[5]),
                 orgTransactionAmount=safe_string(row[6]),
                 usdTransactionAmount=safe_string(row[7]) if row[7] else None,
-                tzsTransactionAmount=safe_string(row[8])
+                tzsTransactionAmount=safe_string(row[8]),
+                tmstamp=safe_string(row[9]) if len(row) > 9 and row[9] else None  # TMSTAMP field
             )
             
             return record
@@ -235,13 +289,24 @@ class LoanTransactionsStreamingPipeline:
             self.logger.error(f"Error validating loan transaction record: {e}")
             return False
     
-    def producer_thread(self):
+    def producer_thread(self, incremental=True):
         """Producer thread - executes query ONCE and streams results via fetchmany()"""
         try:
             self.logger.info("Producer thread started")
             
+            # Get last timestamp for incremental processing
+            last_timestamp = None
+            if incremental:
+                last_timestamp = self.get_last_successful_run()
+                if last_timestamp:
+                    self.logger.info(f"Incremental mode: Processing records after {last_timestamp}")
+                else:
+                    self.logger.info("Incremental mode: No previous run found, processing all records")
+            else:
+                self.logger.info("Full load mode: Processing all records")
+            
             # Get dynamic record count
-            self.total_available = self.get_total_count()
+            self.total_available = self.get_total_count(last_timestamp)
             
             self.logger.info(f"Total loan transaction records available: {self.total_available:,} (estimated)")
             estimated_batches = (self.total_available + self.batch_size - 1) // self.batch_size
@@ -251,8 +316,10 @@ class LoanTransactionsStreamingPipeline:
             rmq_connection, channel = self.setup_rabbitmq_connection()
             
             # Execute the query ONCE and stream results
-            query = self.get_loan_transactions_query()
+            query = self.get_loan_transactions_query(last_timestamp)
             self.logger.info("Executing loan transactions query (single execution, streaming results)...")
+            
+            max_timestamp = None
             
             with self.db2_conn.get_connection(log_connection=True) as db2_conn:
                 db2_cursor = db2_conn.cursor()
@@ -309,6 +376,15 @@ class LoanTransactionsStreamingPipeline:
                                 with self._stats_lock:
                                     self.total_produced += 1
                     
+                    # Track maximum timestamp for state update
+                    if incremental and rows:
+                        # Get the latest timestamp from this batch
+                        for row in rows:
+                            if len(row) > 9 and row[9]:  # TMSTAMP is at index 9
+                                timestamp_str = str(row[9]).strip()
+                                if not max_timestamp or timestamp_str > max_timestamp:
+                                    max_timestamp = timestamp_str
+                    
                     batch_time = time.time() - batch_start_time
                     with self._stats_lock:
                         produced = self.total_produced
@@ -329,6 +405,11 @@ class LoanTransactionsStreamingPipeline:
                         last_progress_report = current_time
                     
                     batch_number += 1
+            
+            # Update state if incremental and we processed records
+            if incremental and max_timestamp and self.total_produced > 0:
+                self._update_state(max_timestamp)
+                self.logger.info(f"Updated pipeline state with timestamp: {max_timestamp}")
             
             rmq_connection.close()
             with self._stats_lock:
@@ -523,7 +604,7 @@ class LoanTransactionsStreamingPipeline:
                     pass
     
     def insert_batch_to_postgres(self, records: List[LoanTransactionRecord], pg_conn):
-        """Batch insert loan transaction records to PostgreSQL"""
+        """Batch insert loan transaction records to PostgreSQL with duplicate prevention"""
         try:
             cursor = pg_conn.cursor()
             
@@ -533,6 +614,13 @@ class LoanTransactionsStreamingPipeline:
                 "loanTransactionSubType", "currency", "orgTransactionAmount",
                 "usdTransactionAmount", "tzsTransactionAmount"
             ) VALUES %s
+            ON CONFLICT ("loanNumber", "transactionDate", "loanTransactionType", "orgTransactionAmount") 
+            DO UPDATE SET
+                "reportingDate" = EXCLUDED."reportingDate",
+                "loanTransactionSubType" = EXCLUDED."loanTransactionSubType",
+                "currency" = EXCLUDED."currency",
+                "usdTransactionAmount" = EXCLUDED."usdTransactionAmount",
+                "tzsTransactionAmount" = EXCLUDED."tzsTransactionAmount"
             """
             
             values = [
@@ -540,6 +628,7 @@ class LoanTransactionsStreamingPipeline:
                     r.reportingDate, r.loanNumber, r.transactionDate, r.loanTransactionType,
                     r.loanTransactionSubType, r.currency, r.orgTransactionAmount,
                     r.usdTransactionAmount, r.tzsTransactionAmount
+                    # Note: tmstamp is excluded as it's only used for incremental processing tracking
                 )
                 for r in records
             ]
@@ -551,9 +640,10 @@ class LoanTransactionsStreamingPipeline:
             self.logger.error(f"Error batch inserting {len(records)} loan transaction records: {e}")
             raise
     
-    def run_streaming_pipeline(self):
+    def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Loan Transactions STREAMING pipeline...")
+        mode_str = "INCREMENTAL" if incremental else "FULL LOAD"
+        self.logger.info(f"Starting Loan Transactions STREAMING pipeline ({mode_str})...")
         
         try:
             # Setup queue
@@ -567,7 +657,7 @@ class LoanTransactionsStreamingPipeline:
             time.sleep(1)
             
             # Start producer thread
-            producer_thread = threading.Thread(target=self.producer_thread, name="Producer")
+            producer_thread = threading.Thread(target=self.producer_thread, args=(incremental,), name="Producer")
             producer_thread.start()
             
             # Wait for producer to finish
@@ -589,7 +679,7 @@ class LoanTransactionsStreamingPipeline:
             
             self.logger.info(f"""
             ==========================================
-            Loan Transactions Pipeline Summary:
+            Loan Transactions Pipeline Summary ({mode_str}):
             ==========================================
             Total available records: {self.total_available:,}
             Records produced: {self.total_produced:,}
@@ -614,19 +704,24 @@ def main():
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
+    parser.add_argument('--full-load', action='store_true', 
+                       help='Run full load instead of incremental (processes all records)')
     
     args = parser.parse_args()
+    
+    # Determine if running incremental or full load
+    incremental = not args.full_load
     
     # Create pipeline
     pipeline = LoanTransactionsStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
     
     try:
         if args.mode == 'producer':
-            pipeline.producer_thread()
+            pipeline.producer_thread(incremental)
         elif args.mode == 'consumer':
             pipeline.consumer_thread()
         else:  # streaming
-            pipeline.run_streaming_pipeline()
+            pipeline.run_streaming_pipeline(incremental)
             
     except KeyboardInterrupt:
         pipeline.logger.info("Pipeline stopped by user")
