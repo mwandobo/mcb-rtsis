@@ -14,7 +14,7 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from insurance_commission.insurance_commission_streaming_pipeline import InsuranceCommissionStreamingPipeline
+from insurance_commission._deprecated_db2_based_insurance_commission_streaming_pipeline import InsuranceCommissionStreamingPipeline
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

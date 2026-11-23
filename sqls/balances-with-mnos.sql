@@ -25,7 +25,17 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') AS reportingDate,
                THEN DECIMAL(gte.DC_AMOUNT * fx.rate, 18, 2)
 
            ELSE DECIMAL(gte.DC_AMOUNT, 18, 2)
-           END                                           AS tzsFloatAmount
+           END                                           AS tzsFloatAmount,
+
+       -- Internal-use-only natural key for the underlying GL posting, used
+       -- solely to prevent duplicate rows on a crash/retry - not part of the
+       -- BOT-reported output. Verified unique as (custId, trnDate, trnSnum,
+       -- lineNum, trxSn) together.
+       gte.CUST_ID                                       AS custId,
+       gte.TRN_DATE                                      AS trnDate,
+       gte.TRN_SNUM                                      AS trnSnum,
+       gte.LINE_NUM                                      AS lineNum,
+       gte.TRX_SN                                        AS trxSn
 FROM GLI_TRX_EXTRACT gte
          -- Join Currency Using SHORT_DESCR
 -- =========================================

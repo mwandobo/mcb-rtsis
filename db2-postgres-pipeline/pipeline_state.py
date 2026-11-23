@@ -29,6 +29,7 @@ class PipelineStateManager:
         'employee',
         'directors_records',
         'account_product_category',
+        'card_product',
         'incoming_fund_transfer',
         'outgoing_fund_transfer',
         'cards',
@@ -44,6 +45,13 @@ class PipelineStateManager:
         'ibcm_transactions',
         'account_information',
         'card_transactions',
+        'insurance_claim',
+        'insurance_commission',
+        'insurance_underwriting',
+        'complaint_fraud_statistics',
+        'investment_debt_securities',
+        'cheques',
+        'inter_bank_loan_receivable',
         # Add other pipelines as they are created
     ]
     

@@ -43,6 +43,11 @@ class BalanceWithBotRecord:
     maturityDate: str
     allowanceProbableLoss: int
     botProvision: int
+    custId: Optional[str]
+    trnDate: Optional[str]
+    trnSnum: Optional[int]
+    lineNum: Optional[int]
+    trxSn: Optional[int]
 
 
 class BalanceWithBotStreamingPipeline:
@@ -286,7 +291,12 @@ class BalanceWithBotStreamingPipeline:
                 transactionDate=safe_string(row[9]),
                 maturityDate=safe_string(row[10]),
                 allowanceProbableLoss=safe_int(row[11]),
-                botProvision=safe_int(row[12])
+                botProvision=safe_int(row[12]),
+                custId=safe_string(row[13]) if row[13] else None,
+                trnDate=safe_string(row[14]) if row[14] else None,
+                trnSnum=safe_int(row[15]),
+                lineNum=safe_int(row[16]),
+                trxSn=safe_int(row[17])
             )
             
             return record
@@ -605,15 +615,18 @@ class BalanceWithBotStreamingPipeline:
             INSERT INTO "balanceWithBot" (
                 "reportingDate", "accountNumber", "accountName", "accountType", "subAccountType",
                 currency, "orgAmount", "usdAmount", "tzsAmount", "transactionDate",
-                "maturityDate", "allowanceProbableLoss", "botProvision"
+                "maturityDate", "allowanceProbableLoss", "botProvision",
+                "custId", "trnDate", "trnSnum", "lineNum", "trxSn"
             ) VALUES %s
+            ON CONFLICT ("custId", "trnDate", "trnSnum", "lineNum", "trxSn") DO NOTHING
             """
-            
+
             values = [
                 (
                     r.reportingDate, r.accountNumber, r.accountName, r.accountType, r.subAccountType,
                     r.currency, r.orgAmount, r.usdAmount, r.tzsAmount, r.transactionDate,
-                    r.maturityDate, r.allowanceProbableLoss, r.botProvision
+                    r.maturityDate, r.allowanceProbableLoss, r.botProvision,
+                    r.custId, r.trnDate, r.trnSnum, r.lineNum, r.trxSn
                 )
                 for r in records
             ]
@@ -625,14 +638,47 @@ class BalanceWithBotStreamingPipeline:
             self.logger.error(f"Error batch inserting {len(records)} balance with BOT records: {e}")
             raise
     
+    def setup_target_table(self):
+        """Add the dedup-key columns if they don't exist yet (idempotent, non-destructive)"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('ALTER TABLE "balanceWithBot" ADD COLUMN IF NOT EXISTS "custId" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "balanceWithBot" ADD COLUMN IF NOT EXISTS "trnDate" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "balanceWithBot" ADD COLUMN IF NOT EXISTS "trnSnum" INTEGER')
+                cursor.execute('ALTER TABLE "balanceWithBot" ADD COLUMN IF NOT EXISTS "lineNum" INTEGER')
+                cursor.execute('ALTER TABLE "balanceWithBot" ADD COLUMN IF NOT EXISTS "trxSn" INTEGER')
+                conn.commit()
+                self.logger.info("balanceWithBot dedup-key columns verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to add dedup-key columns to balanceWithBot: {e}")
+            raise
+
+    def ensure_unique_index(self):
+        """Ensure unique index on the GL posting's natural key exists for ON CONFLICT duplicate prevention"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_balancewithbot_gl_key
+                    ON "balanceWithBot" ("custId", "trnDate", "trnSnum", "lineNum", "trxSn")
+                """)
+                conn.commit()
+                self.logger.info("Unique index on GL posting key verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create unique index on balanceWithBot: {e}")
+            raise
+
     def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
         self.logger.info(f"Starting Balance with BOT STREAMING pipeline... (incremental={incremental})")
-        
+
         # Update state to running
         self._update_state('running')
-        
+
         try:
+            self.setup_target_table()
+            self.ensure_unique_index()
             self.setup_rabbitmq_queue()
             
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")

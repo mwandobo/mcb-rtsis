@@ -23,6 +23,7 @@ import hashlib
 import logging
 import os
 import sys
+from contextlib import contextmanager
 
 import pandas as pd
 import psycopg2
@@ -30,11 +31,39 @@ import psycopg2.extras
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import Config
-from insurance_commission_streaming_pipeline import InsuranceCommissionStreamingPipeline
 
 SHEET_NAME = 'Insuarance Commision'
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def postgres_connection():
+    cfg = Config()
+    connection = psycopg2.connect(
+        host=cfg.database.pg_host, port=cfg.database.pg_port,
+        database=cfg.database.pg_database, user=cfg.database.pg_user,
+        password=cfg.database.pg_password,
+    )
+    try:
+        yield connection
+    finally:
+        connection.close()
+
+
+def setup_target_table():
+    with postgres_connection() as connection, connection.cursor() as cursor:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS "insuranceCommission" (
+                id BIGSERIAL PRIMARY KEY,
+                "recordKey" VARCHAR(64) UNIQUE,
+                "reportingDate" VARCHAR(12), "policyNumber" VARCHAR(255), currency VARCHAR(20),
+                "orgCommissionReceivedAmount" NUMERIC(31, 2), "tzsCommissionReceivedAmount" NUMERIC(31, 2),
+                "commissionReceivedDate" VARCHAR(12), "commissionRate" NUMERIC(31, 6)
+            )
+        ''')
+        cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_insuranceCommission_record_key ON "insuranceCommission" ("recordKey")')
+        connection.commit()
 
 
 def load_rows(xlsx_path):
@@ -79,9 +108,8 @@ def load_rows(xlsx_path):
 
 
 def replace_table(rows):
-    pipeline = InsuranceCommissionStreamingPipeline()
-    pipeline.setup_target_table()
-    with pipeline.postgres_connection() as connection, connection.cursor() as cursor:
+    setup_target_table()
+    with postgres_connection() as connection, connection.cursor() as cursor:
         cursor.execute('DELETE FROM "insuranceCommission"')
         psycopg2.extras.execute_values(cursor, '''
             INSERT INTO "insuranceCommission" (

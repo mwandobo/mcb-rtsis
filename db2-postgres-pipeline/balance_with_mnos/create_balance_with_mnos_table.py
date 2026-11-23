@@ -49,6 +49,11 @@ def create_balance_with_mnos_table():
             "orgFloatAmount" DECIMAL(18, 2),
             "usdFloatAmount" DECIMAL(18, 2),
             "tzsFloatAmount" DECIMAL(18, 2),
+            "custId" VARCHAR(50),
+            "trnDate" VARCHAR(50),
+            "trnSnum" INTEGER,
+            "lineNum" INTEGER,
+            "trxSn" INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -62,7 +67,8 @@ def create_balance_with_mnos_table():
             'CREATE INDEX idx_balanceWithMnos_reporting_date ON "balanceWithMnos"("reportingDate")',
             'CREATE INDEX idx_balanceWithMnos_mno_code ON "balanceWithMnos"("mnoCode")',
             'CREATE INDEX idx_balanceWithMnos_currency ON "balanceWithMnos"(currency)',
-            'CREATE INDEX idx_balanceWithMnos_created_at ON "balanceWithMnos"(created_at)'
+            'CREATE INDEX idx_balanceWithMnos_created_at ON "balanceWithMnos"(created_at)',
+            'CREATE UNIQUE INDEX idx_balancewithmnos_gl_key ON "balanceWithMnos"("custId", "trnDate", "trnSnum", "lineNum", "trxSn")'
         ]
         
         for index_sql in indexes:

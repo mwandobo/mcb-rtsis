@@ -654,7 +654,36 @@ class InvestmentDebtSecuritiesStreamingPipeline:
                 "purchaseDate", "valueDate", "maturityDate", "tradingIntent", "securityEncumbranceStatus",
                 "pastDueDays", "allowanceProbableLoss", "botProvision", "assetClassificationCategory"
             ) VALUES %s
-            ON CONFLICT ("securityNumber") DO NOTHING
+            ON CONFLICT ("securityNumber") DO UPDATE SET
+                "reportingDate" = EXCLUDED."reportingDate",
+                "securityType" = EXCLUDED."securityType",
+                "securityIssuerName" = EXCLUDED."securityIssuerName",
+                "ratingStatus" = EXCLUDED."ratingStatus",
+                "externalIssuerRating" = EXCLUDED."externalIssuerRating",
+                "gradesUnratedBanks" = EXCLUDED."gradesUnratedBanks",
+                "securityIssuerCountry" = EXCLUDED."securityIssuerCountry",
+                "sectorSnaClassification" = EXCLUDED."sectorSnaClassification",
+                currency = EXCLUDED.currency,
+                "orgCostValueAmount" = EXCLUDED."orgCostValueAmount",
+                "usdCostValueAmount" = EXCLUDED."usdCostValueAmount",
+                "tzsCostValueAmount" = EXCLUDED."tzsCostValueAmount",
+                "faceValueAmount" = EXCLUDED."faceValueAmount",
+                "usdFaceValueAmount" = EXCLUDED."usdFaceValueAmount",
+                "tzsFaceValueAmount" = EXCLUDED."tzsFaceValueAmount",
+                "orgFairValueAmount" = EXCLUDED."orgFairValueAmount",
+                "usdFairValueAmount" = EXCLUDED."usdFairValueAmount",
+                "tzsFairValueAmount" = EXCLUDED."tzsFairValueAmount",
+                "interestRate" = EXCLUDED."interestRate",
+                "purchaseDate" = EXCLUDED."purchaseDate",
+                "valueDate" = EXCLUDED."valueDate",
+                "maturityDate" = EXCLUDED."maturityDate",
+                "tradingIntent" = EXCLUDED."tradingIntent",
+                "securityEncumbranceStatus" = EXCLUDED."securityEncumbranceStatus",
+                "pastDueDays" = EXCLUDED."pastDueDays",
+                "allowanceProbableLoss" = EXCLUDED."allowanceProbableLoss",
+                "botProvision" = EXCLUDED."botProvision",
+                "assetClassificationCategory" = EXCLUDED."assetClassificationCategory",
+                updated_at = CURRENT_TIMESTAMP
             """
             
             values = [
@@ -691,13 +720,76 @@ class InvestmentDebtSecuritiesStreamingPipeline:
         except Exception as e:
             self.logger.error(f"Failed to create unique index on securityNumber: {e}")
             raise
-    
-    def run_streaming_pipeline(self):
-        """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Investment Debt Securities STREAMING pipeline...")
-        
+
+    def setup_target_table(self):
+        """Create the investmentDebtSecurities table if it doesn't exist yet (idempotent, non-destructive)"""
         try:
-            # Ensure unique index for duplicate prevention
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS "investmentDebtSecurities" (
+                        id SERIAL PRIMARY KEY,
+                        "reportingDate" VARCHAR(12),
+                        "securityNumber" VARCHAR(50),
+                        "securityType" VARCHAR(50),
+                        "securityIssuerName" VARCHAR(255),
+                        "ratingStatus" VARCHAR(10),
+                        "externalIssuerRating" VARCHAR(50),
+                        "gradesUnratedBanks" VARCHAR(50),
+                        "securityIssuerCountry" VARCHAR(100),
+                        "sectorSnaClassification" VARCHAR(100),
+                        currency VARCHAR(10),
+                        "orgCostValueAmount" VARCHAR(50),
+                        "usdCostValueAmount" VARCHAR(50),
+                        "tzsCostValueAmount" VARCHAR(50),
+                        "faceValueAmount" VARCHAR(50),
+                        "usdFaceValueAmount" VARCHAR(50),
+                        "tzsFaceValueAmount" VARCHAR(50),
+                        "orgFairValueAmount" VARCHAR(50),
+                        "usdFairValueAmount" VARCHAR(50),
+                        "tzsFairValueAmount" VARCHAR(50),
+                        "interestRate" VARCHAR(20),
+                        "purchaseDate" VARCHAR(12),
+                        "valueDate" VARCHAR(12),
+                        "maturityDate" VARCHAR(12),
+                        "tradingIntent" VARCHAR(50),
+                        "securityEncumbranceStatus" VARCHAR(20),
+                        "pastDueDays" VARCHAR(10),
+                        "allowanceProbableLoss" VARCHAR(50),
+                        "botProvision" VARCHAR(50),
+                        "assetClassificationCategory" VARCHAR(50),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.commit()
+                self.logger.info("investmentDebtSecurities table verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create investmentDebtSecurities table: {e}")
+            raise
+
+    def run_streaming_pipeline(self):
+        """Run the streaming pipeline with simultaneous producer and consumer.
+
+        TREASURY_MM_DEAL/TRS_DEAL_RECORDING do have TMSTAMP columns, but
+        fairValue/price fields are re-derived daily from TRS_MARKET_PRICE
+        (mark-to-market), not from the deal record's own last-modified time -
+        filtering on TMSTAMP would miss legitimate daily revaluations on a
+        deal whose own record hasn't changed since inception. The query also
+        GROUP BYs per DEAL_NO, so row-level TMSTAMP filtering would be unsafe
+        regardless (same risk as personal_data_corporates/card_product). The
+        in-scope result set is tiny (currently 1 active deal, since matured
+        deals already drop out via the MATURITY_DATE >= CURRENT DATE filter),
+        so this deliberately always does a full scan; the ON CONFLICT DO
+        UPDATE upsert is what keeps re-runs correct and picks up fair-value/
+        rating/status changes on existing securities.
+        """
+        self.logger.info("Starting Investment Debt Securities STREAMING pipeline...")
+        self._update_state('running')
+
+        try:
+            # Ensure target table and unique index exist
+            self.setup_target_table()
             self.ensure_unique_index()
             
             # Setup queue
@@ -747,27 +839,38 @@ class InvestmentDebtSecuritiesStreamingPipeline:
             Average rate: {avg_rate:.1f} records/second
             ==========================================
             """)
-            
+
+            self._update_state('completed')
+
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+
+    def _update_state(self, status, error_message=None):
+        try:
+            from pipeline_state import PipelineStateManager
+            PipelineStateManager().update_run('investment_debt_securities', status, self.total_consumed, error_message)
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 def main():
     """Main function"""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='Investment Debt Securities Streaming Pipeline')
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for DB2 query pagination')
     parser.add_argument('--consumer-batch-size', type=int, default=100, help='Batch size for PostgreSQL inserts')
     parser.add_argument('--mode', choices=['producer', 'consumer', 'streaming'], default='streaming',
                        help='Pipeline mode: producer only, consumer only, or full streaming')
-    
+
     args = parser.parse_args()
-    
+
     # Create pipeline
     pipeline = InvestmentDebtSecuritiesStreamingPipeline(batch_size=args.batch_size, consumer_batch_size=args.consumer_batch_size)
-    
+
     try:
         if args.mode == 'producer':
             pipeline.producer_thread()

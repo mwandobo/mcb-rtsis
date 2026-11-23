@@ -52,6 +52,11 @@ def create_balance_with_bot_table():
             "maturityDate" VARCHAR(50),
             "allowanceProbableLoss" INTEGER,
             "botProvision" INTEGER,
+            "custId" VARCHAR(50),
+            "trnDate" VARCHAR(50),
+            "trnSnum" INTEGER,
+            "lineNum" INTEGER,
+            "trxSn" INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -67,7 +72,8 @@ def create_balance_with_bot_table():
             'CREATE INDEX idx_balanceWithBot_currency ON "balanceWithBot"(currency)',
             'CREATE INDEX idx_balanceWithBot_account_type ON "balanceWithBot"("accountType")',
             'CREATE INDEX idx_balanceWithBot_transaction_date ON "balanceWithBot"("transactionDate")',
-            'CREATE INDEX idx_balanceWithBot_created_at ON "balanceWithBot"(created_at)'
+            'CREATE INDEX idx_balanceWithBot_created_at ON "balanceWithBot"(created_at)',
+            'CREATE UNIQUE INDEX idx_balancewithbot_gl_key ON "balanceWithBot"("custId", "trnDate", "trnSnum", "lineNum", "trxSn")'
         ]
         
         for index_sql in indexes:

@@ -22,7 +22,7 @@ const path_1 = require("path");
 const amqp = require("amqplib");
 const pipeline_state_entity_1 = require("./entities/pipeline-state.entity");
 const config_service_1 = require("../config/config.service");
-const PINNED_ORDER = ['branch', 'agents', 'pos', 'atm', 'personal_data_information', 'personal_data_corporates', 'employee', 'directors_records', 'account_product_category', 'account_information'];
+const PINNED_ORDER = ['branch', 'agents', 'pos', 'atm', 'personal_data_information', 'personal_data_corporates', 'employee', 'directors_records', 'account_product_category', 'account_information', 'card_product', 'cards', 'balance_with_other_banks', 'cash', 'balance_with_bot', 'balance_with_mnos', 'investment_debt_securities', 'cheques', 'inter_bank_loan_receivable', 'insurance_claim', 'insurance_commission', 'insurance_underwriting', 'complaint_fraud_statistics'];
 let PipelinesService = PipelinesService_1 = class PipelinesService {
     constructor(pipelineStateRepository, configService) {
         this.pipelineStateRepository = pipelineStateRepository;

@@ -39,7 +39,18 @@ SELECT CURRENT_TIMESTAMP                                  AS reportingDate,
        gte.TRN_DATE                                       as contractDate,
        CURRENT_TIMESTAMP                                 as maturityDate,
        'Unrated'                                          as externalRatingCorrespondentBank,
-       'Grade B'                                          as gradesUnratedBanks
+       'Grade B'                                          as gradesUnratedBanks,
+
+       -- Internal-use-only natural key for the underlying GL posting, used
+       -- solely to prevent duplicate rows on a crash/retry - not part of the
+       -- BOT-reported output. Verified unique as (custId, trnDate, trnSnum,
+       -- lineNum, trxSn) together - trnSnum/lineNum/trxSn alone repeat
+       -- across different customers/dates.
+       gte.CUST_ID                                        as custId,
+       gte.TRN_DATE                                       as trnDate,
+       gte.TRN_SNUM                                       as trnSnum,
+       gte.LINE_NUM                                       as lineNum,
+       gte.TRX_SN                                         as trxSn
 
 FROM GLI_TRX_EXTRACT as gte
 

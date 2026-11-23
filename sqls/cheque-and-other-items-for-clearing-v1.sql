@@ -31,7 +31,13 @@ SELECT VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM')      AS reportingDate,
        CAST(COALESCE(da.BOOK_BALANCE, 0) AS DECFLOAT)          AS orgAmountBalance,
        0                                                       AS usdAmountBalance,
        CAST(COALESCE(da.BOOK_BALANCE, 0) AS DECFLOAT)          AS tzsAmountBalance,
-       cfc.TMSTAMP                                             AS tmstamp
+       cfc.TMSTAMP                                             AS tmstamp,
+
+       -- Internal-use-only natural key for the underlying cheque collection
+       -- record, used solely to prevent duplicate rows on a crash/retry -
+       -- not part of the BOT-reported output. Verified unique alone across
+       -- the whole table.
+       cfc.BILL_SERIAL_NUM                                     AS billSerialNum
 
 FROM CHEQUES_FOR_COLLEC AS cfc
 

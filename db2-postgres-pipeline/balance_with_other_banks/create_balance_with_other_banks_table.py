@@ -60,6 +60,11 @@ def create_balance_with_other_banks_table():
             "maturityDate" VARCHAR(50),
             "externalRatingCorrespondentBank" VARCHAR(50),
             "gradesUnratedBanks" VARCHAR(50),
+            "custId" VARCHAR(50),
+            "trnDate" VARCHAR(50),
+            "trnSnum" INTEGER,
+            "lineNum" INTEGER,
+            "trxSn" INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -75,7 +80,8 @@ def create_balance_with_other_banks_table():
             'CREATE INDEX idx_balanceWithOtherBanks_bank_code ON "balanceWithOtherBanks"("bankCode")',
             'CREATE INDEX idx_balanceWithOtherBanks_currency ON "balanceWithOtherBanks"(currency)',
             'CREATE INDEX idx_balanceWithOtherBanks_account_type ON "balanceWithOtherBanks"("accountType")',
-            'CREATE INDEX idx_balanceWithOtherBanks_created_at ON "balanceWithOtherBanks"(created_at)'
+            'CREATE INDEX idx_balanceWithOtherBanks_created_at ON "balanceWithOtherBanks"(created_at)',
+            'CREATE UNIQUE INDEX idx_balancewithotherbanks_gl_key ON "balanceWithOtherBanks" ("custId", "trnDate", "trnSnum", "lineNum", "trxSn")'
         ]
         
         for index_sql in indexes:

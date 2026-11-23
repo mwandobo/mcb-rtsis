@@ -59,6 +59,12 @@ def create_cash_information_table():
             "maturityDate" VARCHAR(12),
             "allowanceProbableLoss" VARCHAR(50),
             "botProvision" VARCHAR(50),
+            "custId" VARCHAR(50),
+            "trnDate" VARCHAR(50),
+            "trnSnum" INTEGER,
+            "lineNum" INTEGER,
+            "trxSn" INTEGER,
+            "glAccount" VARCHAR(50),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -75,7 +81,7 @@ def create_cash_information_table():
             'CREATE INDEX idx_cashInformation_cash_category ON "cashInformation"("cashCategory")',
             'CREATE INDEX idx_cashInformation_transaction_date ON "cashInformation"("transactionDate")',
             'CREATE INDEX idx_cashInformation_currency ON "cashInformation"("currency")',
-            'CREATE UNIQUE INDEX idx_cashInformation_unique ON "cashInformation"("branchCode", "transactionDate", "cashCategory")',
+            'CREATE UNIQUE INDEX idx_cashinformation_gl_key ON "cashInformation"("custId", "trnDate", "trnSnum", "lineNum", "trxSn", "glAccount")',
             'CREATE INDEX idx_cashInformation_created_at ON "cashInformation"(created_at)'
         ]
         

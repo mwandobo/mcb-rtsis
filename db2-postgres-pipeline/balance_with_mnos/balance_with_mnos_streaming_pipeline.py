@@ -9,6 +9,7 @@ import psycopg2
 import psycopg2.extras
 import json
 import logging
+import re
 import threading
 import time
 from dataclasses import dataclass, asdict
@@ -39,6 +40,11 @@ class BalanceWithMnoRecord:
     orgFloatAmount: Optional[Decimal]
     usdFloatAmount: Optional[Decimal]
     tzsFloatAmount: Optional[Decimal]
+    custId: Optional[str]
+    trnDate: Optional[str]
+    trnSnum: Optional[int]
+    lineNum: Optional[int]
+    trxSn: Optional[int]
 
 
 
@@ -71,24 +77,50 @@ class BalanceWithMnosStreamingPipeline:
         self.logger.info(f"Retry settings: {self.max_retries} retries with {self.retry_delay}s delay")
     
     def get_balance_with_mnos_query(self, last_timestamp=None):
-        """Get the balance with MNOs query from balances-with-mnos.sql"""
+        """Get the balance with MNOs query from balances-with-mnos.sql, with optional TMSTAMP filter for incremental mode.
+
+        Note: this previously tried to substitute a ':last_timestamp'
+        placeholder that was never actually present in the base .sql file,
+        so the incremental filter silently never applied (every "incremental"
+        run was really a full load) - fixed to use the same append-pattern
+        as every other migrated pipeline instead of relying on that
+        placeholder.
+        """
         sql_file_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             'sqls', 'balances-with-mnos.sql'
         )
-        
+
         with open(sql_file_path, 'r', encoding='utf-8') as f:
-            sql = f.read()
-        
+            sql = f.read().strip()
+
+        if sql.endswith(';'):
+            sql = sql[:-1]
+
         if last_timestamp:
             if last_timestamp == 'epoch':
                 timestamp_value = '1900-01-01-00.00.00.000000'
             else:
                 timestamp_value = last_timestamp.strftime('%Y-%m-%d-%H.%M.%S.%f')[:-3]
-            sql = sql.replace(':last_timestamp', f"'{timestamp_value}'")
-        else:
-            sql = sql.replace('AND gte.TMSTAMP > :last_timestamp', '')
-        
+
+            tmstamp_filter = f"gte.TMSTAMP > '{timestamp_value}'"
+            order_by_match = re.search(r'\bORDER\s+BY\b', sql, re.IGNORECASE)
+            tail_start = order_by_match.start() if order_by_match else len(sql)
+            tail = sql[tail_start:]
+
+            # The query has WHERE clauses nested inside subqueries (e.g. the
+            # fixing_rate CTE), so the first match is not the real top-level
+            # WHERE - take the last one before the tail instead.
+            where_matches = list(re.finditer(r'\bWHERE\b', sql[:tail_start], re.IGNORECASE))
+            if where_matches:
+                where_match = where_matches[-1]
+                head = sql[:where_match.start()]
+                existing_predicate = sql[where_match.end():tail_start].strip()
+                sql = f"{head}WHERE ({existing_predicate}) AND {tmstamp_filter}\n{tail}"
+            else:
+                head = sql[:tail_start]
+                sql = f"{head}\nWHERE {tmstamp_filter}\n{tail}"
+
         return sql
     
     def get_last_successful_run(self):
@@ -265,7 +297,12 @@ class BalanceWithMnosStreamingPipeline:
                 botProvision=safe_int(row[6]),
                 orgFloatAmount=safe_decimal(row[7]),
                 usdFloatAmount=safe_decimal(row[8]),
-                tzsFloatAmount=safe_decimal(row[9])
+                tzsFloatAmount=safe_decimal(row[9]),
+                custId=safe_string(row[10]) if row[10] else None,
+                trnDate=safe_string(row[11]) if row[11] else None,
+                trnSnum=safe_int(row[12]),
+                lineNum=safe_int(row[13]),
+                trxSn=safe_int(row[14])
             )
             
             return record
@@ -573,15 +610,18 @@ class BalanceWithMnosStreamingPipeline:
             INSERT INTO "balanceWithMnos" (
                 "reportingDate", "floatBalanceDate", "mnoCode", "tillNumber", currency,
                 "allowanceProbableLoss", "botProvision", "orgFloatAmount",
-                "usdFloatAmount", "tzsFloatAmount"
+                "usdFloatAmount", "tzsFloatAmount",
+                "custId", "trnDate", "trnSnum", "lineNum", "trxSn"
             ) VALUES %s
+            ON CONFLICT ("custId", "trnDate", "trnSnum", "lineNum", "trxSn") DO NOTHING
             """
-            
+
             values = [
                 (
                     r.reportingDate, r.floatBalanceDate, r.mnoCode, r.tillNumber, r.currency,
                     r.allowanceProbableLoss, r.botProvision, r.orgFloatAmount,
-                    r.usdFloatAmount, r.tzsFloatAmount
+                    r.usdFloatAmount, r.tzsFloatAmount,
+                    r.custId, r.trnDate, r.trnSnum, r.lineNum, r.trxSn
                 )
                 for r in records
             ]
@@ -593,14 +633,47 @@ class BalanceWithMnosStreamingPipeline:
             self.logger.error(f"Error batch inserting {len(records)} balance with MNO records: {e}")
             raise
     
+    def setup_target_table(self):
+        """Add the dedup-key columns if they don't exist yet (idempotent, non-destructive)"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('ALTER TABLE "balanceWithMnos" ADD COLUMN IF NOT EXISTS "custId" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "balanceWithMnos" ADD COLUMN IF NOT EXISTS "trnDate" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "balanceWithMnos" ADD COLUMN IF NOT EXISTS "trnSnum" INTEGER')
+                cursor.execute('ALTER TABLE "balanceWithMnos" ADD COLUMN IF NOT EXISTS "lineNum" INTEGER')
+                cursor.execute('ALTER TABLE "balanceWithMnos" ADD COLUMN IF NOT EXISTS "trxSn" INTEGER')
+                conn.commit()
+                self.logger.info("balanceWithMnos dedup-key columns verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to add dedup-key columns to balanceWithMnos: {e}")
+            raise
+
+    def ensure_unique_index(self):
+        """Ensure unique index on the GL posting's natural key exists for ON CONFLICT duplicate prevention"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_balancewithmnos_gl_key
+                    ON "balanceWithMnos" ("custId", "trnDate", "trnSnum", "lineNum", "trxSn")
+                """)
+                conn.commit()
+                self.logger.info("Unique index on GL posting key verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create unique index on balanceWithMnos: {e}")
+            raise
+
     def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
         self.logger.info(f"Starting Balance with MNOs STREAMING pipeline... (incremental={incremental})")
-        
+
         # Update state to running
         self._update_state('running')
-        
+
         try:
+            self.setup_target_table()
+            self.ensure_unique_index()
             self.setup_rabbitmq_queue()
             
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")

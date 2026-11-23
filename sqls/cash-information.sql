@@ -43,7 +43,20 @@ SELECT varchar_format(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
        VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')       as transactionDate,
        varchar_format(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as maturityDate,
        0                                                 as allowanceProbableLoss,
-       0                                                 as botProvision
+       0                                                 as botProvision,
+
+       -- Internal-use-only natural key for the underlying GL posting, used
+       -- solely to prevent duplicate/dropped rows on a crash/retry - not
+       -- part of the BOT-reported output. Verified unique as (custId,
+       -- trnDate, trnSnum, lineNum, trxSn, glAccount) together - a single
+       -- transaction can post lines to multiple cash-related GL accounts,
+       -- so the account code itself is part of the identity.
+       gte.CUST_ID                                       as custId,
+       gte.TRN_DATE                                      as trnDate,
+       gte.TRN_SNUM                                      as trnSnum,
+       gte.LINE_NUM                                      as lineNum,
+       gte.TRX_SN                                        as trxSn,
+       gte.FK_GLG_ACCOUNTACCO                            as glAccount
 FROM GLI_TRX_EXTRACT AS gte
 
          -- Join Currency Using SHORT_DESCR

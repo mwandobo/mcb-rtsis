@@ -50,6 +50,11 @@ class BalanceWithOtherBankRecord:
     maturityDate: Optional[str]
     externalRatingCorrespondentBank: str
     gradesUnratedBanks: str
+    custId: Optional[str]
+    trnDate: Optional[str]
+    trnSnum: Optional[int]
+    lineNum: Optional[int]
+    trxSn: Optional[int]
 
 
 class BalanceWithOtherBanksStreamingPipeline:
@@ -288,7 +293,12 @@ class BalanceWithOtherBanksStreamingPipeline:
                 contractDate=safe_string(row[17]) if row[17] else None,
                 maturityDate=safe_string(row[18]) if row[18] else None,
                 externalRatingCorrespondentBank=safe_string(row[19]),
-                gradesUnratedBanks=safe_string(row[20])
+                gradesUnratedBanks=safe_string(row[20]),
+                custId=safe_string(row[21]) if row[21] else None,
+                trnDate=safe_string(row[22]) if row[22] else None,
+                trnSnum=safe_int(row[23]),
+                lineNum=safe_int(row[24]),
+                trxSn=safe_int(row[25])
             )
             
             return record
@@ -598,17 +608,20 @@ class BalanceWithOtherBanksStreamingPipeline:
                 "relationshipType", "accountType", "subAccountType", currency,
                 "orgAmount", "usdAmount", "tzsAmount", "transactionDate", "pastDueDays",
                 "allowanceProbableLoss", "botProvision", "assetsClassificationCategory",
-                "contractDate", "maturityDate", "externalRatingCorrespondentBank", "gradesUnratedBanks"
+                "contractDate", "maturityDate", "externalRatingCorrespondentBank", "gradesUnratedBanks",
+                "custId", "trnDate", "trnSnum", "lineNum", "trxSn"
             ) VALUES %s
+            ON CONFLICT ("custId", "trnDate", "trnSnum", "lineNum", "trxSn") DO NOTHING
             """
-            
+
             values = [
                 (
                     r.reportingDate, r.accountNumber, r.accountName, r.bankCode, r.country,
                     r.relationshipType, r.accountType, r.subAccountType, r.currency,
                     r.orgAmount, r.usdAmount, r.tzsAmount, r.transactionDate, r.pastDueDays,
                     r.allowanceProbableLoss, r.botProvision, r.assetsClassificationCategory,
-                    r.contractDate, r.maturityDate, r.externalRatingCorrespondentBank, r.gradesUnratedBanks
+                    r.contractDate, r.maturityDate, r.externalRatingCorrespondentBank, r.gradesUnratedBanks,
+                    r.custId, r.trnDate, r.trnSnum, r.lineNum, r.trxSn
                 )
                 for r in records
             ]
@@ -620,14 +633,47 @@ class BalanceWithOtherBanksStreamingPipeline:
             self.logger.error(f"Error batch inserting {len(records)} balance with other bank records: {e}")
             raise
     
+    def setup_target_table(self):
+        """Add the dedup-key columns if they don't exist yet (idempotent, non-destructive)"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('ALTER TABLE "balanceWithOtherBanks" ADD COLUMN IF NOT EXISTS "custId" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "balanceWithOtherBanks" ADD COLUMN IF NOT EXISTS "trnDate" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "balanceWithOtherBanks" ADD COLUMN IF NOT EXISTS "trnSnum" INTEGER')
+                cursor.execute('ALTER TABLE "balanceWithOtherBanks" ADD COLUMN IF NOT EXISTS "lineNum" INTEGER')
+                cursor.execute('ALTER TABLE "balanceWithOtherBanks" ADD COLUMN IF NOT EXISTS "trxSn" INTEGER')
+                conn.commit()
+                self.logger.info("balanceWithOtherBanks dedup-key columns verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to add dedup-key columns to balanceWithOtherBanks: {e}")
+            raise
+
+    def ensure_unique_index(self):
+        """Ensure unique index on the GL posting's natural key exists for ON CONFLICT duplicate prevention"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_balancewithotherbanks_gl_key
+                    ON "balanceWithOtherBanks" ("custId", "trnDate", "trnSnum", "lineNum", "trxSn")
+                """)
+                conn.commit()
+                self.logger.info("Unique index on GL posting key verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create unique index on balanceWithOtherBanks: {e}")
+            raise
+
     def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
         self.logger.info(f"Starting Balance with Other Banks STREAMING pipeline... (incremental={incremental})")
-        
+
         # Update state to running
         self._update_state('running')
-        
+
         try:
+            self.setup_target_table()
+            self.ensure_unique_index()
             self.setup_rabbitmq_queue()
             
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")

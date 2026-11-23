@@ -46,6 +46,12 @@ class CashInformationRecord:
     maturityDate: str
     allowanceProbableLoss: str
     botProvision: str
+    custId: Optional[str]
+    trnDate: Optional[str]
+    trnSnum: Optional[int]
+    lineNum: Optional[int]
+    trxSn: Optional[int]
+    glAccount: Optional[str]
 
 
 class CashInformationStreamingPipeline:
@@ -264,7 +270,15 @@ class CashInformationStreamingPipeline:
                 if value is None:
                     return None
                 return str(value).strip()
-            
+
+            def safe_int(value):
+                if value is None:
+                    return None
+                try:
+                    return int(value)
+                except (ValueError, TypeError):
+                    return None
+
             # Map the fields from the SQL query to the dataclass
             record = CashInformationRecord(
                 reportingDate=safe_string(row[0]),                      # varchar_format(CURRENT_TIMESTAMP,'DDMMYYYYHHMM')
@@ -281,7 +295,13 @@ class CashInformationStreamingPipeline:
                 transactionDate=safe_string(row[11]),                   # VARCHAR_FORMAT(TRN_DATE,'DDMMYYYHHMM')
                 maturityDate=safe_string(row[12]),                      # varchar_format(CURRENT_TIMESTAMP,'DDMMYYYYHHMM')
                 allowanceProbableLoss=safe_string(row[13]),             # 0
-                botProvision=safe_string(row[14])                       # 0
+                botProvision=safe_string(row[14]),                      # 0
+                custId=safe_string(row[15]) if row[15] else None,
+                trnDate=safe_string(row[16]) if row[16] else None,
+                trnSnum=safe_int(row[17]),
+                lineNum=safe_int(row[18]),
+                trxSn=safe_int(row[19]),
+                glAccount=safe_string(row[20]) if row[20] else None
             )
             
             return record
@@ -618,17 +638,19 @@ class CashInformationStreamingPipeline:
                 "reportingDate", "branchCode", "cashCategory", "cashSubCategory",
                 "cashSubmissionTime", "currency", "cashDenomination", "quantityOfCoinsNotes",
                 "orgAmount", "usdAmount", "tzsAmount", "transactionDate", "maturityDate",
-                "allowanceProbableLoss", "botProvision"
+                "allowanceProbableLoss", "botProvision",
+                "custId", "trnDate", "trnSnum", "lineNum", "trxSn", "glAccount"
             ) VALUES %s
-            ON CONFLICT ("branchCode", "transactionDate", "cashCategory") DO NOTHING
+            ON CONFLICT ("custId", "trnDate", "trnSnum", "lineNum", "trxSn", "glAccount") DO NOTHING
             """
-            
+
             values = [
                 (
                     r.reportingDate, r.branchCode, r.cashCategory, r.cashSubCategory,
                     r.cashSubmissionTime, r.currency, r.cashDenomination, r.quantityOfCoinsNotes,
                     r.orgAmount, r.usdAmount, r.tzsAmount, r.transactionDate, r.maturityDate,
-                    r.allowanceProbableLoss, r.botProvision
+                    r.allowanceProbableLoss, r.botProvision,
+                    r.custId, r.trnDate, r.trnSnum, r.lineNum, r.trxSn, r.glAccount
                 )
                 for r in records
             ]
@@ -640,17 +662,46 @@ class CashInformationStreamingPipeline:
             self.logger.error(f"Error batch inserting {len(records)} cash information records: {e}")
             raise
     
-    def ensure_unique_index(self):
-        """Ensure unique index on branchCode, transactionDate, cashCategory exists for ON CONFLICT duplicate prevention"""
+    def setup_target_table(self):
+        """Add the dedup-key columns if they don't exist yet (idempotent, non-destructive)"""
         try:
             with self.get_postgres_connection() as conn:
                 cursor = conn.cursor()
+                cursor.execute('ALTER TABLE "cashInformation" ADD COLUMN IF NOT EXISTS "custId" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "cashInformation" ADD COLUMN IF NOT EXISTS "trnDate" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "cashInformation" ADD COLUMN IF NOT EXISTS "trnSnum" INTEGER')
+                cursor.execute('ALTER TABLE "cashInformation" ADD COLUMN IF NOT EXISTS "lineNum" INTEGER')
+                cursor.execute('ALTER TABLE "cashInformation" ADD COLUMN IF NOT EXISTS "trxSn" INTEGER')
+                cursor.execute('ALTER TABLE "cashInformation" ADD COLUMN IF NOT EXISTS "glAccount" VARCHAR(50)')
+                conn.commit()
+                self.logger.info("cashInformation dedup-key columns verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to add dedup-key columns to cashInformation: {e}")
+            raise
+
+    def ensure_unique_index(self):
+        """Ensure unique index on the GL posting's real natural key exists for ON CONFLICT duplicate prevention.
+
+        The previous index on (branchCode, transactionDate, cashCategory) was
+        far too coarse - verified against DB2 that this key collides ~21x on
+        average (359,327 real transactions share only 17,210 distinct
+        combinations), so DO NOTHING on it was silently discarding ~95% of
+        genuinely distinct cash transactions, not just protecting against
+        retries. It must be dropped, not just left alongside the new index:
+        leaving it in place would make any insert whose new key doesn't
+        collide but whose old key does raise a constraint-violation error
+        instead of a silent (correct) insert.
+        """
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('DROP INDEX IF EXISTS idx_cashinformation_unique')
                 cursor.execute("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_cashinformation_unique
-                    ON "cashInformation" ("branchCode", "transactionDate", "cashCategory")
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_cashinformation_gl_key
+                    ON "cashInformation" ("custId", "trnDate", "trnSnum", "lineNum", "trxSn", "glAccount")
                 """)
                 conn.commit()
-                self.logger.info("Unique index on branchCode, transactionDate, cashCategory verified/created")
+                self.logger.info("Unique index on GL posting key verified/created (old coarse index dropped)")
         except Exception as e:
             self.logger.error(f"Failed to create unique index: {e}")
             raise
@@ -663,16 +714,17 @@ class CashInformationStreamingPipeline:
         self._update_state('running')
         
         try:
-            # Ensure unique index for duplicate prevention
+            # Ensure target table columns and unique index exist
+            self.setup_target_table()
             self.ensure_unique_index()
-            
+
             # Setup queue
             self.setup_rabbitmq_queue()
-            
+
             # Start consumer thread first
             consumer_thread = threading.Thread(target=self.consumer_thread, name="Consumer")
             consumer_thread.start()
-            
+
             # Small delay to ensure consumer is ready
             time.sleep(1)
             

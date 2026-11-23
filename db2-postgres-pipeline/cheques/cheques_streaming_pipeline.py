@@ -54,6 +54,7 @@ class ChequeRecord:
     usdAmountBalance: str
     tzsAmountBalance: str
     tmstamp: str
+    billSerialNum: Optional[str]
 
 
 class ChequesStreamingPipeline:
@@ -281,7 +282,8 @@ class ChequesStreamingPipeline:
                 orgAmountBalance=safe_string(row[18]),                  # CAST(da.BOOK_BALANCE AS DECFLOAT)
                 usdAmountBalance=safe_string(row[19]),                  # 0
                 tzsAmountBalance=safe_string(row[20]),                  # CAST(da.BOOK_BALANCE AS DECFLOAT)
-                tmstamp=safe_string(row[21])                            # cfc.TMSTAMP
+                tmstamp=safe_string(row[21]),                           # cfc.TMSTAMP
+                billSerialNum=safe_string(row[22]) if row[22] else None  # cfc.BILL_SERIAL_NUM
             )
             
             return record
@@ -649,17 +651,42 @@ class ChequesStreamingPipeline:
                 "payeeAccountNumber", "chequeDate", "transactionDate", "settlementDate",
                 "allowanceProbableLoss", "botProvision", "currency", "orgAmountOpening",
                 "usdAmountOpening", "tzsAmountOpening", "orgAmountPayment", "usdAmountPayment",
-                "tzsAmountPayment", "orgAmountBalance", "usdAmountBalance", "tzsAmountBalance"
+                "tzsAmountPayment", "orgAmountBalance", "usdAmountBalance", "tzsAmountBalance",
+                "billSerialNum"
             ) VALUES %s
+            ON CONFLICT ("billSerialNum") DO UPDATE SET
+                "reportingDate" = EXCLUDED."reportingDate",
+                "chequeNumber" = EXCLUDED."chequeNumber",
+                "issuerName" = EXCLUDED."issuerName",
+                "issuerBankerCode" = EXCLUDED."issuerBankerCode",
+                "payeeName" = EXCLUDED."payeeName",
+                "payeeAccountNumber" = EXCLUDED."payeeAccountNumber",
+                "chequeDate" = EXCLUDED."chequeDate",
+                "transactionDate" = EXCLUDED."transactionDate",
+                "settlementDate" = EXCLUDED."settlementDate",
+                "allowanceProbableLoss" = EXCLUDED."allowanceProbableLoss",
+                "botProvision" = EXCLUDED."botProvision",
+                currency = EXCLUDED.currency,
+                "orgAmountOpening" = EXCLUDED."orgAmountOpening",
+                "usdAmountOpening" = EXCLUDED."usdAmountOpening",
+                "tzsAmountOpening" = EXCLUDED."tzsAmountOpening",
+                "orgAmountPayment" = EXCLUDED."orgAmountPayment",
+                "usdAmountPayment" = EXCLUDED."usdAmountPayment",
+                "tzsAmountPayment" = EXCLUDED."tzsAmountPayment",
+                "orgAmountBalance" = EXCLUDED."orgAmountBalance",
+                "usdAmountBalance" = EXCLUDED."usdAmountBalance",
+                "tzsAmountBalance" = EXCLUDED."tzsAmountBalance",
+                updated_at = CURRENT_TIMESTAMP
             """
-            
+
             values = [
                 (
                     r.reportingDate, r.chequeNumber, r.issuerName, r.issuerBankerCode, r.payeeName,
                     r.payeeAccountNumber, r.chequeDate, r.transactionDate, r.settlementDate,
                     r.allowanceProbableLoss, r.botProvision, r.currency, r.orgAmountOpening,
                     r.usdAmountOpening, r.tzsAmountOpening, r.orgAmountPayment, r.usdAmountPayment,
-                    r.tzsAmountPayment, r.orgAmountBalance, r.usdAmountBalance, r.tzsAmountBalance
+                    r.tzsAmountPayment, r.orgAmountBalance, r.usdAmountBalance, r.tzsAmountBalance,
+                    r.billSerialNum
                 )
                 for r in records
             ]
@@ -671,8 +698,48 @@ class ChequesStreamingPipeline:
             self.logger.error(f"Error batch inserting {len(records)} cheque records: {e}")
             raise
     
+    def setup_target_table(self):
+        """Create the chequeClearing table and add the dedup-key column if missing (idempotent, non-destructive)"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS "chequeClearing" (
+                        "id" SERIAL PRIMARY KEY,
+                        "reportingDate" VARCHAR(50),
+                        "chequeNumber" VARCHAR(100),
+                        "issuerName" VARCHAR(255),
+                        "issuerBankerCode" VARCHAR(50),
+                        "payeeName" VARCHAR(255),
+                        "payeeAccountNumber" VARCHAR(100),
+                        "chequeDate" VARCHAR(50),
+                        "transactionDate" VARCHAR(50),
+                        "settlementDate" VARCHAR(50),
+                        "allowanceProbableLoss" VARCHAR(50),
+                        "botProvision" VARCHAR(50),
+                        "currency" VARCHAR(10),
+                        "orgAmountOpening" VARCHAR(50),
+                        "usdAmountOpening" VARCHAR(50),
+                        "tzsAmountOpening" VARCHAR(50),
+                        "orgAmountPayment" VARCHAR(50),
+                        "usdAmountPayment" VARCHAR(50),
+                        "tzsAmountPayment" VARCHAR(50),
+                        "orgAmountBalance" VARCHAR(50),
+                        "usdAmountBalance" VARCHAR(50),
+                        "tzsAmountBalance" VARCHAR(50),
+                        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute('ALTER TABLE "chequeClearing" ADD COLUMN IF NOT EXISTS "billSerialNum" VARCHAR(50)')
+                cursor.execute('ALTER TABLE "chequeClearing" ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+                conn.commit()
+                self.logger.info("chequeClearing table and dedup-key column verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to set up chequeClearing table: {e}")
+            raise
+
     def ensure_unique_index(self):
-        """Ensure performance indexes exist"""
+        """Ensure performance indexes and the dedup unique index exist"""
         try:
             with self.get_postgres_connection() as conn:
                 cursor = conn.cursor()
@@ -684,21 +751,26 @@ class ChequesStreamingPipeline:
                     CREATE INDEX IF NOT EXISTS idx_chequeclearing_date
                     ON "chequeClearing" ("transactionDate")
                 """)
+                cursor.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_chequeclearing_bill_serial_num
+                    ON "chequeClearing" ("billSerialNum")
+                """)
                 conn.commit()
-                self.logger.info("Performance indexes on chequeClearing verified/created")
+                self.logger.info("Performance and unique indexes on chequeClearing verified/created")
         except Exception as e:
-            self.logger.error(f"Failed to create performance indexes: {e}")
+            self.logger.error(f"Failed to create indexes: {e}")
             raise
-    
+
     def run_streaming_pipeline(self, incremental=True):
         """Run the streaming pipeline with simultaneous producer and consumer"""
         self.logger.info(f"Starting Cheques STREAMING pipeline... (incremental={incremental})")
-        
+
         try:
             # Update state to running
             self._update_state('running')
-            
-            # Ensure unique index for duplicate prevention
+
+            # Ensure target table and indexes exist
+            self.setup_target_table()
             self.ensure_unique_index()
             
             # Setup queue

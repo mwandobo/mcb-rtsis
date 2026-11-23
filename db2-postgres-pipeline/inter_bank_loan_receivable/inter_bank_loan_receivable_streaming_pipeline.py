@@ -500,7 +500,20 @@ class InterBankLoanReceivableStreamingPipeline:
             self.consumer_finished.set()
     
     def insert_to_postgres(self, record, cursor):
-        """Insert inter-bank loan receivable record to PostgreSQL"""
+        """Insert inter-bank loan receivable record to PostgreSQL.
+
+        The source query joins a deduplicated per-loan subquery (one row per
+        CUST_ID+product via ROW_NUMBER) against GLI_TRX_EXTRACT, a raw
+        transaction-level table, on a non-unique key - this legitimately
+        fans out the same loan into one row per matching GL transaction
+        (confirmed: 2,740 rows but only 131 distinct loanNumbers). The
+        loan-level fields are identical across a given loan's fanned-out
+        copies; only the currency-dependent fields can differ by which GL
+        transaction happened to join. ON CONFLICT DO UPDATE collapses this
+        down to one canonical row per loanNumber, same as the fix applied to
+        other entity-snapshot pipelines - not a workaround for a bug in this
+        INSERT, but the intended way to resolve the query's own fan-out.
+        """
         try:
             insert_query = """
             INSERT INTO "interBankLoanReceivable" (
@@ -514,6 +527,34 @@ class InterBankLoanReceivableStreamingPipeline:
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
+            ON CONFLICT ("loanNumber") DO UPDATE SET
+                "reportingDate" = EXCLUDED."reportingDate",
+                "borrowersInstitutionCode" = EXCLUDED."borrowersInstitutionCode",
+                "borrowerCountry" = EXCLUDED."borrowerCountry",
+                "relationshipType" = EXCLUDED."relationshipType",
+                "ratingStatus" = EXCLUDED."ratingStatus",
+                "externalRatingCorrespondentBorrower" = EXCLUDED."externalRatingCorrespondentBorrower",
+                "gradesUnratedBorrower" = EXCLUDED."gradesUnratedBorrower",
+                "loanType" = EXCLUDED."loanType",
+                "issueDate" = EXCLUDED."issueDate",
+                "loanMaturityDate" = EXCLUDED."loanMaturityDate",
+                currency = EXCLUDED.currency,
+                "orgLoanAmount" = EXCLUDED."orgLoanAmount",
+                "usdLoanAmount" = EXCLUDED."usdLoanAmount",
+                "tzsLoanAmount" = EXCLUDED."tzsLoanAmount",
+                "interestRate" = EXCLUDED."interestRate",
+                "orgAccruedInterestAmount" = EXCLUDED."orgAccruedInterestAmount",
+                "usdAccruedInterestAmount" = EXCLUDED."usdAccruedInterestAmount",
+                "tzsAccruedInterestAmount" = EXCLUDED."tzsAccruedInterestAmount",
+                "orgSuspendedInterest" = EXCLUDED."orgSuspendedInterest",
+                "usdSuspendedInterest" = EXCLUDED."usdSuspendedInterest",
+                "tzsSuspendedInterest" = EXCLUDED."tzsSuspendedInterest",
+                "ovExpDt" = EXCLUDED."ovExpDt",
+                "pastDueDays" = EXCLUDED."pastDueDays",
+                "allowanceProbableLoss" = EXCLUDED."allowanceProbableLoss",
+                "botProvision" = EXCLUDED."botProvision",
+                "assetClassificationCategory" = EXCLUDED."assetClassificationCategory",
+                updated_at = CURRENT_TIMESTAMP
             """
             
             cursor.execute(insert_query, (
@@ -550,11 +591,96 @@ class InterBankLoanReceivableStreamingPipeline:
             self.logger.error(f"Error inserting inter-bank loan receivable record to PostgreSQL: {e}")
             raise
     
-    def run_streaming_pipeline(self):
-        """Run the streaming pipeline with simultaneous producer and consumer"""
-        self.logger.info("Starting Inter-Bank Loan Receivable STREAMING pipeline...")
-        
+    def setup_target_table(self):
+        """Create the interBankLoanReceivable table if it doesn't exist yet (idempotent, non-destructive)"""
         try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS "interBankLoanReceivable" (
+                        id SERIAL PRIMARY KEY,
+                        "reportingDate" VARCHAR(50),
+                        "borrowersInstitutionCode" VARCHAR(50),
+                        "borrowerCountry" VARCHAR(100),
+                        "relationshipType" VARCHAR(100),
+                        "ratingStatus" INTEGER,
+                        "externalRatingCorrespondentBorrower" VARCHAR(50),
+                        "gradesUnratedBorrower" VARCHAR(50),
+                        "loanNumber" VARCHAR(50),
+                        "loanType" VARCHAR(100),
+                        "issueDate" VARCHAR(50),
+                        "loanMaturityDate" VARCHAR(50),
+                        currency VARCHAR(10),
+                        "orgLoanAmount" DECIMAL(18,2),
+                        "usdLoanAmount" DECIMAL(18,2),
+                        "tzsLoanAmount" DECIMAL(18,2),
+                        "interestRate" DECIMAL(8,4),
+                        "orgAccruedInterestAmount" DECIMAL(18,2),
+                        "usdAccruedInterestAmount" DECIMAL(18,2),
+                        "tzsAccruedInterestAmount" DECIMAL(18,2),
+                        "orgSuspendedInterest" DECIMAL(18,2),
+                        "usdSuspendedInterest" DECIMAL(18,2),
+                        "tzsSuspendedInterest" DECIMAL(18,2),
+                        "ovExpDt" VARCHAR(50),
+                        "pastDueDays" INTEGER,
+                        "allowanceProbableLoss" INTEGER,
+                        "botProvision" INTEGER,
+                        "assetClassificationCategory" VARCHAR(100),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.commit()
+                self.logger.info("interBankLoanReceivable table verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create interBankLoanReceivable table: {e}")
+            raise
+
+    def ensure_unique_index(self):
+        """Ensure a unique index on loanNumber exists for ON CONFLICT duplicate prevention"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_interbankloanreceivable_loan_number_unique
+                    ON "interBankLoanReceivable" ("loanNumber")
+                """)
+                conn.commit()
+                self.logger.info("Unique index on loanNumber verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create unique index on loanNumber: {e}")
+            raise
+
+    def _update_state(self, status, error_message=None):
+        try:
+            from pipeline_state import PipelineStateManager
+            PipelineStateManager().update_run('inter_bank_loan_receivable', status, self.total_consumed, error_message)
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
+
+    def run_streaming_pipeline(self):
+        """Run the streaming pipeline with simultaneous producer and consumer.
+
+        LOAN_ACCOUNT does have TMSTAMP, but the query's ROW_NUMBER() window
+        function (PARTITION BY CUST_ID, FK_LOANFK_PRODUCTI ORDER BY TMSTAMP
+        DESC) needs to see every row for a given customer+product to
+        correctly determine which is the latest - filtering individual rows
+        by TMSTAMP before that window function evaluates would be unsafe
+        (same risk as personal_data_corporates/card_product's GROUP BY).
+        This deliberately always does a full scan; the ON CONFLICT DO UPDATE
+        upsert is what keeps re-runs correct, collapses the query's own
+        transaction-level fan-out, and picks up pastDueDays/status changes
+        on existing loans.
+        """
+        self.logger.info("Starting Inter-Bank Loan Receivable STREAMING pipeline...")
+        self._update_state('running')
+
+        try:
+            # Ensure target table and unique index exist
+            self.setup_target_table()
+            self.ensure_unique_index()
+
             # Setup queue
             self.setup_rabbitmq_queue()
             
@@ -598,9 +724,12 @@ class InterBankLoanReceivableStreamingPipeline:
             Average rate: {avg_rate:.1f} records/second
             ==========================================
             """)
-            
+
+            self._update_state('completed')
+
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
 
 

@@ -525,13 +525,21 @@ class CardProductStreamingPipeline:
         """Batch insert card product records to PostgreSQL with duplicate prevention"""
         try:
             cursor = pg_conn.cursor()
-            
+
             insert_query = """
             INSERT INTO "cardProduct" (
                 "reportingDate", "binNumber", "binNumberStartDate", currency,
                 "cardType", "cardTypeSubCategory", "cardSchemeName", "cardIssuerCategory", "cardIssuer"
             ) VALUES %s
-            ON CONFLICT ("binNumber", "cardType") DO NOTHING
+            ON CONFLICT ("binNumber", "cardType") DO UPDATE SET
+                "reportingDate" = EXCLUDED."reportingDate",
+                "binNumberStartDate" = EXCLUDED."binNumberStartDate",
+                currency = EXCLUDED.currency,
+                "cardTypeSubCategory" = EXCLUDED."cardTypeSubCategory",
+                "cardSchemeName" = EXCLUDED."cardSchemeName",
+                "cardIssuerCategory" = EXCLUDED."cardIssuerCategory",
+                "cardIssuer" = EXCLUDED."cardIssuer",
+                updated_at = CURRENT_TIMESTAMP
             """
             
             values = [
@@ -549,6 +557,33 @@ class CardProductStreamingPipeline:
             self.logger.error(f"Error batch inserting {len(records)} card product records: {e}")
             raise
     
+    def setup_target_table(self):
+        """Create the cardProduct table if it doesn't exist yet (idempotent, non-destructive)"""
+        try:
+            with self.get_postgres_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS "cardProduct" (
+                        id SERIAL PRIMARY KEY,
+                        "reportingDate" VARCHAR(12),
+                        "binNumber" VARCHAR(6),
+                        "binNumberStartDate" VARCHAR(12),
+                        currency VARCHAR(3),
+                        "cardType" VARCHAR(50),
+                        "cardTypeSubCategory" VARCHAR(50),
+                        "cardSchemeName" VARCHAR(50),
+                        "cardIssuerCategory" VARCHAR(50),
+                        "cardIssuer" VARCHAR(100),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.commit()
+                self.logger.info("cardProduct table verified/created")
+        except Exception as e:
+            self.logger.error(f"Failed to create cardProduct table: {e}")
+            raise
+
     def ensure_unique_index(self):
         """Ensure unique index on binNumber and cardType exists for ON CONFLICT duplicate prevention"""
         try:
@@ -565,11 +600,25 @@ class CardProductStreamingPipeline:
             raise
     
     def run_streaming_pipeline(self):
-        """Run the streaming pipeline with simultaneous producer and consumer"""
+        """Run the streaming pipeline with simultaneous producer and consumer.
+
+        CMS_CARD does have a genuine TMSTAMP column, but the query GROUPs
+        rows down to BIN+cardType with MIN(CREATION_DATE)/MIN(PROD_DATE)/
+        MIN(TUN_DATE) aggregates - filtering individual card rows by TMSTAMP
+        would compute that MIN() only over the newly-filtered rows instead of
+        the group's true all-time earliest date, silently corrupting
+        binNumberStartDate for any BIN that already has older cards. The
+        output is only a couple of BIN+cardType rows, so there's no
+        performance benefit to taking that risk; this deliberately always
+        does a full scan, and the ON CONFLICT DO UPDATE upsert is what keeps
+        re-runs idempotent and picks up attribute changes on existing BINs.
+        """
         self.logger.info("Starting Card Product STREAMING pipeline...")
-        
+        self._update_state('running')
+
         try:
-            # Ensure unique index for duplicate prevention
+            # Ensure target table and unique index exist
+            self.setup_target_table()
             self.ensure_unique_index()
             
             # Setup queue
@@ -609,17 +658,28 @@ class CardProductStreamingPipeline:
             self.logger.info(f"Total time: {total_time:.1f} seconds")
             self.logger.info(f"Average rate: {avg_rate:.1f} records/second")
             self.logger.info("=" * 60)
-            
+
+            self._update_state('completed')
+
             return {
                 'total_produced': self.total_produced,
                 'total_consumed': self.total_consumed,
                 'total_time': total_time,
                 'avg_rate': avg_rate
             }
-            
+
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            self._update_state('failed', str(e))
             raise
+
+    def _update_state(self, status, error_message=None):
+        try:
+            from pipeline_state import PipelineStateManager
+            PipelineStateManager().update_run('card_product', status, self.total_consumed, error_message)
+            self.logger.info(f"State updated: {status}, records: {self.total_consumed}")
+        except Exception as e:
+            self.logger.warning(f"Could not update state: {e}")
 
 
 if __name__ == "__main__":

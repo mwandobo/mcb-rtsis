@@ -26,7 +26,17 @@ select VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as reportingDate,
        VARCHAR_FORMAT(gte.TRN_DATE, 'DDMMYYYYHHMM')      as transactionDate,
        VARCHAR_FORMAT(CURRENT_TIMESTAMP, 'DDMMYYYYHHMM') as maturityDate,
        0                                                 as allowanceProbableLoss,
-       0                                                 as botProvision
+       0                                                 as botProvision,
+
+       -- Internal-use-only natural key for the underlying GL posting, used
+       -- solely to prevent duplicate rows on a crash/retry - not part of the
+       -- BOT-reported output. Verified unique as (custId, trnDate, trnSnum,
+       -- lineNum, trxSn) together.
+       gte.CUST_ID                                       as custId,
+       gte.TRN_DATE                                      as trnDate,
+       gte.TRN_SNUM                                      as trnSnum,
+       gte.LINE_NUM                                      as lineNum,
+       gte.TRX_SN                                        as trxSn
 
 FROM GLI_TRX_EXTRACT AS gte
          JOIN
